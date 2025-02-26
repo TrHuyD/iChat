@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace iChat.Data.EF
 {
-    class iChatDbContext(DbContextOptions options): IdentityDbContext<AppUser,Role,Guid>(options)
+    public class iChatDbContext(DbContextOptions options): IdentityDbContext<AppUser,Role,Guid>(options)
     {
         protected override void OnModelCreating(ModelBuilder builder)
         {
