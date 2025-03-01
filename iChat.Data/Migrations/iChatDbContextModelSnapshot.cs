@@ -207,6 +207,35 @@ namespace iChat.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("iChat.Data.Entities.Users.Auth.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("Revoked")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("iChat.Data.Entities.Users.Messages.Message", b =>
                 {
                     b.Property<int>("MessageId")
@@ -352,6 +381,17 @@ namespace iChat.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("iChat.Data.Entities.Users.Auth.RefreshToken", b =>
+                {
+                    b.HasOne("iChat.Data.Entities.Users.AppUser", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("iChat.Data.Entities.Users.Messages.Message", b =>
                 {
                     b.HasOne("iChat.Data.Entities.Users.AppUser", "Reciever")
@@ -369,6 +409,11 @@ namespace iChat.Data.Migrations
                     b.Navigation("Reciever");
 
                     b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("iChat.Data.Entities.Users.AppUser", b =>
+                {
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

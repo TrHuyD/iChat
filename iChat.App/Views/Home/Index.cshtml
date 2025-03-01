@@ -1,0 +1,31 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>
+        Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.
+    </p>
+    <p id="userGreeting">Checking login status...</p>
+</div>
+
+<script>
+    async function fetchUser() {
+        const greetingElement = document.getElementById('userGreeting');
+
+        try {
+            const response = await fetch('/User/Profile', { credentials: 'include' });
+
+            if (!response.ok) throw new Error(response.status);
+
+            const { username } = await response.json();
+            greetingElement.textContent = `Hi, ${username}`;
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            greetingElement.innerHTML = `<a href="/Login">Login</a>`;
+        }
+    }
+
+    fetchUser();
+</script>

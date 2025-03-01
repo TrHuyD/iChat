@@ -16,8 +16,8 @@ builder.Services.AddDbContext<iChatDbContext>(options =>
 builder.Services.AddIdentity<AppUser, Role>()
     .AddEntityFrameworkStores<iChatDbContext>()
     .AddDefaultTokenProviders();
-builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddTransient<IJwtService, JwtService>();
+builder.Services.AddTransient<IAuthService, AuthService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

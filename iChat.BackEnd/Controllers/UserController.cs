@@ -15,6 +15,7 @@ namespace iChat.BackEnd.Controllers
             _authService = authService;
         }
 
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -35,6 +36,45 @@ namespace iChat.BackEnd.Controllers
             try
             {
                 var response = await _authService.LoginAsync(request);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+        [HttpPost("test123")]
+        public async Task<IActionResult> Test123([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                var response = await _authService.isValidJwt(request);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+        [HttpPost("refreshtoken")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                var response = await _authService.RefreshTokenAsync(request);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+        [HttpGet("{userName}")]
+        public async Task<IActionResult> GetUser(string userName)
+        {
+            try
+            {
+                var response = await _authService.GetUserAsync(userName);
                 return Ok(response);
             }
             catch (Exception ex)

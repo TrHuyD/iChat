@@ -1,0 +1,27 @@
+﻿@model iChat.DTOs.Users.Auth.LoginRequest
+
+@{
+    ViewData["Title"] = "Login";
+}
+
+<h2>Login</h2>
+
+@if (ViewData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @ViewData["ErrorMessage"]
+    </div>
+}
+
+<form method="post" asp-action="Login" asp-controller="Auth">
+    @Html.AntiForgeryToken()
+    <div>
+        <label asp-for="Username"></label>
+        <input asp-for="Username" class="form-control" required />
+    </div>
+    <div>
+        <label asp-for="Password"></label>
+        <input asp-for="Password" type="password" class="form-control" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Login</button>
+</form>

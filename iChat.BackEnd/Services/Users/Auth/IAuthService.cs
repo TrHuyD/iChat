@@ -6,5 +6,7 @@ namespace iChat.BackEnd.Services.Users.Auth
     {
         Task<AuthResponse> RegisterAsync(RegisterRequest request);
         Task<AuthResponse> LoginAsync(LoginRequest request);
+        Task<RefreshTokenRespone> RefreshTokenAsync(RefreshTokenRequest request);
+        Task<bool> isValidJwt(RefreshTokenRequest request);
     }
 }
