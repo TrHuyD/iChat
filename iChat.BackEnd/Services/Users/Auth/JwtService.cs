@@ -2,6 +2,7 @@
 using iChat.BackEnd.Services.Users.Auth;
 using iChat.Data.Entities.Users.Auth;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,13 +12,26 @@ using System.Text;
 
 public class JwtService : IJwtService
 {
-    private readonly JwtSettings _jwtSettings;
+    private JwtOptions _jwtOptions => __jwtOptions.CurrentValue;
+    private readonly IOptionsMonitor<JwtOptions> __jwtOptions;
 
-    public JwtService(IOptions<JwtSettings> jwtOptions)
+    public JwtService(IOptionsMonitor<JwtOptions> jwtOptions)
     {
-        _jwtSettings = jwtOptions.Value; 
+        __jwtOptions = jwtOptions;
     }
-
+    public TokenValidationParameters GetParam(bool vallifetime)
+    {
+        var key = Encoding.UTF8.GetBytes(_jwtOptions.SecretKey);
+        return  new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = vallifetime,
+            ClockSkew = TimeSpan.Zero
+        };
+    }
     public string GenerateAccessToken(Guid userId, IList<string> roles)
     {
         var claims = new List<Claim>
@@ -28,14 +42,14 @@ public class JwtService : IJwtService
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: _jwtSettings.Issuer,
-            audience: _jwtSettings.Audience,
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.ExpireMinutes),
+            expires: DateTime.UtcNow.AddMinutes(_jwtOptions.ExpireMinutes),
             signingCredentials: credentials
         );
 
@@ -57,18 +71,9 @@ public class JwtService : IJwtService
     public ClaimsPrincipal? ValidateJwtToken(string token,bool vallifetime=false)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+        var key = Encoding.UTF8.GetBytes(_jwtOptions.SecretKey);
 
-        var validateParam = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = vallifetime,
-            ClockSkew = TimeSpan.Zero
-        };
-
+        var validateParam = GetParam(vallifetime);
         try
         {
             var principal = tokenHandler.ValidateToken(token, validateParam, out var validatedToken);

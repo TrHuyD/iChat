@@ -1,9 +1,8 @@
 ﻿using iChat.Data.Entities.Users;
-using iChat.Data.Entities.Users.Auth;
 using iChat.DTOs.Users.Auth;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
 namespace iChat.BackEnd.Services.Users.Auth
@@ -11,81 +10,49 @@ namespace iChat.BackEnd.Services.Users.Auth
     public class AuthService : IAuthService
     {
         private readonly UserManager<AppUser> _userManager;
-        private readonly IJwtService _jwtService;
-        public AuthService(UserManager<AppUser> userManager, IJwtService jwtService)
+        private readonly SignInManager<AppUser> _signInManager;
+        private readonly UserRelationService _neo4jService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public AuthService(UserRelationService neo4JService,UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, IHttpContextAccessor httpContextAccessor)
         {
+            _neo4jService = neo4JService;
             _userManager = userManager;
-            _jwtService = jwtService;
+
+            _signInManager = signInManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
+        public async Task<bool> RegisterAsync(RegisterRequest request)
         {
             var user = new AppUser
             {
-                UserName = request.Email,
+                UserName = request.UserName,
                 Email = request.Email,
                 FirstName = request.FirstName,
                 LastName = request.LastName
             };
+
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
                 throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
-            return await GenerateAuthResponse(user);
+            _=_neo4jService.CreateUserNode(user.Id);
+            return true;
         }
-        public async Task<AuthResponse> LoginAsync(LoginRequest request)
+
+        public async Task<bool> LoginAsync(LoginRequest request)
         {
             var user = await _userManager.FindByNameAsync(request.Username);
             if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
                 throw new Exception("Invalid credentials");
+            await _signInManager.SignInAsync(user, isPersistent: request.RememberMe);
 
-            return await GenerateAuthResponse(user);
+            return true;
         }
 
-        private async Task<AuthResponse> GenerateAuthResponse(AppUser user)
+        public async Task LogoutAsync()
         {
-            var roles = await _userManager.GetRolesAsync(user);
-            var accessToken = _jwtService.GenerateAccessToken(user.Id,await _userManager.GetRolesAsync(user));
-            var refreshToken = _jwtService.GenerateRefreshToken();
-            user.RefreshTokens.Add(new RefreshToken
-            {
-                Token = refreshToken,
-                ExpiryDate = DateTime.UtcNow.AddDays(7),
-                Created = DateTime.UtcNow,
-                UserId = user.Id
-            });
-            await _userManager.UpdateAsync(user);
-            return new AuthResponse
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                Roles = roles.ToArray()
-            };
-        }
-
-        public async Task<RefreshTokenRespone> RefreshTokenAsync(RefreshTokenRequest request)
-        {
-            var t = _jwtService.ValidateJwtToken(request.Jwt);
-            var userIdClaim = t?.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdClaim) )
-                throw new Exception("Invalid token");
-
-            var user = await _userManager.Users.Include(u => u.RefreshTokens).FirstOrDefaultAsync(u => u.Id == Guid.Parse(userIdClaim));
-            if (user == null)
-                throw new Exception("User not found");
-
-            var refreshToken = user.RefreshTokens?.FirstOrDefault(t => t.Token == request.RefreshToken);
-            if (refreshToken == null || !_jwtService.ValidateRefreshToken(refreshToken))
-                throw new Exception("Invalid refresh token");
-
-            var roles = await _userManager.GetRolesAsync(user);
-            var accessToken = _jwtService.GenerateAccessToken(user.Id, roles);
-
-            return new RefreshTokenRespone { Token = accessToken };
-        }
-
-        public Task<bool> isValidJwt(RefreshTokenRequest request)
-        {
-            return Task.FromResult(_jwtService.isValid(request.Jwt));
+            await _signInManager.SignOutAsync();
         }
     }
 }

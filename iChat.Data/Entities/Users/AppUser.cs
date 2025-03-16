@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace iChat.Data.Entities.Users
 {
-    public class AppUser : IdentityUser<Guid>
+    public class AppUser : IdentityUser<long>
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }

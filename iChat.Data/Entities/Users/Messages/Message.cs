@@ -9,12 +9,12 @@ namespace iChat.Data.Entities.Users.Messages
 {
     public abstract class Message
     {
-        public int MessageId { get; set; } 
-        public AppUser? Sender { get; set; }
-        public Guid SenderId { get; set; } 
+        public long MessageId { get; set; } 
+      //  public AppUser? Sender { get; set; }
+        public long SenderId { get; set; } 
         public MessageType MessageType { get; set; }
-        public AppUser? Reciever { get; set; }
-        public Guid ReceiverId { get; set; } 
+        //public AppUser? Reciever { get; set; }
+        public long ReceiveChannelId { get; set; } 
         //public string Content { get; set; }
         public DateTime Timestamp { get; set; } 
     }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace iChat.Data.Entities.Users
 {
-    public class Role : IdentityRole<Guid>
+    public class Role : IdentityRole<long>
     {
         public string Description { get; set; }
     }

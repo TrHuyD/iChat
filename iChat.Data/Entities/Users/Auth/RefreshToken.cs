@@ -15,7 +15,7 @@ namespace iChat.Data.Entities.Users.Auth
         public DateTime? Revoked { get; set; }
         public bool IsExpired => DateTime.UtcNow >= ExpiryDate;
         public bool IsActive => Revoked == null && !IsExpired;
-        public Guid UserId { get; set; }
+        public long UserId { get; set; }
         public AppUser User { get; set; }
     }
 }

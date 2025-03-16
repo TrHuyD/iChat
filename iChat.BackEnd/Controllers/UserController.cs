@@ -1,12 +1,12 @@
 ﻿using iChat.BackEnd.Services.Users.Auth;
 using iChat.DTOs.Users.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class UserController : ControllerBase
+    [Route("")]
+    public class UserController : Controller
     {
         private readonly IAuthService _authService;
 
@@ -14,73 +14,83 @@ namespace iChat.BackEnd.Controllers
         {
             _authService = authService;
         }
-
+        [HttpGet()]
+        [Authorize]
+        public IActionResult Home()
+        {
+            return View();
+        }
+        [HttpGet("register")]
+        public IActionResult Register()
+        {
+            if (User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Home");
+            return View();
+        }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterRequest request)
         {
+            if (!ModelState.IsValid)
+                return View(request);
+
             try
             {
-                var response = await _authService.RegisterAsync(request);
-                return Ok(response);
+                await _authService.RegisterAsync(request);
+                return RedirectToAction("Login");
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                ModelState.AddModelError("", ex.Message);
+                return View(request);
             }
+        }
+
+        [HttpGet("login")]
+        public IActionResult Login()
+        {
+            if (User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Home");
+            return View();
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginRequest request)
         {
+            if (!ModelState.IsValid)
+                return View(request);
+
             try
             {
-                var response = await _authService.LoginAsync(request);
-                return Ok(response);
+                await _authService.LoginAsync(request);
+                return RedirectToAction("Profile");
             }
             catch (Exception ex)
             {
-                return Unauthorized(new { message = ex.Message });
+                ModelState.AddModelError("", ex.Message);
+                return View(request);
             }
         }
-        [HttpPost("test123")]
-        public async Task<IActionResult> Test123([FromBody] RefreshTokenRequest request)
+
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
         {
-            try
-            {
-                var response = await _authService.isValidJwt(request);
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
+            await _authService.LogoutAsync();
+            return RedirectToAction("Login");
         }
-        [HttpPost("refreshtoken")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+
+        [HttpGet("profile")]
+        [Authorize]
+        public IActionResult Profile()
         {
-            try
-            {
-                var response = await _authService.RefreshTokenAsync(request);
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
-        }
-        [HttpGet("{userName}")]
-        public async Task<IActionResult> GetUser(string userName)
-        {
-            try
-            {
-                var response = await _authService.GetUserAsync(userName);
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized();
+
+            return View();
         }
     }
 }

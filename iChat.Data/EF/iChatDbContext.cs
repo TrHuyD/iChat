@@ -12,14 +12,12 @@ using System.Threading.Tasks;
 
 namespace iChat.Data.EF
 {
-    public class iChatDbContext(DbContextOptions options): IdentityDbContext<AppUser,Role,Guid>(options)
+    public class iChatDbContext(DbContextOptions options): IdentityDbContext<AppUser,Role,long>(options)
     {
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.ApplyConfiguration(new AppUserConfiguration());
             
-            builder.ApplyConfiguration(new MessageConfiguration());
-            builder.ApplyConfiguration(new TextMessageConfiguration());
             builder.ApplyConfiguration(new RefreshTokenConfiguration());
             //builder.seed();
             base.OnModelCreating(builder);
@@ -27,6 +25,5 @@ namespace iChat.Data.EF
         public DbSet<AppUser> AppUsers { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
-        public DbSet<Message> Messages { get; set; }
     }
 }

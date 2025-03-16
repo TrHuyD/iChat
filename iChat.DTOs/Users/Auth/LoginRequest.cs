@@ -12,5 +12,7 @@ namespace iChat.DTOs.Users.Auth
         public string Username { get; set; }    
 
         public string Password { get; set; }
+
+        public bool RememberMe { set; get; }
     }
 }

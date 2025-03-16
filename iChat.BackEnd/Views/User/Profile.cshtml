@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Profile";
+    Layout = "_AuthMainLayout";
+}
+
+<div class="profile-container">
+    <div class="avatar">
+        <img id="avatar" src="" alt="User Avatar">
+    </div>
+    <h2 id="fullName">Loading...</h2>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/store.js/2.0.12/store.legacy.min.js"></script>
+<script src="~/js/StorageHelper.js"></script>
+<script src="~/js/ProfileService.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", async function() {
+        const profile = await ProfileService.getUserProfile();
+        if (profile) {
+            document.getElementById("avatar").src = profile.avatarUrl;
+            document.getElementById("fullName").innerText = profile.firstName + " " + profile.lastName;
+        }
+    });
+</script>

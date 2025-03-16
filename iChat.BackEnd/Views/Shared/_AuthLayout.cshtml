@@ -1,0 +1,41 @@
+﻿@{
+    Layout = "_MasterLayout";
+}
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/store.js/2.0.12/store.legacy.min.js"></script>
+    <script>
+        async function fetchProfile() {
+            try {
+                const response = await fetch('/Profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch profile');
+                }
+
+                const data = await response.json();
+                store.set('userProfile', data);
+
+                document.getElementById('profile-data').innerText = JSON.stringify(data, null, 2);
+                if (data.FirstName && data.LastName) {
+                    document.getElementById('user-name').innerText = `Hi, ${data.FirstName} ${data.LastName}`;
+                }
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+                document.getElementById('profile-data').innerText = 'Error loading profile.';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchProfile);
+    </script>
+}
+
+<div>
+    <h1>Welcome</h1>
+    <pre id="profile-data">Loading profile...</pre>
+    @RenderBody()
+</div>
