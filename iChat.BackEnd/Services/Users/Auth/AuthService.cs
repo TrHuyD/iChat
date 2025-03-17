@@ -23,22 +23,7 @@ namespace iChat.BackEnd.Services.Users.Auth
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<bool> RegisterAsync(RegisterRequest request)
-        {
-            var user = new AppUser
-            {
-                UserName = request.UserName,
-                Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName
-            };
 
-            var result = await _userManager.CreateAsync(user, request.Password);
-            if (!result.Succeeded)
-                throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
-            _=_neo4jService.CreateUserNode(user.Id);
-            return true;
-        }
 
         public async Task<bool> LoginAsync(LoginRequest request)
         {

@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Models.Helpers;
 using iChat.BackEnd.Models.User.MessageRequests;
+using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Services.Users.Infra.CassandraDB

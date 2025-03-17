@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers
 {
-    [Route("")]
+    [Route("user")]
     public class UserController : Controller
     {
         private readonly IAuthService _authService;
@@ -20,32 +20,32 @@ namespace iChat.BackEnd.Controllers
         {
             return View();
         }
-        [HttpGet("register")]
-        public IActionResult Register()
-        {
-            if (User.Identity.IsAuthenticated)
-                return RedirectToAction("Index", "Home");
-            return View();
-        }
+        //[HttpGet("register")]
+        //public IActionResult Register()
+        //{
+        //    if (User.Identity.IsAuthenticated)
+        //        return RedirectToAction("Index", "Home");
+        //    return View();
+        //}
 
-        [HttpPost("register")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterRequest request)
-        {
-            if (!ModelState.IsValid)
-                return View(request);
+        //[HttpPost("register")]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Register(RegisterRequest request)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return View(request);
 
-            try
-            {
-                await _authService.RegisterAsync(request);
-                return RedirectToAction("Login");
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", ex.Message);
-                return View(request);
-            }
-        }
+        //    try
+        //    {
+        //        await _authService.RegisterAsync(request);
+        //        return RedirectToAction("Login");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ModelState.AddModelError("", ex.Message);
+        //        return View(request);
+        //    }
+        //}
 
         [HttpGet("login")]
         public IActionResult Login()
@@ -77,6 +77,12 @@ namespace iChat.BackEnd.Controllers
         [HttpPost("logout")]
         [Authorize]
         public async Task<IActionResult> Logout()
+        {
+            await _authService.LogoutAsync();
+            return RedirectToAction("Login");
+        }
+        [HttpGet("logout")]
+        public async Task<IActionResult> LogoutGet()
         {
             await _authService.LogoutAsync();
             return RedirectToAction("Login");

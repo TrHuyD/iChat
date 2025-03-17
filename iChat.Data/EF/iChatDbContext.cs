@@ -1,4 +1,5 @@
 ﻿using iChat.Data.Configurations;
+using iChat.Data.Entities.Servers;
 using iChat.Data.Entities.Users;
 using iChat.Data.Entities.Users.Auth;
 using iChat.Data.Entities.Users.Messages;
@@ -23,6 +24,7 @@ namespace iChat.Data.EF
             base.OnModelCreating(builder);
         }
         public DbSet<AppUser> AppUsers { get; set; }
+        public DbSet<ChatServer> ChatServers { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
     }

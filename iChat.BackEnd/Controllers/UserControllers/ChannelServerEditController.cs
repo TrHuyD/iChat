@@ -1,61 +1,75 @@
-﻿using iChat.BackEnd.Services.Users.Infra.Neo4j;
+﻿using iChat.BackEnd.Services.Users.Infra.IdGenerator;
+using iChat.BackEnd.Services.Users.Infra.Neo4j;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers.UserControllers
 {
+    [Authorize]
+    [Route("Chat")]
     public class ChatServerEditController : Controller
     {
         private readonly ChatServerService _chatServerService;
+        private readonly ChannelIdService _IdGen;
 
-        public ChatServerEditController(ChatServerService chatServerService)
+        public ChatServerEditController(ChatServerService chatServerService,ChannelIdService IdGen)
         {
+            _IdGen = IdGen;
             _chatServerService = chatServerService;
         }
+        //[HttpGet]
+        //public IActionResult Create()
+        //{
+        //    return View();
+        //}
 
-        public IActionResult Create()
-        {
-            return View();
-        }
+        //[HttpPost]
+        //public async Task<IActionResult> Create(string name)
+        //{
+        //    if (string.IsNullOrWhiteSpace(name))
+        //    {
+        //        ModelState.AddModelError("Name", "Server name is required.");
+        //        return View();
+        //    }
 
-        [HttpPost]
-        public async Task<IActionResult> Create(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                ModelState.AddModelError("Name", "Server name is required.");
-                return View();
-            }
+        //    var serverId = _IdGen.GenerateId();
+        //    var userId = new UserClaimHelper(User).GetUserId();
+        //    await _chatServerService.CreateChatServerAsync(serverId, name, userId);
 
-            string serverId = Guid.NewGuid().ToString();
-            await _chatServerService.CreateChatServerAsync(serverId, name);
-            return RedirectToAction("Index", "ChatServer");
-        }
+        //    return RedirectToAction("Index", "ChatServer");
+        //}
+
+        [HttpGet("{id}\\Edit")]
 
         public async Task<IActionResult> Edit(string id)
         {
             return View(new { ServerId = id });
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Edit(string id, string newName)
+        [HttpPost("{id}\\Edit")]
+
+        public async Task<IActionResult> Edit(long id, string newName)
         {
             if (string.IsNullOrWhiteSpace(newName))
             {
                 ModelState.AddModelError("Name", "Server name is required.");
                 return View(new { ServerId = id });
             }
+            var userId = new UserClaimHelper(User).GetUserId();
+            await _chatServerService.UpdateChatServerNameAsync(id, newName, userId);
 
-            await _chatServerService.EditChatServerNameAsync(id, newName);
             return RedirectToAction("Index", "ChatServer");
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Delete(string id)
+
+        [HttpPost("{id}\\Delete")]
+        public async Task<IActionResult> Delete(long id)
         {
-            await _chatServerService.DeleteChatServerAsync(id);
+            var userId = new UserClaimHelper(User).GetUserId();
+            await _chatServerService.DeleteChatServerAsync(id, userId);
             return RedirectToAction("Index", "ChatServer");
         }
-
+        [HttpPost("{serverId}\\{channelId}")]
         public IActionResult ViewChannel(string serverId, string channelId)
         {
             ViewData["ServerId"] = serverId;

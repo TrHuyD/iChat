@@ -1,6 +1,6 @@
 ﻿using Neo4j.Driver;
 
-namespace iChat.BackEnd.Services.Users.Infra.Neo4j
+namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
 {
     public class ChatChannelService
     {
