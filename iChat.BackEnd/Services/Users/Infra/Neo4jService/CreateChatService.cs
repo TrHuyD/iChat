@@ -46,7 +46,8 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
                 CREATE (c:ChatChannel {id: $channelId, name: 'general'})
                 CREATE (s)-[:HAS_CHANNEL]->(c)
                 CREATE (s)-[:DEFAULT_CHANNEL]->(c)  
-                CREATE (u)-[:ADMIN_OF]->(s)";
+                CREATE (u)-[:ADMIN_OF]->(s)
+                CREATE (u)-[:MEMBER_OF]->(s)";
 
             try
             {

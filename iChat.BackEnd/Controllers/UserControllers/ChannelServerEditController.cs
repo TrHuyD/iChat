@@ -1,5 +1,5 @@
 ﻿using iChat.BackEnd.Services.Users.Infra.IdGenerator;
-using iChat.BackEnd.Services.Users.Infra.Neo4j;
+using iChat.BackEnd.Services.Users.Infra.Neo4jService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,10 +9,10 @@ namespace iChat.BackEnd.Controllers.UserControllers
     [Route("Chat")]
     public class ChatServerEditController : Controller
     {
-        private readonly ChatServerService _chatServerService;
+        private readonly Neo4jChatServerEditService _chatServerService;
         private readonly ChannelIdService _IdGen;
 
-        public ChatServerEditController(ChatServerService chatServerService,ChannelIdService IdGen)
+        public ChatServerEditController(Neo4jChatServerEditService chatServerService,ChannelIdService IdGen)
         {
             _IdGen = IdGen;
             _chatServerService = chatServerService;
@@ -48,14 +48,14 @@ namespace iChat.BackEnd.Controllers.UserControllers
 
         [HttpPost("{id}\\Edit")]
 
-        public async Task<IActionResult> Edit(long id, string newName)
+        public async Task<IActionResult> Edit(string id, string newName)
         {
             if (string.IsNullOrWhiteSpace(newName))
             {
                 ModelState.AddModelError("Name", "Server name is required.");
                 return View(new { ServerId = id });
             }
-            var userId = new UserClaimHelper(User).GetUserId();
+            var userId = new UserClaimHelper(User).GetUserIdStr();
             await _chatServerService.UpdateChatServerNameAsync(id, newName, userId);
 
             return RedirectToAction("Index", "ChatServer");
@@ -63,9 +63,9 @@ namespace iChat.BackEnd.Controllers.UserControllers
 
 
         [HttpPost("{id}\\Delete")]
-        public async Task<IActionResult> Delete(long id)
+        public async Task<IActionResult> Delete(string id)
         {
-            var userId = new UserClaimHelper(User).GetUserId();
+            var userId = new UserClaimHelper(User).GetUserIdStr();
             await _chatServerService.DeleteChatServerAsync(id, userId);
             return RedirectToAction("Index", "ChatServer");
         }

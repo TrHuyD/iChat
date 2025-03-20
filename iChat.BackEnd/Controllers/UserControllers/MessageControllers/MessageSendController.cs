@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 {
     [ApiController]
-    [Route("api/message/send")]
+    [Route("chat")]
     [Authorize]
     public class MessageSendController :ControllerBase
     {

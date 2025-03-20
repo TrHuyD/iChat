@@ -1,0 +1,11 @@
+﻿@using iChat.Data.Entities.Servers
+@model List<ChatChannel>
+
+@foreach (var channel in Model)
+{
+    <button hx-get="@Url.Action("GetMessages", "Chat", new { channelId = channel.Id })"
+            hx-target="#chatContainer"
+            class="block w-full text-left p-2 text-white hover:bg-gray-600">
+        @channel.Name
+    </button>
+}

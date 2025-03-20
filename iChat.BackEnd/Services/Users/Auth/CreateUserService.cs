@@ -1,5 +1,5 @@
 ﻿using iChat.BackEnd.Services.Users.Infra.IdGenerator;
-using iChat.BackEnd.Services.Users.Infra.Neo4j;
+using iChat.BackEnd.Services.Users.Infra.Neo4jService;
 using iChat.Data.Entities.Users;
 using iChat.DTOs.Users.Auth;
 using Microsoft.AspNetCore.Identity;

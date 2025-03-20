@@ -1,0 +1,33 @@
+﻿@using iChat.Data.Entities.Servers
+@model List<ChatServer>
+
+<div class="flex h-screen">
+    <!-- Server List -->
+    <div class="w-16 bg-gray-900 p-2 flex flex-col items-center">
+        @foreach (var server in Model)
+        {
+            <button hx-get="@Url.Action("GetChannels", "Chat", new { serverId = server.Id })"
+                    hx-target="#channelList"
+                    class="p-2 rounded-full mb-2 bg-gray-700 hover:bg-gray-500">
+                <img src="https://cdn.discordapp.com/embed/avatars/0.png" class="w-12 h-12">
+            </button>
+        }
+    </div>
+
+    <!-- Channel List -->
+    <div class="w-48 bg-gray-800 p-4" id="channelList">
+        <p class="text-white">Select a server</p>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="flex-1 flex flex-col bg-gray-700 p-4">
+        <div class="overflow-auto flex-1" id="chatContainer" hx-trigger="revealed" hx-get="@Url.Action("GetMessages", "Chat", new { channelId = "default-channel-id" })">
+            <p class="text-gray-400">Select a channel</p>
+        </div>
+    </div>
+
+    <!-- Member List -->
+    <div class="w-64 bg-gray-900 p-4">
+        <p class="text-white">Members List (Coming Soon)</p>
+    </div>
+</div>

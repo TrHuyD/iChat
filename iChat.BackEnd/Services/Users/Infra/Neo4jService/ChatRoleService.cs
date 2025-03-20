@@ -63,20 +63,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
             return record.Count() != 0;
 
         }
-        public async Task<List<string>> GetUserJoinedServersAsync(string userId)
-        {
-            try
-            {
-                var query = @"MATCH (u:User {id: $userId})-[:MEMBER_OF]->(s:ChatServer)
-                             RETURN s.id AS serverId";
-                var result = await _session.RunAsync(query, new { userId });
-                return await result.ToListAsync(r => r["serverId"].As<string>());
-            }
-            catch
-            {
-                return new List<string>();
-            }
-        }
+
         public async Task<bool> DeleteRoleAsync(string roleId)
         {
             var query = @"

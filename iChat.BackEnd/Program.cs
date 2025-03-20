@@ -14,10 +14,14 @@ using System;
 using iChat.Data.Entities.Users.Messages;
 using iChat.BackEnd.Services.Users.Infra.CassandraDB;
 using Microsoft.Extensions.DependencyInjection;
-using iChat.BackEnd.Services.Users.Infra.Neo4j;
+
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Models.Infrastructures;
 using Microsoft.OpenApi.Models;
+using iChat.BackEnd.Services.Users.Infra.Neo4jService;
+using iChat.BackEnd.Services.Users.Infra.Redis;
+using iChat.BackEnd.Services.Users.Servers;
+using iChat.BackEnd.Services.Users.Infra.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsDevelopment())
@@ -37,7 +41,14 @@ var CassandraRWConfig = new CassandraOptions(builder.Configuration.GetSection("C
 var WorkerIdConfig = new ConfigurationBuilder()
     .AddJsonFile("workerSettings.json", optional: true, reloadOnChange: true)
     .Build().GetSection("Id").Get<WorkerID>();
-
+builder.Services.AddSingleton<ThreadSafeCacheService>();
+builder.Services.AddSingleton<IRedisConnectionService>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    return new CloudRedisCacheService(configuration);
+});
+builder.Services.AddScoped<AppRedisService>();
+builder.Services.AddSingleton<RedisLiveTime>();
 IdBuilderHelper.AddService(builder, WorkerIdConfig);
 
 builder.Services.AddSingleton<IDriver>(GraphDatabase.Driver(neo4jConfig["Uri"], AuthTokens.Basic(neo4jConfig["Username"], neo4jConfig["Password"]!)));
@@ -48,10 +59,13 @@ builder.Services.AddTransient<IAsyncSession>(provider =>
 });
 builder.Services.AddSingleton(new MessageUpdateService(CassandraRWConfig));
 
-
-builder.Services.AddTransient<ChatChannelService>();
-builder.Services.AddTransient<ChatServerService>();
+builder.Services.AddTransient<Neo4jChatChannelEditService>();
+builder.Services.AddTransient<Neo4jChatServerEditService>();
+builder.Services.AddTransient(provider =>
+    new Lazy<Neo4jChatListingService>(() => provider.GetRequiredService<Neo4jChatListingService>()));
 builder.Services.AddTransient<UserRelationService>();
+builder.Services.AddTransient<RedisUserServerService>();
+builder.Services.AddTransient<ServerListService>();
 // Database Context
 builder.Services.AddDbContext<iChatDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("iChatdev")));
@@ -73,6 +87,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
     options.SlidingExpiration = true;
 });
+builder.Services.AddTransient<CreateChatService>();
 builder.Services.AddTransient < Neo4jCreateUserService>();
 builder.Services.AddTransient<CreateUserService>();
 builder.Services.AddTransient<IUserService, UserService>();

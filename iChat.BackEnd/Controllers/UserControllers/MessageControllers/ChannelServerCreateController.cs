@@ -1,4 +1,4 @@
-﻿using iChat.BackEnd.Services.Users.Infra.Neo4j;
+﻿using iChat.BackEnd.Services.Users.Infra.Neo4jService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

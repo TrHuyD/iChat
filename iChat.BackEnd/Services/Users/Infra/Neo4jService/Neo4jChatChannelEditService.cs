@@ -2,11 +2,11 @@
 
 namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
 {
-    public class ChatChannelService
+    public class Neo4jChatChannelEditService
     {
         private readonly IAsyncSession _session;
 
-        public ChatChannelService(IAsyncSession session)
+        public Neo4jChatChannelEditService(IAsyncSession session)
         {
             _session = session;
         }
