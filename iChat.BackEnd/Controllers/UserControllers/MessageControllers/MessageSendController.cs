@@ -9,8 +9,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
     [Authorize]
     public class MessageSendController :ControllerBase
     {
-        private readonly MessageWriteService _messageWriteService;
-        public MessageSendController(MessageWriteService messageWriteService)
+        private readonly CassandraMessageWriteService _messageWriteService;
+        public MessageSendController(CassandraMessageWriteService messageWriteService)
         {
             _messageWriteService = messageWriteService;
         }

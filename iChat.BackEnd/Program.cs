@@ -22,6 +22,9 @@ using iChat.BackEnd.Services.Users.Infra.Neo4jService;
 using iChat.BackEnd.Services.Users.Infra.Redis;
 using iChat.BackEnd.Services.Users.Servers;
 using iChat.BackEnd.Services.Users.Infra.Helpers;
+using iChat.BackEnd.Models.Helpers.CassandraOptionss;
+using iChat.BackEnd.Services.Validators;
+using iChat.BackEnd.Services.Validators.TextMessageValidators;
 
 var builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsDevelopment())
@@ -37,7 +40,7 @@ builder.Services.AddControllersWithViews();
 
 builder.Configuration.AddUserSecrets<Program>();
 var neo4jConfig = builder.Configuration.GetSection("Neo4j");
-var CassandraRWConfig = new CassandraOptions(builder.Configuration.GetSection("Cassandra:ReadWriteOnly"));
+
 var WorkerIdConfig = new ConfigurationBuilder()
     .AddJsonFile("workerSettings.json", optional: true, reloadOnChange: true)
     .Build().GetSection("Id").Get<WorkerID>();
@@ -49,7 +52,7 @@ builder.Services.AddSingleton<IRedisConnectionService>(provider =>
 });
 builder.Services.AddScoped<AppRedisService>();
 builder.Services.AddSingleton<RedisLiveTime>();
-IdBuilderHelper.AddService(builder, WorkerIdConfig);
+new IdBuilderHelper().AddService(builder, WorkerIdConfig);
 
 builder.Services.AddSingleton<IDriver>(GraphDatabase.Driver(neo4jConfig["Uri"], AuthTokens.Basic(neo4jConfig["Username"], neo4jConfig["Password"]!)));
 builder.Services.AddTransient<IAsyncSession>(provider =>
@@ -57,12 +60,14 @@ builder.Services.AddTransient<IAsyncSession>(provider =>
     var driver = provider.GetRequiredService<IDriver>();
     return driver.AsyncSession();
 });
-builder.Services.AddSingleton(new MessageUpdateService(CassandraRWConfig));
-
+new CassandraBuilderHelper().AddService(builder);
+new ValidatorsHelper(builder);
 builder.Services.AddTransient<Neo4jChatChannelEditService>();
 builder.Services.AddTransient<Neo4jChatServerEditService>();
 builder.Services.AddTransient(provider =>
     new Lazy<Neo4jChatListingService>(() => provider.GetRequiredService<Neo4jChatListingService>()));
+builder.Services.AddTransient(provider =>
+new Lazy<CassandraMessageWriteService>(() => provider.GetRequiredService<CassandraMessageWriteService>()));
 builder.Services.AddTransient<UserRelationService>();
 builder.Services.AddTransient<RedisUserServerService>();
 builder.Services.AddTransient<ServerListService>();

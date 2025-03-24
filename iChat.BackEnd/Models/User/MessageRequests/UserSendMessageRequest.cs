@@ -2,7 +2,7 @@
 
 namespace iChat.BackEnd.Models.User.MessageRequests
 {
-    public class BaseMessageRequest
+    public class UserSendMessageRequest
     {
 
         public long ReceiveChannelId { get; set; }

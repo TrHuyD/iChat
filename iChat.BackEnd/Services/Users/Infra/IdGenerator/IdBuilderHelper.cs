@@ -2,9 +2,9 @@
 
 namespace iChat.BackEnd.Services.Users.Infra.IdGenerator
 {
-    public static class IdBuilderHelper
+    public  class IdBuilderHelper
     {
-        static public void AddService(WebApplicationBuilder builder,WorkerID id)
+         public void AddService(WebApplicationBuilder builder,WorkerID id)
         {
             builder.Services.AddSingleton(new SnowflakeService(id.WorkerId,id.DataCenterId));
             builder.Services.AddSingleton(new UserIdService(id.WorkerId, id.DataCenterId));

@@ -2,11 +2,13 @@
 
 namespace iChat.BackEnd.Models.User.MessageRequests
 {
-    public class MesageRequest :BaseMessageRequest
+    public class MesageRequest
     {
-        public long? MessageId { get; set; }
         public long? SenderId { get; set; }
         
         public MessageType? messageType { get; set; }
+        public long ReceiveChannelId { get; set; }
+        public string? MediaContent { get; set; }
+        public string? TextContent { get; set; }
     }
 }
