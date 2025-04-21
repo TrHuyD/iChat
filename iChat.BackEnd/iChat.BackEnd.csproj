@@ -11,11 +11,15 @@
     <PackageReference Include="AutoMapper" Version="14.0.0" />
     <PackageReference Include="CassandraCSharpDriver" Version="3.22.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="9.0.3" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.6.1" />
     <PackageReference Include="Neo4j.Driver" Version="5.27.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="NRedisStack" Version="0.13.2" />
     <PackageReference Include="Polly" Version="8.5.2" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.31" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="7.3.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.1" />
@@ -31,6 +35,9 @@
 
   <ItemGroup>
     <Folder Include="Controllers\UserControllers\NewFolder\" />
+    <Folder Include="Models\Infrastructures\w\" />
+    <Folder Include="Services\NewFolder1\" />
+    <Folder Include="Services\StartUpServices\" />
   </ItemGroup>
 
 </Project>

@@ -21,11 +21,14 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
                 Password = password,
                 ClientName = "RedisCacheService",
                 ConnectTimeout = 5000,
-                ConnectRetry = 3,
+                SyncTimeout = 5000,
+                KeepAlive = 30,
+                ConnectRetry = 4,
                 AbortOnConnectFail = false,
                 DefaultDatabase = 0,
                 SocketManager = new SocketManager("RedisSockets")
             };
+
             _redis = ConnectionMultiplexer.Connect(options);
             _db = _redis.GetDatabase();
         }

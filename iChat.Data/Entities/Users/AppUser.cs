@@ -13,7 +13,7 @@ namespace iChat.Data.Entities.Users
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public DateTime Dob { get; set; }
-      
+        
         public List<RefreshToken> RefreshTokens { get; set; } = new();
         public DateTime LastSeen { get; set; }
 

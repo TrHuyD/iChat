@@ -9,14 +9,12 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
     public class CasandraService : IDisposable
     {
         private readonly ISession _session;
-        private readonly ILogger<CasandraService> _logger;
         private readonly CassandraOptions _options;
         private Cluster _cluster;
 
-        public CasandraService(CassandraOptions options, ILogger<CasandraService> logger)
+        public CasandraService(CassandraOptions options)
         {
             _options = options;
-            _logger = logger;
             _session = ConnectToCassandra();
         }
         public ISession GetSession() => _session;
@@ -24,7 +22,7 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
         {
             try
             {
-                _logger.LogInformation("Connecting to Cassandra...");
+                Console.WriteLine("Connecting to Cassandra...");
 
                 _cluster = Cluster.Builder()
                     .WithCloudSecureConnectionBundle(_options.path)
@@ -41,12 +39,12 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
 
 
                 var session = _cluster.Connect();
-                _logger.LogInformation("Connected to Cassandra.");
+                Console.WriteLine("Connected to Cassandra.");
                 return session;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Cassandra connection failed.");
+                Console.WriteLine($"Cassandra connection failed w {ex.Message}");
                 throw;
             }
         }
@@ -59,7 +57,7 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
                 .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(2),
                     (exception, timeSpan, retryCount, context) =>
                     {
-                        _logger.LogWarning($"Health check failed. Retry {retryCount}/3 in {timeSpan}. Error: {exception.Message}");
+                        Console.WriteLine($"Health check failed. Retry {retryCount}/3 in {timeSpan}. Error: {exception.Message}");
                     });
 
             return await retryPolicy.ExecuteAsync(async () =>

@@ -1,94 +1,186 @@
-﻿using System.Collections.Concurrent;
+﻿using iChat.BackEnd.Services.Users.Infra.Redis;
+using StackExchange.Redis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace iChat.BackEnd.Services.Users.Infra.Helpers
 {
     public class ThreadSafeCacheService
     {
-        private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
+        private readonly IDatabase _db;
+        private readonly TimeSpan _lockExpiry = TimeSpan.FromSeconds(10);
+        private readonly HashSet<string> _LocalLockKeys = new HashSet<string>(); 
 
-        public async Task<T> GetOrAddAsync<T>(
-            string key,
+        public ThreadSafeCacheService(AppRedisService redis)
+        {
+            _db = redis.GetDatabase();
+        }
+
+        public async Task<bool> TryAcquireLockWithResultAsync(string key)
+        {
+            if (_LocalLockKeys.Contains(key))
+                return false ;
+            string lockValue = Guid.NewGuid().ToString();
+            _LocalLockKeys.Add(key);
+            var result= await _db.StringSetAsync(key, lockValue, _lockExpiry, When.NotExists);
+            if (result == false)
+            {
+                _LocalLockKeys.Remove(key);
+                return false;
+            }
+            return true;
+        }
+
+        public async Task ReleaseLockAsync(string key)
+        {
+            _LocalLockKeys.Remove(key);
+            await _db.KeyDeleteAsync(key);
+        }
+        [Obsolete("GetOrAddAsync is deprecated, please use GetOrRenewWithLockAsync instead.")]
+        public async Task<T?> GetOrAddAsync<T>(
+            Func<string> getLockKey,
             Func<Task<T?>> fetchFromCache,
             Func<Task<T>> fetchFromDb,
             Func<T, Task> saveToCache)
         {
-            // try getting data from cache
-            var data = await fetchFromCache();
-            if (data is not null)
+            var cachedData = await fetchFromCache();
+            if (cachedData is not null)
             {
-                return data;
+                return cachedData;
             }
 
-            // Ensure only one thread queries DB per key
-            var cacheLock = _locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
-
-            await cacheLock.WaitAsync();
-            try
+            string key = getLockKey();
+            if (await TryAcquireLockWithResultAsync(key))
             {
-                // Double-check if another thread has updated the cache
-                data = await fetchFromCache();
-                if (data is not null)
+                try
                 {
-                    return data;
+                    cachedData = await fetchFromCache();
+                    if (cachedData is not null)
+                    {
+                        return cachedData;
+                    }
+
+                    cachedData = await fetchFromDb();
+                    await saveToCache(cachedData);
+
+                    return cachedData;
+                }
+                finally
+                {
+                    ReleaseLockAsync(key);
+                }
+            }
+
+            await Task.Delay(300);
+            return await fetchFromCache();
+        }
+        public async Task<T?> GetOrRenewWithLockAsync<T>(
+            Func<Task<T>> fetchFromCache,
+            Func<Task<T>> fetchFromDb,
+            Func<T, Task> saveToCache,
+            Func<string> getLockKey,
+            Func<T?, bool> isCacheExpired,
+            int maxRetry = 3,
+            int delayMs = 250)
+        {
+            for (int attempt = 0; attempt < maxRetry; attempt++)
+            {
+                // Step 1: Try to get from cache first
+                
+                var cached = await fetchFromCache();
+                if (cached is not null && !isCacheExpired(cached))
+                {
+                    return cached;
+                }
+                else
+                {
+                    // Retry again
+                    cached = await fetchFromCache();
+                    if (cached is not null && !isCacheExpired(cached))
+                    {
+                        return cached;
+                    }
                 }
 
-                // Fetch data from DB and update cache
-                data = await fetchFromDb();
-                await saveToCache(data);
+                var lockKey = getLockKey();
+                var lockAcquired = await TryAcquireLockWithResultAsync(lockKey);
 
-                return data;
+                if (lockAcquired)
+                {
+                    try
+                    {
+                        // Step 1-1: Re-check cache after acquiring the lock
+                        cached = await fetchFromCache();
+                        if (cached is not null && !isCacheExpired(cached))
+                        {
+                            return cached;
+                        }
+
+                        // Step 1-2: Fetch from DB and update cache
+                        var dbData = await fetchFromDb();
+                        await saveToCache(dbData);
+
+                        return dbData;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"[Cache] Error during save : {ex.Message}");
+                        throw;
+                    }
+                    finally
+                    {
+                        await ReleaseLockAsync(lockKey);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"[Cache] Lock {lockKey} not acquired (attempt {attempt + 1}/{maxRetry}). Waiting {delayMs}ms...");
+                    await Task.Delay(delayMs);
+
+                    // Step 2-1: Retry getting from cache again after wait
+                    cached = await fetchFromCache();
+                    if (cached is not null && !isCacheExpired(cached))
+                    {
+                        return cached;
+                    }
+                }
             }
-            finally
-            {
-                cacheLock.Release();
-                _locks.TryRemove(key, out _); // Remove unused lock to free memory
-            }
+
+            Console.Error.WriteLine("[Cache] Failed to get valid cache after retries.");
+            return default;
         }
+
         public async Task<bool> CheckAndFetchAsync(
-                string key,
-                string member,
-                Func<Task<int>> fetchFromCache, // Should return 0, 1, or 2
-                Func<Task<List<string>>> fetchFromDb, // Fetch from DB
-                Func<List<string>, Task> saveToCache // Save to cache
-            )
+            string key,
+            string member,
+            Func<Task<int>> fetchFromCache,
+            Func<Task<List<string>>> fetchFromDb,
+            Func<List<string>, Task> saveToCache)
         {
-            // Check from cache
             int cacheResult = await fetchFromCache();
+            if (cacheResult == 1) return true;
+            if (cacheResult == 0) return false;
 
-            if (cacheResult == 1)
+            if (await TryAcquireLockWithResultAsync(key))
             {
-                return true; // User exists, expiry extended
+                try
+                {
+                    cacheResult = await fetchFromCache();
+                    if (cacheResult == 1) return true;
+                    if (cacheResult == 0) return false;
+
+                    var dbResult = await fetchFromDb();
+                    await saveToCache(dbResult);
+
+                    return dbResult.Contains(member);
+                }
+                finally
+                {
+                    ReleaseLockAsync(key);
+                }
             }
-            if (cacheResult == 0)
-            {
-                return false; // List exists, but user is not in it
-            }
 
-            // If expired (cacheResult == 2), ensure only one thread fetches from DB
-            var cacheLock = _locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
-
-            await cacheLock.WaitAsync();
-            try
-            {
-                // Double-check cache after acquiring lock
-                cacheResult = await fetchFromCache();
-                if (cacheResult == 1) return true;
-                if (cacheResult == 0) return false;
-
-                // Fetch fresh data from DB
-                var dbResult = await fetchFromDb();
-
-                // Save new data to cache
-                await saveToCache(dbResult);
-
-                // Check if user exists in the refreshed list
-                return dbResult.Contains(member);
-            }
-            finally
-            {
-                cacheLock.Release();
-                _locks.TryRemove(key, out _); // Cleanup lock
-            }
+            await Task.Delay(300);
+            return await fetchFromCache() == 1;
         }
     }
 }

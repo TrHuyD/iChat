@@ -2,9 +2,9 @@
 
 namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
 {
-    public class MessageUpdateService :CasandraService
+    public class MessageUpdateService 
     {
-       public  MessageUpdateService(CassandraOptions options) : base(options)
+       public  MessageUpdateService()
         {
 
         }

@@ -1,4 +1,5 @@
 ﻿using iChat.BackEnd.Models.Helpers.CassandraOptionss;
+using iChat.BackEnd.Models.User.CassandraResults;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using Microsoft.AspNetCore.Mvc;
@@ -21,25 +22,26 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
         /// <param name="request"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public async Task<bool> UploadMessageAsync(MesageRequest request)
+        public async Task<CassMessageWriteResult> UploadMessageAsync(MessageRequest request)
         {
-            if (request.SenderId is null || request.messageType is null)
-                throw new ArgumentException("SenderId and MessageType are required.");
+            if (request.SenderId is null)
+                throw new ArgumentException("SenderId are required.");
 
             var messageId = idGen.GenerateId();
+            
             var timestamp = DateTime.UtcNow;
 
            
 
-            var query = "INSERT INTO db_user_message.messages " +
+            var query = "INSERT INTO user_upload.messages " +
                         "(channel_id, message_id, sender_id, message_type, text_content, media_content, timestamp) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?);";
 
             var preparedStatement = await session.PrepareAsync(query);
             var boundStatement = preparedStatement.Bind(
-                request.ReceiveChannelId,
+                long.Parse(request.ReceiveChannelId),
                 messageId,
-                request.SenderId,
+                long.Parse(request.SenderId),
                 (short)request.messageType,
                 request.TextContent ?? string.Empty,
                 request.MediaContent ?? string.Empty,
@@ -47,7 +49,7 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
             );
 
             await session.ExecuteAsync(boundStatement);
-            return true;
+            return new CassMessageWriteResult { Success = true, MessageId = messageId};
         }
     }
 }

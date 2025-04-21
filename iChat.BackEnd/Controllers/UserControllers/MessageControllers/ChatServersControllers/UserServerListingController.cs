@@ -1,4 +1,5 @@
-﻿using iChat.BackEnd.Services.Users.Servers;
+﻿using iChat.BackEnd.Services.Users.ChatServers;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

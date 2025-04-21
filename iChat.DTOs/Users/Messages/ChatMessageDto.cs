@@ -14,8 +14,8 @@ namespace iChat.DTOs.Users.Messages
         public int MessageType { get; set; }
         public DateTime CreatedAt { get; set; }
         public long SenderId { get; set; }
-        public string? SenderName { get; set; } = string.Empty;
-        public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
-        public long ChannelId { get; set; }
+   //     public string? SenderName { get; set; } = string.Empty;
+    //   public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
+        
     }
 }

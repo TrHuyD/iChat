@@ -4,10 +4,10 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
 {
     public class Neo4jChatListingService
     {
-        private readonly IAsyncSession _session;
-        public Neo4jChatListingService(IAsyncSession session)
+        private readonly Lazy<IAsyncSession> __session;
+        public Neo4jChatListingService(Lazy<IAsyncSession> session)
         {
-            _session = session;
+            __session = session;
         }
         public async Task<List<string>> GetServerChannelListAsync(string serverId)
         {
@@ -15,6 +15,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
                     MATCH (s:ChatServer {id: toInteger($serverId)})-[:HAS_CHANNEL]->(c:ChatChannel)
                     RETURN collect(toString(c.id)) AS channelIds;
                     ";
+            var _session = __session.Value;
             var result = await _session.RunAsync(query, new { serverId });
             var record = await result.SingleAsync();
             return record["channelIds"].As<List<string>>();
@@ -25,7 +26,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
                     MATCH (u:User {id: toInteger($userId)})-[:MEMBER_OF]->(s:ChatServer)
                     RETURN collect(toString(s.id)) AS serverIds;
                     ";
-
+            var _session = __session.Value;
             var result = await _session.RunAsync(query, new { userId });
             var record = await result.SingleAsync();
             return record["serverIds"].As<List<string>>();
@@ -37,10 +38,11 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
                     MATCH (s:ChatServer {id: toInteger($serverId)})<-[:MEMBER_OF]-(u:User)
                     RETURN collect(toString(u.id)) AS userIds;
                     ";
+            var _session = __session.Value;
             var result = await _session.RunAsync(query, new { serverId });
             var record = await result.SingleAsync();
             return record["userIds"].As<List<string>>();
         }
-        public async Task<bool> 
+        //public async Task<bool>
     }
 }

@@ -28,7 +28,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             }
 
             var userId = new UserClaimHelper(User).GetUserId();
-            await _service.CreateServerAsynco(name, userId);
+            await _service.CreateServerAsync(name, userId);
             return RedirectToAction("Index", "ChatServer");
         }
         [HttpGet("{id}/CreateChannel")]
