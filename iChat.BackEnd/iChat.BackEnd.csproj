@@ -37,7 +37,6 @@
     <Folder Include="Controllers\UserControllers\NewFolder\" />
     <Folder Include="Models\Infrastructures\w\" />
     <Folder Include="Services\NewFolder1\" />
-    <Folder Include="Services\StartUpServices\" />
   </ItemGroup>
 
 </Project>

@@ -26,6 +26,8 @@ using iChat.BackEnd.Services.Validators;
 using iChat.BackEnd.Services.Validators.TextMessageValidators;
 using iChat.BackEnd.Services.Users.ChatServers;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
+using iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices;
+using iChat.BackEnd.Services.StartUpServices.SUS_ChatServer;
 
 var builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsDevelopment())
@@ -53,6 +55,7 @@ builder.Services.AddSingleton<IRedisConnectionService>(provider =>
 });
 builder.Services.AddSingleton<AppRedisService>();
 builder.Services.AddSingleton<RedisLiveTime>();
+builder.Services.AddSingleton<RedisChatServerService>();
 new IdBuilderHelper().AddService(builder, WorkerIdConfig);
 
 builder.Services.AddSingleton<IDriver>(GraphDatabase.Driver(neo4jConfig["Uri"], AuthTokens.Basic(neo4jConfig["Username"], neo4jConfig["Password"]!)));
@@ -79,6 +82,8 @@ builder.Services.AddTransient<ServerListService>();
 
 builder.Services.AddSingleton<IChatSendMessageService, Test_UserSendTextMessageService > ();
 builder.Services.AddSingleton<IChatReadMessageService, Test_UserChatReadMessageService>();
+
+
 // Database Context
 builder.Services.AddDbContext<iChatDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("iChatdev")));
@@ -107,6 +112,7 @@ builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPublicUserService, PublicUserService>();
 
+builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();
 builder.Services.AddEndpointsApiExplorer();
 
 
