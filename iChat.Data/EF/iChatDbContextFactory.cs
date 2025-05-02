@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using Microsoft.EntityFrameworkCore.Sqlite;
 namespace iChat.Data.EF
 {
     class iChatDbContextFactory: IDesignTimeDbContextFactory<iChatDbContext>
@@ -16,8 +16,9 @@ namespace iChat.Data.EF
             var config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build();
        
         var optionsBuilder = new DbContextOptionsBuilder<iChatDbContext>();
+            optionsBuilder.UseSqlite(config.GetConnectionString("sqlite"));
         //optionsBuilder.UseSqlServer(config.GetConnectionString("iChatdev"));
-        optionsBuilder.usesqlli
+      //  optionsBuilder.usesqlli
             optionsBuilder.EnableSensitiveDataLogging();
 
         return new iChatDbContext(optionsBuilder.Options);
