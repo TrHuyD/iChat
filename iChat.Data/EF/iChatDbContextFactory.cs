@@ -16,8 +16,9 @@ namespace iChat.Data.EF
             var config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build();
        
         var optionsBuilder = new DbContextOptionsBuilder<iChatDbContext>();
-        optionsBuilder.UseSqlServer(config.GetConnectionString("iChatdev"));
-        optionsBuilder.EnableSensitiveDataLogging();
+        //optionsBuilder.UseSqlServer(config.GetConnectionString("iChatdev"));
+        optionsBuilder.usesqlli
+            optionsBuilder.EnableSensitiveDataLogging();
 
         return new iChatDbContext(optionsBuilder.Options);
     }
