@@ -28,7 +28,15 @@ using iChat.BackEnd.Services.Users.ChatServers;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices;
 using iChat.BackEnd.Services.StartUpServices.SUS_ChatServer;
-
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using System.Security.Claims;
+using Auth0.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
+using iChat.BackEnd.Services.Users.Auth.Auth0;
+//using Microsoft.AspNetCore.Authentication;
+//using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsDevelopment())
 {
@@ -39,9 +47,10 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddControllers();
 }
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
 
 builder.Configuration.AddUserSecrets<Program>();
+builder.Services.AddHttpContextAccessor();
 var neo4jConfig = builder.Configuration.GetSection("Neo4j");
 
 var WorkerIdConfig = new ConfigurationBuilder()
@@ -57,7 +66,7 @@ builder.Services.AddSingleton<AppRedisService>();
 builder.Services.AddSingleton<RedisLiveTime>();
 builder.Services.AddSingleton<RedisChatServerService>();
 new IdBuilderHelper().AddService(builder, WorkerIdConfig);
-
+new Auth0BuilderHelper().AddService(builder);
 builder.Services.AddSingleton<IDriver>(GraphDatabase.Driver(neo4jConfig["Uri"], AuthTokens.Basic(neo4jConfig["Username"], neo4jConfig["Password"]!)));
 builder.Services.AddTransient<IAsyncSession>(provider =>
 {
@@ -97,14 +106,25 @@ builder.Services.AddIdentity<AppUser, Role>(options =>
     .AddDefaultTokenProviders();
 
 // Configure Cookie Authentication
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.LoginPath = "/Login";
-    options.LogoutPath = "/Logout";
-    options.AccessDeniedPath = "/Forbidden";
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-    options.SlidingExpiration = true;
-});
+//builder.Services.ConfigureApplicationCookie(options =>
+//{
+//    options.LoginPath = "/Login";
+//    options.LogoutPath = "/Logout";
+//    options.AccessDeniedPath = "/Forbidden";
+//    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+//    options.SlidingExpiration = true;
+//});
+
+////JWT Authentication
+////JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
+//builder.Services
+//    .AddAuth0WebAppAuthentication(options => {
+//        options.Domain = builder.Configuration["Auth0:Domain"];
+//        options.ClientId = builder.Configuration["Auth0:ClientId"];
+//    });
+
+
 builder.Services.AddTransient<CreateChatService>();
 builder.Services.AddTransient < Neo4jCreateUserService>();
 builder.Services.AddTransient<CreateUserService>();
@@ -118,9 +138,9 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddHttpContextAccessor();
 
-// Configure Authentication
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie();
+//// Configure Authentication
+//builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+//    .AddCookie();
 
 // Configure Logging
 builder.Services.AddLogging(logging =>
@@ -169,4 +189,25 @@ else
         endpoints.MapControllers();
     });
 }
-    app.Run();
+
+//app.MapGet("/Account/Login", async (HttpContext httpContext, string returnUrl = "/") =>
+//{
+//    var authenticationProperties = new LoginAuthenticationPropertiesBuilder()
+//            .WithRedirectUri(returnUrl)
+//            .Build();
+
+//    await httpContext.ChallengeAsync(Auth0Constants.AuthenticationScheme, authenticationProperties);
+//});
+//app.MapGet("/Account/Logout", async (HttpContext httpContext) =>
+//{
+//    var authenticationProperties = new LogoutAuthenticationPropertiesBuilder()
+//            .WithRedirectUri("/")
+//            .Build();
+
+//    await httpContext.SignOutAsync(Auth0Constants.AuthenticationScheme, authenticationProperties);
+//    await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+//});
+
+
+
+app.Run();

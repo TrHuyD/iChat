@@ -1,0 +1,30 @@
+﻿@model iChat.DTOs.Users.Auth.LoginRequest
+
+@{
+    ViewBag.Title = "Test Login";
+}
+
+<h2>Test Login</h2>
+
+@if (ViewBag.Message != null)
+{
+    <div style="color: green">@ViewBag.Message</div>
+}
+
+<form method="post">
+    <div>
+        <label asp-for="Username">Username</label>
+        <input asp-for="Username" />
+        <span asp-validation-for="Username" style="color:red"></span>
+    </div>
+    <div>
+        <label asp-for="Password">Password</label>
+        <input asp-for="Password" type="password" />
+        <span asp-validation-for="Password" style="color:red"></span>
+    </div>
+    <button type="submit">Login</button>
+</form>
+
+@* @section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+} *@

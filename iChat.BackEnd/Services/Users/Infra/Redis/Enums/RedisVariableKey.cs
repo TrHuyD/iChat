@@ -1,35 +1,49 @@
-﻿using Key = iChat.BackEnd.Services.Users.Infra.Redis.RedisKeyTable;
+﻿using StackExchange.Redis;
+using Key = iChat.BackEnd.Services.Users.Infra.Redis.RedisKeyTable;
 namespace iChat.BackEnd.Services.Users.Infra.Redis.Enums
 {
     public static class RedisVariableKey
     {
-        public static string GetUserServerKey(string userId)
+        internal static string GetUserServerKey(string userId)
         {
             return $"{Key.User}:{userId}:{Key.ChatServer}";
         }
-        public static string GetUserServerKey_Lock(string userId)
+        internal static string GetUserServerKey_Lock(string userId)
         {
             return GetServerChannelKey(userId) + "_l";
         }
-        public static string GetServerChannelKey(long serverId)
+        internal static string GetServerChannelKey(long serverId)
         {
             return $"{Key.ChatServer}:{serverId}:{Key.ChatChannel}";
         }
-        public static string GetServerChannelKey(string serverId)
+        internal static string GetServerChannelKey(string serverId)
         {
             return $"{Key.ChatServer}:{serverId}:{Key.ChatChannel}";
         }
-        public static string GetServerChannelKey_Lock(string serverId)
+        internal static string GetServerChannelKey_Lock(string serverId)
         {
             return GetServerChannelKey(serverId) + "_l";
         }
-        public static string GetRecentChatMessageKey(string channelId)
+        internal static string GetRecentChatMessageKey(string channelId)
         {
             return $"{Key.ChatChannel}:{channelId}:{Key.Message}";
         }
-        public static string GetRecentChatMessageKey_Lock(string channelId)
+        internal static string GetRecentChatMessageKey_Lock(string channelId)
         {
             return GetRecentChatMessageKey(channelId) + "_l";
         }
+
+        internal static string GetUserServerPermsKey(long userId, long serverId)
+        {
+           
+            return $"{Key.User}:{userId}:{Key.ChatServer}:{serverId}:{Key.Perm}";
+        }
+
+        internal static string GetChannelUserPermsKey(long serverId, long channelId)
+        {
+            
+            return $"{Key.ChatServer}:{serverId}:c:{channelId}:p";
+        }
+
     }
 }

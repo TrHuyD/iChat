@@ -74,7 +74,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Helpers
             return await fetchFromCache();
         }
         public async Task<T?> GetOrRenewWithLockAsync<T>(
-            Func<Task<T>> fetchFromCache,
+            Func<Task<T?>> fetchFromCache,
             Func<Task<T>> fetchFromDb,
             Func<T, Task> saveToCache,
             Func<string> getLockKey,
