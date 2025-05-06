@@ -22,8 +22,7 @@ public class UserService : IUserService
 
         return new UserProfileDto
         {
-            FirstName = user.FirstName,
-            LastName = user.LastName,
+            Name = user.Name,
             //AvatarUrl = $"/profile?avatarid={user.Id}"
         };
     }

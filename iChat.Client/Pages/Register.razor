@@ -1,0 +1,77 @@
+﻿@inject HttpClient Http
+@inject NavigationManager Nav
+@using iChat.DTOs.Users.Auth
+
+<h3>Register</h3>
+
+<EditForm Model="register" OnValidSubmit="HandleRegister">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText @bind-Value="register.Name" placeholder="First Name" />
+
+    <InputText @bind-Value="register.UserName" placeholder="Username" />
+    <InputText @bind-Value="register.Email" placeholder="Email" />
+    <InputText @bind-Value="register.Password" placeholder="Password" type="password" />
+    <InputText @bind-Value="confirmPassword" placeholder="Confirm Password" type="password" />
+
+    @if (!string.IsNullOrEmpty(passwordError))
+    {
+        <div style="color:red">@passwordError</div>
+    }
+
+    <button type="submit">Register</button>
+</EditForm>
+
+@code {
+    private RegisterRequest register = new();
+    private string confirmPassword = "";
+    private string passwordError = "";
+
+    private async Task HandleRegister()
+    {
+        if (!ValidatePassword(register.Password))
+        {
+            passwordError =
+                "Password must contain at least:\n" +
+                "- One uppercase letter\n" +
+                "- One lowercase letter\n" +
+                "- One number\n" +
+                "- One special character\n" +
+                "- Minimum 8 characters";
+            return;
+        }
+
+
+        if (register.Password != confirmPassword)
+        {
+            passwordError = "Passwords do not match.";
+            return;
+        }
+
+        passwordError = "";
+
+        var response = await Http.PostAsJsonAsync("/Auth/register", register);
+        if (response.IsSuccessStatusCode)
+        {
+            Nav.NavigateTo("/login");
+        }
+        else
+        {
+            passwordError = "Registration failed.";
+        }
+    }
+
+    private bool ValidatePassword(string password)
+    {
+        if (string.IsNullOrEmpty(password)) return false;
+
+        bool hasUpper = password.Any(char.IsUpper);
+        bool hasLower = password.Any(char.IsLower);
+        bool hasDigit = password.Any(char.IsDigit);
+        bool hasSpecial = password.Any(c => "!@#$%^&*()_+-=[]{}|;:',.<>?/`~".Contains(c));
+        bool hasMinLength = password.Length >= 8;
+
+        return hasUpper && hasLower && hasDigit && hasSpecial && hasMinLength;
+    }
+}

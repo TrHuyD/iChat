@@ -24,7 +24,7 @@ namespace iChat.BackEnd.Services.Users.Auth.Auth0
 
      
 
-        public async Task<OperationResult> CreateUserAsync(RegisterRequest rq)
+        public async Task<OperationResult> RegisterAsync(RegisterRequest rq)
         {
             try
             {

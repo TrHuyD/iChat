@@ -6,13 +6,19 @@ using System.Threading.Tasks;
 
 namespace iChat.DTOs.Shared
 {
-    class OperationResultT<T> :OperationResult
+    public class OperationResultT<T> :OperationResult
     {
         public T? Value { get; set; }
         public static OperationResultT<T> Ok(T value) => new()
         {
             Success = true,
             Value = value
+        };
+        public static OperationResultT<T> Fail(string code, string message) => new()
+        {
+            Success = false,
+            ErrorCode = code,
+            ErrorMessage = message
         };
     }
 }

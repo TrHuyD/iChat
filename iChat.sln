@@ -23,6 +23,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "iChat.Client", "iChat.Client\iChat.Client.csproj", "{D837F6D1-5B54-48AC-BE91-5F622357891E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4A30E199-4BF0-495F-A510-C0795A72CE9F} = {4A30E199-4BF0-495F-A510-C0795A72CE9F}
+		{A34BBB61-FCD4-4F7C-96B7-13FF6E9B84E4} = {A34BBB61-FCD4-4F7C-96B7-13FF6E9B84E4}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

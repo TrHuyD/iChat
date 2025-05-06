@@ -1,12 +1,22 @@
-﻿@inherits LayoutComponentBase
+﻿@inject UserStateService UserState
+@inherits LayoutComponentBase
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
     </div>
 
     <main>
-        <div class="top-row px-4">
+        <div class="top-row px-4 d-flex justify-between align-center">
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+
+            @if (user != null)
+            {
+                <div class="user-info" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <img src="@user.AvatarUrl" alt="Avatar" class="avatar" style="width: 32px; height: 32px; border-radius: 50%;" />
+                    <span>@user.Name</span>
+                </div>
+            }
         </div>
 
         <article class="content px-4">
@@ -14,3 +24,12 @@
         </article>
     </main>
 </div>
+
+@code {
+    private UserProfileDto? user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserState.GetUserAsync();
+    }
+}

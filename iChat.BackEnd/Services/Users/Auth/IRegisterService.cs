@@ -5,6 +5,6 @@ namespace iChat.BackEnd.Services.Users.Auth
 {
     public interface IRegisterService
     {
-        public  Task<OperationResult> CreateUserAsync(RegisterRequest rq);
+        public  Task<OperationResult> RegisterAsync(RegisterRequest rq);
     }
 }

@@ -31,8 +31,7 @@ namespace iChat.Data.Migrations
                 name: "AspNetUsers",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<long>(type: "INTEGER", nullable: false),
                     FirstName = table.Column<string>(type: "TEXT", maxLength: 15, nullable: false),
                     LastName = table.Column<string>(type: "TEXT", maxLength: 15, nullable: false),
                     Dob = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -182,12 +181,14 @@ namespace iChat.Data.Migrations
                 name: "RefreshTokens",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     Token = table.Column<string>(type: "TEXT", nullable: false),
                     ExpiryDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Created = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Revoked = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    UserId = table.Column<long>(type: "INTEGER", nullable: false)
+                    UserId = table.Column<long>(type: "INTEGER", nullable: false),
+                    IpAddress = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {

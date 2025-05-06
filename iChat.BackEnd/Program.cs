@@ -35,6 +35,7 @@ using System.Security.Claims;
 using Auth0.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using iChat.BackEnd.Services.Users.Auth.Auth0;
+using iChat.BackEnd.Services.Users.Auth.Sql;
 //using Microsoft.AspNetCore.Authentication;
 //using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
@@ -46,8 +47,20 @@ if (builder.Environment.IsDevelopment())
     });
     builder.Services.AddControllers();
 }
-// Add services to the container.
-builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
+else
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowClient",
+           builder => builder.WithOrigins("https://trhuyd.github.io")
+                             .AllowAnyMethod()
+                             .AllowAnyHeader()
+                             .AllowCredentials());
+    });
+
+}
+    // Add services to the container.
+    builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
 
 builder.Configuration.AddUserSecrets<Program>();
 builder.Services.AddHttpContextAccessor();
@@ -66,7 +79,7 @@ builder.Services.AddSingleton<AppRedisService>();
 builder.Services.AddSingleton<RedisLiveTime>();
 builder.Services.AddSingleton<RedisChatServerService>();
 new IdBuilderHelper().AddService(builder, WorkerIdConfig);
-new Auth0BuilderHelper().AddService(builder);
+//new Auth0BuilderHelper().AddService(builder);
 builder.Services.AddSingleton<IDriver>(GraphDatabase.Driver(neo4jConfig["Uri"], AuthTokens.Basic(neo4jConfig["Username"], neo4jConfig["Password"]!)));
 builder.Services.AddTransient<IAsyncSession>(provider =>
 {
@@ -87,6 +100,8 @@ builder.Services.AddTransient<UserRelationService>();
 builder.Services.AddTransient<RedisUserServerService>();
 builder.Services.AddTransient<RedisMessageRWService>();
 
+new SqlAuthBuilderHelper().AddService(builder);
+
 builder.Services.AddTransient<ServerListService>();
 
 builder.Services.AddSingleton<IChatSendMessageService, Test_UserSendTextMessageService > ();
@@ -95,7 +110,7 @@ builder.Services.AddSingleton<IChatReadMessageService, Test_UserChatReadMessageS
 
 // Database Context
 builder.Services.AddDbContext<iChatDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("iChatdev")));
+    options.UseSqlite($"Data Source={builder.Configuration.GetValue<string>("ConnectionStrings:sqlite")};"));
 
 // Identity Configuration with Cookie Authentication
 builder.Services.AddIdentity<AppUser, Role>(options =>
@@ -129,7 +144,7 @@ builder.Services.AddTransient<CreateChatService>();
 builder.Services.AddTransient < Neo4jCreateUserService>();
 builder.Services.AddTransient<CreateUserService>();
 builder.Services.AddTransient<IUserService, UserService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+//builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPublicUserService, PublicUserService>();
 
 builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();

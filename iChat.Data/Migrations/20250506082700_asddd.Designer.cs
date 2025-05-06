@@ -11,8 +11,8 @@ using iChat.Data.EF;
 namespace iChat.Data.Migrations
 {
     [DbContext(typeof(iChatDbContext))]
-    [Migration("20250502102953_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250506082700_asddd")]
+    partial class asddd
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -143,7 +143,6 @@ namespace iChat.Data.Migrations
             modelBuilder.Entity("iChat.Data.Entities.Users.AppUser", b =>
                 {
                     b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("AccessFailedCount")
@@ -163,16 +162,6 @@ namespace iChat.Data.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(15)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(15)
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime>("LastSeen")
                         .HasColumnType("TEXT");
 
@@ -180,6 +169,11 @@ namespace iChat.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(15)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("NormalizedEmail")
@@ -223,14 +217,18 @@ namespace iChat.Data.Migrations
 
             modelBuilder.Entity("iChat.Data.Entities.Users.Auth.RefreshToken", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("Revoked")

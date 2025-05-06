@@ -33,8 +33,8 @@ namespace iChat.BackEnd.Controllers
                 .Select(u => new UserVM
                 {
                     Id = u.Id,
-                    FirstName = u.FirstName,
-                    LastName = u.LastName
+                    FirstName = u.Name,
+                   // LastName = u.LastName
                 });
 
             var users = await query

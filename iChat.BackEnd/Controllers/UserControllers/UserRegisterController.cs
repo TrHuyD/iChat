@@ -28,8 +28,14 @@ namespace iChat.BackEnd.Controllers.UserControllers
 
             try
             {
-                await _UserService.RegisterAsync(request);
+                var result=await _UserService.RegisterAsync(request);
+                if(result.Success)
                 return RedirectToAction("Login");
+                else
+                {
+                    ModelState.AddModelError("", $"Error: {result.ErrorMessage}");
+                    return View(request);
+                }
             }
             catch (Exception ex)
             {

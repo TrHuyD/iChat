@@ -1,0 +1,32 @@
+﻿@inject HttpClient Http
+@inject NavigationManager Nav
+@using iChat.DTOs.Users.Auth
+
+<h3>Login</h3>
+
+<EditForm Model="login" OnValidSubmit="HandleLogin">
+    <InputText @bind-Value="login.Username" placeholder="Username" />
+    <InputText @bind-Value="login.Password" placeholder="Password" type="password" />
+    <button type="submit">Login</button>
+</EditForm>
+<p>
+    Don't have an account?
+    <NavLink href="/register">Register here</NavLink>
+</p>
+@code {
+    private LoginRequest login = new();
+
+    private async Task HandleLogin()
+    {
+        var response = await Http.PostAsJsonAsync("/Auth/login", login);
+        if (response.IsSuccessStatusCode)
+        {
+            Nav.NavigateTo("/");
+        }
+        else
+        {
+            // Optional: show error
+            Console.WriteLine("Login failed.");
+        }
+    }
+}

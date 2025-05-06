@@ -10,8 +10,7 @@ namespace iChat.Data.Entities.Users
 {
     public class AppUser : IdentityUser<long>
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
+        public string Name { get; set; }
         public DateTime Dob { get; set; }
         
         public List<RefreshToken> RefreshTokens { get; set; } = new();

@@ -5,7 +5,7 @@ using Neo4j.Driver;
 
 namespace iChat.BackEnd.Controllers
 {
-    [Route("api/health")]
+    [Route("health")]
     [ApiController]
     public class HealthController : ControllerBase
     {

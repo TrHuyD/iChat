@@ -1,12 +1,13 @@
 ﻿using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.Neo4jService;
 using iChat.Data.Entities.Users;
+using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Auth;
 using Microsoft.AspNetCore.Identity;
 
 namespace iChat.BackEnd.Services.Users.Auth
 {
-    public class CreateUserService
+    public class CreateUserService : IRegisterService
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly UserIdService _idGen;
@@ -17,22 +18,33 @@ namespace iChat.BackEnd.Services.Users.Auth
             _idGen = IdGen;
             _neo4j=neo4J;
         }
-        public async Task<bool> RegisterAsync(RegisterRequest request)
+        public async Task<OperationResult> RegisterAsync(RegisterRequest request)
         {
             var user = new AppUser
             {
-                Id=_idGen.GenerateId(),
+                Id = _idGen.GenerateId(),
                 UserName = request.UserName,
                 Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName
+                Name = request.Name,
             };
-
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
-                throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
-            _ = _neo4j.CreateUserNode(user.Id);
-            return true;
+            {
+                var errors = result.Errors.ToList();
+                foreach (var error in errors)
+                {
+                    if (error.Code == "DuplicateUserName")
+                        return OperationResult.Fail("username_exists", "The username is already taken.");
+
+                    if (error.Code == "DuplicateEmail")
+                        return OperationResult.Fail("email_exists", "An account with this email already exists.");
+                }
+                var combined = string.Join(", ", errors.Select(e => e.Description));
+                return OperationResult.Fail("identity_error", combined);
+            }
+            _ = _neo4j.CreateUserNode(user.Id); 
+            return OperationResult.Ok();
         }
+
     }
 }

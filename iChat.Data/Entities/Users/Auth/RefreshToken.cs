@@ -8,7 +8,7 @@ namespace iChat.Data.Entities.Users.Auth
 {
     public class RefreshToken
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public string Token { get; set; }
         public DateTime ExpiryDate { get; set; }
         public DateTime Created { get; set; }
@@ -17,5 +17,6 @@ namespace iChat.Data.Entities.Users.Auth
         public bool IsActive => Revoked == null && !IsExpired;
         public long UserId { get; set; }
         public AppUser User { get; set; }
+        public string IpAddress { get; set; } // IP address of the user when the token was created
     }
 }

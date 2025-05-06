@@ -13,12 +13,16 @@ namespace iChat.Data.EF
     {
         public iChatDbContext CreateDbContext(string[] args)
     {
-            var config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build();
+            //var config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build();
        
         var optionsBuilder = new DbContextOptionsBuilder<iChatDbContext>();
-            optionsBuilder.UseSqlite(config.GetConnectionString("sqlite"));
-        //optionsBuilder.UseSqlServer(config.GetConnectionString("iChatdev"));
-      //  optionsBuilder.usesqlli
+            var dbPath = Path.Combine(AppContext.BaseDirectory, "app.db");
+            var connectionString = $"Data Source={dbPath};";
+
+            optionsBuilder.UseSqlite(connectionString);
+
+            //optionsBuilder.UseSqlServer(config.GetConnectionString("iChatdev"));
+            //  optionsBuilder.usesqlli
             optionsBuilder.EnableSensitiveDataLogging();
 
         return new iChatDbContext(optionsBuilder.Options);

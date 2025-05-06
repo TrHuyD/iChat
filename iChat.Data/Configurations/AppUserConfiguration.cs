@@ -13,8 +13,8 @@ namespace iChat.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<AppUser> builder)
         {
-            builder.Property(x => x.FirstName).IsRequired().HasMaxLength(15);
-            builder.Property(x => x.LastName).IsRequired().HasMaxLength(15);
+            builder.Property(x=> x.Id).ValueGeneratedNever();
+            builder.Property(x => x.Name).IsRequired().HasMaxLength(15);
             builder.Property(x => x.Dob).IsRequired();
         }
     }
