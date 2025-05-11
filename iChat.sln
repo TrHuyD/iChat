@@ -12,6 +12,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "iChat.ViewModels", "iChat.ViewModels\iChat.ViewModels.csproj", "{A34BBB61-FCD4-4F7C-96B7-13FF6E9B84E4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "iChat.BackEnd", "iChat.BackEnd\iChat.BackEnd.csproj", "{76FBEBCF-159C-483B-A821-E4C117D004E1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D837F6D1-5B54-48AC-BE91-5F622357891E} = {D837F6D1-5B54-48AC-BE91-5F622357891E}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "iChat.DTOs", "iChat.DTOs\iChat.DTOs.csproj", "{4A30E199-4BF0-495F-A510-C0795A72CE9F}"
 EndProject

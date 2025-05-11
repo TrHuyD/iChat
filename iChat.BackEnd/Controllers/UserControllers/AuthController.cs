@@ -18,7 +18,7 @@ namespace iChat.BackEnd.Controllers
         {
             
         }
-        [HttpGet(UrlPath.RefreshToken)]
+        [HttpGet("refreshtoken")]
         public async Task<IActionResult> RefreshToken([FromServices] SqlKeyRotationService _service)
         {
             var result = await _service.RefreshCred(HttpContext);
@@ -30,33 +30,41 @@ namespace iChat.BackEnd.Controllers
             var token = result.Value;
             return Ok(token);
         }
+        //  [ValidateAntiForgeryToken]
         [HttpPost("register")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register([FromBody]RegisterRequest request,[FromServices] IRegisterService _registerService)
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request, [FromServices] IRegisterService registerService)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            var result = await _registerService.RegisterAsync(request);
+            {
+                return BadRequest(OperationResult.Fail("ValidationError", "Invalid registration data."));
+            }
+
+            var result = await registerService.RegisterAsync(request);
             if (!result.Success)
             {
-                ModelState.AddModelError("", $"Error: {result.ErrorMessage}");
-                return BadRequest(ModelState);
+                return Ok(result);
             }
-            return Ok(new { message = "User created successfully!" });
+
+            return Ok(OperationResult.Ok());
         }
+
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request, [FromServices] ILoginService loginService)
+        public async Task<IActionResult> Login(
+            [FromBody] LoginRequest request,
+            [FromServices] ILoginService loginService)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
             var result = await loginService.LoginAsync(request, HttpContext);
             if (!result.Success)
             {
-                ModelState.AddModelError("", $"Error: {result.ErrorMessage}");
-                return BadRequest(ModelState);
+                return Unauthorized(new { error = result.ErrorMessage ?? "Invalid username or password" });
             }
+
             return Ok(new { message = "Login successful!" });
         }
+
         [HttpGet("/.well-known/jwks.json")]
         public IActionResult GetJwks([FromServices] JwtService service)
         {

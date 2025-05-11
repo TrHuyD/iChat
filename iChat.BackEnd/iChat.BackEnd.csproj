@@ -5,7 +5,79 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>9388de23-cdcb-4842-9b13-4073ad7b0947</UserSecretsId>
+
+    <!-- Enables static assets discovery from referenced Blazor WASM project -->
+    <StaticWebAssetsBasePath>/</StaticWebAssetsBasePath>
+    <StaticWebAssetsEnable>true</StaticWebAssetsEnable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include=".wwwroot\css\site.css" />
+    <Content Include=".wwwroot\favicon.ico" />
+    <Content Include=".wwwroot\js\ProfileService.js" />
+    <Content Include=".wwwroot\js\site.js" />
+    <Content Include=".wwwroot\js\StorageHelper.js" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap.min.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap.min.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.js" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.js.map" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.min.js" />
+    <Content Include=".wwwroot\lib\bootstrap\dist\js\bootstrap.min.js.map" />
+    <Content Include=".wwwroot\lib\bootstrap\LICENSE" />
+    <Content Include=".wwwroot\lib\jquery-validation-unobtrusive\dist\jquery.validate.unobtrusive.js" />
+    <Content Include=".wwwroot\lib\jquery-validation-unobtrusive\dist\jquery.validate.unobtrusive.min.js" />
+    <Content Include=".wwwroot\lib\jquery-validation-unobtrusive\LICENSE.txt" />
+    <Content Include=".wwwroot\lib\jquery-validation\dist\additional-methods.js" />
+    <Content Include=".wwwroot\lib\jquery-validation\dist\additional-methods.min.js" />
+    <Content Include=".wwwroot\lib\jquery-validation\dist\jquery.validate.js" />
+    <Content Include=".wwwroot\lib\jquery-validation\dist\jquery.validate.min.js" />
+    <Content Include=".wwwroot\lib\jquery-validation\LICENSE.md" />
+    <Content Include=".wwwroot\lib\jquery\dist\jquery.js" />
+    <Content Include=".wwwroot\lib\jquery\dist\jquery.min.js" />
+    <Content Include=".wwwroot\lib\jquery\dist\jquery.min.map" />
+    <Content Include=".wwwroot\lib\jquery\dist\jquery.slim.js" />
+    <Content Include=".wwwroot\lib\jquery\dist\jquery.slim.min.js" />
+    <Content Include=".wwwroot\lib\jquery\dist\jquery.slim.min.map" />
+    <Content Include=".wwwroot\lib\jquery\LICENSE.txt" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Auth0.AspNetCore.Authentication" Version="1.4.1" />
@@ -16,6 +88,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Core" Version="2.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="9.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.4" />
@@ -38,6 +111,9 @@
     <ProjectReference Include="..\iChat.Data\iChat.Data.csproj" />
     <ProjectReference Include="..\iChat.DTOs\iChat.DTOs.csproj" />
     <ProjectReference Include="..\iChat.ViewModels\iChat.ViewModels.csproj" />
+
+    <!-- Reference to Blazor Client project -->
+    <ProjectReference Include="..\iChat.Client\iChat.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

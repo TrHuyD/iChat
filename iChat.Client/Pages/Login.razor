@@ -1,32 +1,78 @@
-﻿@inject HttpClient Http
-@inject NavigationManager Nav
+﻿@page "/login"
 @using iChat.DTOs.Users.Auth
-
+@inject HttpClient Http
+@inject NavigationManager Nav
+@layout BaseLayout
 <h3>Login</h3>
 
 <EditForm Model="login" OnValidSubmit="HandleLogin">
-    <InputText @bind-Value="login.Username" placeholder="Username" />
-    <InputText @bind-Value="login.Password" placeholder="Password" type="password" />
-    <button type="submit">Login</button>
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <InputText id="username" @bind-Value="login.Username" class="form-control" />
+        <ValidationMessage For="@(() => login.Username)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <InputText id="password" @bind-Value="login.Password" type="password" class="form-control" />
+        <ValidationMessage For="@(() => login.Password)" />
+    </div>
+
+@*     @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    } *@
+
+    <button type="submit" class="btn btn-primary">Login</button>
 </EditForm>
-<p>
+
+<p class="mt-3">
     Don't have an account?
     <NavLink href="/register">Register here</NavLink>
 </p>
+
 @code {
     private LoginRequest login = new();
+    // private string? errorMessage;
 
     private async Task HandleLogin()
     {
-        var response = await Http.PostAsJsonAsync("/Auth/login", login);
+        //errorMessage = null;
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:6051/Auth/login")
+            {
+                Content = JsonContent.Create(login)
+            };  
+        var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken: default);
         if (response.IsSuccessStatusCode)
         {
+            UserInfoLoader.TriggerReload(); 
             Nav.NavigateTo("/");
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+          //  errorMessage = error?.Error ?? "Invalid credentials.";
+            ToastService.ShowToast("Invalid credentials.", "danger");
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            ToastService.ShowToast("Please correct the highlighted fields.", "danger");
+           
         }
         else
         {
-            // Optional: show error
-            Console.WriteLine("Login failed.");
+            ToastService.ShowToast("An unexpected error occurred.", "danger");
+
         }
+    }
+
+    public class ErrorResponse
+    {
+        public string? Error { get; set; }
     }
 }

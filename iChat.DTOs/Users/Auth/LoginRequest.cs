@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,11 +9,12 @@ namespace iChat.DTOs.Users.Auth
 {
     public class LoginRequest
     {
-       
-        public string Username { get; set; }    
+        [Required(ErrorMessage = "Username is required")]
+        [RegularExpression(@"\S+", ErrorMessage = "Username cannot be empty or whitespace")]
+        public string Username { get; set; } = string.Empty;
 
-        public string Password { get; set; }
-
-        public bool RememberMe { set; get; }
+        [Required(ErrorMessage = "Password is required")]
+        [RegularExpression(@"\S+", ErrorMessage = "Password cannot be empty or whitespace")]
+        public string Password { get; set; } = string.Empty;
     }
 }

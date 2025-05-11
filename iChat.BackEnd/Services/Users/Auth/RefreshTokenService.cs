@@ -86,9 +86,9 @@ namespace iChat.BackEnd.Services.Users.Auth
                 HttpOnly = true,
                 Expires = rf.ExpiryDate,
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = SameSiteMode.Strict,
                 Path = UrlPath.RefreshTokenApi,
-               // Domain = DomainOptions.CookieDomain,
+                //Domain = DomainOptions.CookieDomain,
             };
             context.Response.Cookies.Append("refreshToken", token, cookieOptions);
         }

@@ -46,6 +46,18 @@ if (builder.Environment.IsDevelopment())
         c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
     });
     builder.Services.AddControllers();
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.WithOrigins("https://localhost:7156")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+    });
+
+
 }
 else
 {
@@ -60,10 +72,10 @@ else
 
 }
     // Add services to the container.
-    builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
+    builder.Services.AddControllers().AddRazorRuntimeCompilation();
 
 builder.Configuration.AddUserSecrets<Program>();
-builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpContextAccessor();  
 var neo4jConfig = builder.Configuration.GetSection("Neo4j");
 
 var WorkerIdConfig = new ConfigurationBuilder()
@@ -175,6 +187,7 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
+    app.UseCors();
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -184,16 +197,19 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 
 app.UseRouting();
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
-
+//app.MapControllerRoute(
+//    name: "default",
+//    pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-if(!app.Environment.IsDevelopment())
+    name: "api",
+    pattern: "api/{controller}/{action=Index}/{id?}");
+if (!app.Environment.IsDevelopment())
 {
 
 }
@@ -204,7 +220,7 @@ else
         endpoints.MapControllers();
     });
 }
-
+app.MapFallbackToFile("index.html");
 //app.MapGet("/Account/Login", async (HttpContext httpContext, string returnUrl = "/") =>
 //{
 //    var authenticationProperties = new LoginAuthenticationPropertiesBuilder()

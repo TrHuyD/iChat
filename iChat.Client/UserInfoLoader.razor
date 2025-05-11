@@ -1,0 +1,79 @@
+﻿@inject UserStateService UserState
+
+@if (!isReady)
+{
+    <div class="user-info-loading">
+        <p>⚠️ Unable to load user info. Retrying in @cooldownSeconds seconds... (Attempt @attemptCount)</p>
+    </div>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private static bool _hasRun = false;
+    private bool isReady = false;
+    private int[] retryDelays = [5000, 10000, 30000];
+    private int cooldownSeconds;
+    private int attemptCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_hasRun)
+        {
+            isReady = true;
+            return;
+        }
+
+        while (!isReady)
+        {
+            try
+            {
+                var user = await UserState.GetUserAsync();
+                isReady = true;
+                _hasRun = true;
+                return;
+            }
+            catch (HttpRequestException ex)
+            {
+                if (attemptCount < retryDelays.Length)
+                {
+                    cooldownSeconds = retryDelays[attemptCount] / 1000;
+                    attemptCount++;
+
+                    while (cooldownSeconds > 0)
+                    {
+                        StateHasChanged();
+                        await Task.Delay(1000);
+                        cooldownSeconds--;
+                    }
+
+                    continue;
+                }
+
+                cooldownSeconds = 30;
+                while (true)
+                {
+                    StateHasChanged();
+                    await Task.Delay(1000);
+                    cooldownSeconds--;
+                    if (cooldownSeconds == 0)
+                    {
+                        cooldownSeconds = 30;
+                        attemptCount++;
+                        break;
+                    }
+                }
+            }
+
+        }
+    }
+
+    public static void TriggerReload()
+    {
+        _hasRun = false;
+    }
+}

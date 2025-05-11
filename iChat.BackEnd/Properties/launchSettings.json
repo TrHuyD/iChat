@@ -1,5 +1,6 @@
 ﻿{
   "$schema": "https://json.schemastore.org/launchsettings.json",
+  "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
   "profiles": {
     "http": {
       "commandName": "Project",

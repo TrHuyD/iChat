@@ -24,8 +24,6 @@ namespace iChat.BackEnd.Controllers
         public async Task<IActionResult> GetProfile()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-                return Unauthorized();
 
             var userProfile = await _userService.GetUserProfileAsync(userId);
             if (userProfile == null)

@@ -1,40 +1,28 @@
-﻿using System.Net.Http.Json;
+﻿using iChat.Client.Services.Auth;
+using System.Net.Http.Json;
 
-namespace iChat.Client.Services
+public class UserStateService
 {
-    public class UserStateService
+    private readonly JwtAuthHandler _authHandler;
+
+    public UserStateService(JwtAuthHandler authHandler)
     {
-        private readonly HttpClient _http;
-        private UserProfileDto? _user;
-
-        public UserStateService(HttpClient http)
-        {
-            _http = http;
-        }
-
-        public async Task<UserProfileDto?> GetUserAsync()
-        {
-            if (_user != null)
-                return _user;
-
-            try
-            {
-                _user = await _http.GetFromJsonAsync<UserProfileDto>("/api/user/profile");
-            }
-            catch
-            {
-                
-            }
-
-            return _user;
-        }
-
-        public bool IsAuthenticated => _user != null;
-
-        public void Clear()
-        {
-            _user = null;
-        }
+        _authHandler = authHandler;
     }
 
+    public async Task<UserProfileDto?> GetUserAsync()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "/users/profile");
+
+        var response = await _authHandler.SendAuthAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        { 
+            if (response.StatusCode ==System.Net.HttpStatusCode.Unauthorized)
+                //       return null;
+                return null;
+            throw new HttpRequestException(message: "Server no responding", inner:null, statusCode: System.Net.HttpStatusCode.InternalServerError);
+        }
+        return await response.Content.ReadFromJsonAsync<UserProfileDto>();
+    }
 }

@@ -16,6 +16,7 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
             builder.Services.Configure<JwtOptions>(jwtOptCol);
             builder.Services.AddSingleton<JwtService>();
             builder.Services.AddSingleton<RefreshTokenService>();
+            builder.Services.AddScoped<SqlKeyRotationService>();
             builder.Services.AddTransient<ILoginService,SqlLoginService>();
             builder.Services.AddTransient<IRegisterService, CreateUserService>();
             builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
@@ -32,7 +33,19 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnChallenge = context =>
+                    {
+                        context.HandleResponse();
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        context.Response.ContentType = "application/json";
+                        return context.Response.WriteAsync("{\"error\": \"Unauthorized\"}");
+                    }
+                };
             });
+
 
 
         }
