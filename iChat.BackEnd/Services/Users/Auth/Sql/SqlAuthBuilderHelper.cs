@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Models.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -19,34 +20,42 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
             builder.Services.AddScoped<SqlKeyRotationService>();
             builder.Services.AddTransient<ILoginService,SqlLoginService>();
             builder.Services.AddTransient<IRegisterService, CreateUserService>();
-            builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+            builder.Services.AddSingleton<IPostConfigureOptions<JwtBearerOptions>, JwtBearerPostConfigureOptions>();
+            builder.Services.AddAuthentication(options =>
             {
-                var jwksService = builder.Services.BuildServiceProvider().GetRequiredService<JwtService>();
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                var jwtService = builder.Services.BuildServiceProvider().GetRequiredService<JwtService>();
+                var publicKey = jwtService.GetPublicJwk();
+
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = jwksService.GetPublicJwk(),
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtOptions.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwtOptions.Audience,
+                    IssuerSigningKey = publicKey,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 };
 
                 options.Events = new JwtBearerEvents
                 {
-                    OnChallenge = context =>
+                    OnAuthenticationFailed = context =>
                     {
-                        context.HandleResponse();
-                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                        context.Response.ContentType = "application/json";
-                        return context.Response.WriteAsync("{\"error\": \"Unauthorized\"}");
+                        // Logging logic
+                        return Task.CompletedTask;
+                    },
+                    OnTokenValidated = context =>
+                    {
+                        // Logging logic
+                        return Task.CompletedTask;
                     }
                 };
             });
-
-
 
         }
     }

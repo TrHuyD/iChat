@@ -12,9 +12,9 @@ public class UserStateService
 
     public async Task<UserProfileDto?> GetUserAsync()
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, "/users/profile");
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/users/profile");
 
-        var response = await _authHandler.SendAuthAsync(request);
+        var response = await _authHandler.SendAuthAsync(request,browser_cache:false);
 
         if (!response.IsSuccessStatusCode)
         { 

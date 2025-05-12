@@ -8,7 +8,7 @@ namespace iChat.DTOs.Shared
 {
     public static class UrlPath
     {
-        public const string RefreshTokenApi = "/api/auth/refreshtoken";
+        public const string RefreshTokenApi = "/api/Auth/refreshtoken";
         public const string RefreshToken= "/refreshtoken";
     }
 }

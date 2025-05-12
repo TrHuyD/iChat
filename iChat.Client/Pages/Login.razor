@@ -42,7 +42,7 @@
     {
         //errorMessage = null;
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:6051/Auth/login")
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:6051/api/Auth/login")
             {
                 Content = JsonContent.Create(login)
             };  

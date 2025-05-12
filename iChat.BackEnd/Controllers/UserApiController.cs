@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace iChat.BackEnd.Controllers
 {
-    [Route("user")]
+    [Route("api/users")]
     [ApiController]
     public class UserApiController : ControllerBase
     {

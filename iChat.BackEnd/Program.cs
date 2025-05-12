@@ -1,4 +1,4 @@
-using iChat.BackEnd.Models.Helpers;
+﻿using iChat.BackEnd.Models.Helpers;
 using iChat.BackEnd.Services.Users;
 using iChat.BackEnd.Services.Users.Auth;
 using iChat.Data.EF;
@@ -32,10 +32,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using System.Security.Claims;
-using Auth0.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication;
-using iChat.BackEnd.Services.Users.Auth.Auth0;
 using iChat.BackEnd.Services.Users.Auth.Sql;
+using iChat.Client;
+using System.Text.Json;
 //using Microsoft.AspNetCore.Authentication;
 //using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
@@ -112,7 +112,7 @@ builder.Services.AddTransient<UserRelationService>();
 builder.Services.AddTransient<RedisUserServerService>();
 builder.Services.AddTransient<RedisMessageRWService>();
 
-new SqlAuthBuilderHelper().AddService(builder);
+
 
 builder.Services.AddTransient<ServerListService>();
 
@@ -131,7 +131,7 @@ builder.Services.AddIdentity<AppUser, Role>(options =>
 })
     .AddEntityFrameworkStores<iChatDbContext>()
     .AddDefaultTokenProviders();
-
+new SqlAuthBuilderHelper().AddService(builder);
 // Configure Cookie Authentication
 //builder.Services.ConfigureApplicationCookie(options =>
 //{
@@ -168,18 +168,51 @@ builder.Services.AddHttpContextAccessor();
 //// Configure Authentication
 //builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
 //    .AddCookie();
-
-// Configure Logging
-builder.Services.AddLogging(logging =>
+builder.Services.ConfigureApplicationCookie(options =>
 {
-    logging.ClearProviders();
-    logging.AddConsole();
-    logging.SetMinimumLevel(LogLevel.Information);
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync(JsonSerializer.Serialize(new
+            {
+                error = "Unauthorized",
+                message = "Authentication required"
+            }));
+        }
+
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
 });
 
-var app = builder.Build();
+// Configure Logging
 
-// Configure Middleware
+var app= builder.Build();
+
+// --- Middleware pipeline ---
+
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    Console.WriteLine($"IN->Request: {context.Request.Method} {path}");
+
+    await next();
+
+    var type = context.Response.ContentType ?? "none";
+    Console.WriteLine($"OUT<- Response: {context.Response.StatusCode} ({type})");
+
+    if (path.StartsWithSegments("/api") &&
+        context.Response.StatusCode == 200 &&
+        type.Contains("text/html", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.WriteLine("API returned HTML — probably hit the Blazor fallback.");
+    }
+});
+
+// --- Standard environment setup ---
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -187,58 +220,45 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseCors();
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
     });
-
+    app.UseCors(); // dev CORS
 }
 
-app.UseHttpsRedirection();
+// --- Static + Blazor setup ---
+app.UseStaticFiles();
+app.UseBlazorFrameworkFiles();
 
 app.UseRouting();
-app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=Home}/{action=Index}/{id?}");
-app.MapControllerRoute(
-    name: "api",
-    pattern: "api/{controller}/{action=Index}/{id?}");
-if (!app.Environment.IsDevelopment())
-{
 
-}
-else
+// ✅ Global 401 handler for API
+app.Use(async (context, next) =>
 {
-    app.UseEndpoints(endpoints =>
+    await next();
+
+    if (context.Request.Path.StartsWithSegments("/api") &&
+        context.Response.StatusCode == 401 &&
+        !context.Response.HasStarted)
     {
-        endpoints.MapControllers();
-    });
-}
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(JsonSerializer.Serialize(new
+        {
+            error = "Unauthorized",
+            message = "Authentication required or token invalid"
+        }));
+    }
+});
+
+// ✅ Map API controllers (will respect [Route("api/...")])
+app.MapControllers();
+
+// ✅ Blazor fallback
 app.MapFallbackToFile("index.html");
-//app.MapGet("/Account/Login", async (HttpContext httpContext, string returnUrl = "/") =>
-//{
-//    var authenticationProperties = new LoginAuthenticationPropertiesBuilder()
-//            .WithRedirectUri(returnUrl)
-//            .Build();
-
-//    await httpContext.ChallengeAsync(Auth0Constants.AuthenticationScheme, authenticationProperties);
-//});
-//app.MapGet("/Account/Logout", async (HttpContext httpContext) =>
-//{
-//    var authenticationProperties = new LogoutAuthenticationPropertiesBuilder()
-//            .WithRedirectUri("/")
-//            .Build();
-
-//    await httpContext.SignOutAsync(Auth0Constants.AuthenticationScheme, authenticationProperties);
-//    await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-//});
-
-
 
 app.Run();

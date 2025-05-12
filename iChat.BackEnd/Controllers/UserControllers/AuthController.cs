@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using iChat.DTOs.Users.Auth;
-using iChat.BackEnd.Services.Users.Auth.Auth0;
 using System.Threading.Tasks;
 using iChat.BackEnd.Services.Users.Auth;
 using iChat.DTOs.Shared;
@@ -8,7 +7,7 @@ using iChat.BackEnd.Services.Users.Auth.Sql;
 
 namespace iChat.BackEnd.Controllers
 {
-    [Route("Auth")]
+    [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
     {
@@ -65,10 +64,12 @@ namespace iChat.BackEnd.Controllers
             return Ok(new { message = "Login successful!" });
         }
 
-        [HttpGet("/.well-known/jwks.json")]
+        [HttpGet(".well-known/jwks.json")]
         public IActionResult GetJwks([FromServices] JwtService service)
         {
+
             var jwks = service.GetPublicJwk();
+            
             return Ok(jwks);
         }
         //[HttpGet("register")]

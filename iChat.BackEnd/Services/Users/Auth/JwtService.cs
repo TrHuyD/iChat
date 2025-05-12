@@ -26,7 +26,8 @@ public class JwtService
             KeyId = Guid.NewGuid().ToString() 
         };
         _signingCredentials = new SigningCredentials(_rsaKey, SecurityAlgorithms.RsaSha256);
-        publicJwk= JsonWebKeyConverter.ConvertFromRSASecurityKey(_rsaKey);
+        publicJwk= JsonWebKeyConverter.ConvertFromRSASecurityKey(
+            new RsaSecurityKey(rsa.ExportParameters(false)) { KeyId = _rsaKey.KeyId });
     }
     
     public TokenResponse GenerateAccessToken(string userId, IList<string> roles=null)
@@ -76,6 +77,7 @@ public class JwtService
 
     public JsonWebKey GetPublicJwk()
     {
+        Console.WriteLine($"JWKS modulus: {publicJwk.N}");
         return publicJwk;
     }
 }

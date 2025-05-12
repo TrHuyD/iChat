@@ -18,10 +18,21 @@ namespace iChat.Client.Services.Auth
         public async Task<HttpResponseMessage> SendAuthAsync(
             HttpRequestMessage request,
             bool forceRedirectToLogin = true,
+            bool browser_cache=true,
             CancellationToken cancellationToken = default)
         {
             var token = _tokenProvider.AccessToken;
-            request.RequestUri = new Uri(request.RequestUri.ToString());
+            if(!browser_cache)
+            {
+                request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue
+                {
+                    NoCache = true,
+                    NoStore = true,
+                    MustRevalidate = true
+                };
+                request.Headers.Pragma.ParseAdd("no-cache");
+                request.Headers.IfModifiedSince = DateTimeOffset.UtcNow;
+            }
             if (!string.IsNullOrWhiteSpace(token))
             {
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -46,7 +57,7 @@ namespace iChat.Client.Services.Auth
             }
 
             // Token missing or unauthorized
-            var refreshRequest = new HttpRequestMessage(HttpMethod.Get,  "/refreshToken");
+            var refreshRequest = new HttpRequestMessage(HttpMethod.Get, "/api/Auth/refreshtoken");
             var refreshResponse = await base.SendAsync(refreshRequest, cancellationToken);
 
             if (refreshResponse.IsSuccessStatusCode)
