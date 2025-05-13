@@ -20,7 +20,7 @@ public class JwtBearerPostConfigureOptions : IPostConfigureOptions<JwtBearerOpti
     {
         var publicKey = _jwtService.GetPublicJwk();
 
-        // Optional: Add null check for publicKey
+        
         if (publicKey == null)
         {
             _logger.LogError("Public JWT key is null. Authentication configuration may fail.");

@@ -168,25 +168,25 @@ builder.Services.AddHttpContextAccessor();
 //// Configure Authentication
 //builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
 //    .AddCookie();
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Events.OnRedirectToLogin = context =>
-    {
-        if (context.Request.Path.StartsWithSegments("/api"))
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.ContentType = "application/json";
-            return context.Response.WriteAsync(JsonSerializer.Serialize(new
-            {
-                error = "Unauthorized",
-                message = "Authentication required"
-            }));
-        }
+//builder.Services.ConfigureApplicationCookie(options =>
+//{
+//    options.Events.OnRedirectToLogin = context =>
+//    {
+//        if (context.Request.Path.StartsWithSegments("/api"))
+//        {
+//            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+//            context.Response.ContentType = "application/json";
+//            return context.Response.WriteAsync(JsonSerializer.Serialize(new
+//            {
+//                error = "Unauthorized",
+//                message = "Authentication required"
+//            }));
+//        }
 
-        context.Response.Redirect(context.RedirectUri);
-        return Task.CompletedTask;
-    };
-});
+//        context.Response.Redirect(context.RedirectUri);
+//        return Task.CompletedTask;
+//    };
+//});
 
 // Configure Logging
 
