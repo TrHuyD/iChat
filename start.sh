@@ -1,0 +1,1 @@
+(cd iChat.BackEnd && dotnet watch run) & (cd iChat.Client && dotnet watch run)

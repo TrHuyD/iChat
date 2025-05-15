@@ -1,0 +1,39 @@
+﻿
+@inject ToastService ToastService
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="toast align-items-center text-white bg-@level border-0 show" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    @message
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick="HideToast"></button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string? message;
+    private string level = "info";
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += ShowToast;
+    }
+
+    private void ShowToast(string message, string level)
+    {
+        this.message = message;
+        this.level = level;
+        StateHasChanged();
+    }
+
+    private void HideToast()
+    {
+        message = null;
+        StateHasChanged();
+    }
+}
