@@ -1,8 +1,11 @@
 ﻿@page "/login"
+@using System.Text.Json
 @using iChat.DTOs.Users.Auth
 @inject HttpClient Http
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @layout BaseLayout
+
 <h3>Login</h3>
 
 <EditForm Model="login" OnValidSubmit="HandleLogin">
@@ -21,11 +24,6 @@
         <ValidationMessage For="@(() => login.Password)" />
     </div>
 
-@*     @if (!string.IsNullOrWhiteSpace(errorMessage))
-    {
-        <div class="alert alert-danger">@errorMessage</div>
-    } *@
-
     <button type="submit" class="btn btn-primary">Login</button>
 </EditForm>
 
@@ -36,43 +34,85 @@
 
 @code {
     private LoginRequest login = new();
-    // private string? errorMessage;
 
     private async Task HandleLogin()
     {
-        //errorMessage = null;
+#if DEBUG
+        var url = "https://localhost:6051/api/Auth/login";
+        var loginJson = System.Text.Json.JsonSerializer.Serialize(login);
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:6051/api/Auth/login")
+    var jsResponse = await JS.InvokeAsync<JsFetchResponse>(
+        "fetchWithCredentials",
+        url,
+        new
+        {
+            method = "POST",
+            headers = new Dictionary<string, string> { { "Content-Type", "application/json" } },
+            body = loginJson
+        });
+
+        if (jsResponse.Ok)
+        {
+            UserInfoLoader.TriggerReload();
+            Nav.NavigateTo("/");
+        }
+        else if (jsResponse.Status == 401)
+        {
+            var error = jsResponse.Json as JsonElement?;
+            string? message = null;
+
+            if (error.HasValue && error.Value.TryGetProperty("error", out var errorProp))
             {
-                Content = JsonContent.Create(login)
-            };  
-        var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken: default);
+                message = errorProp.GetString();
+            }
+
+            ToastService.ShowToast(message ?? "Invalid credentials.", "danger");
+        }
+        else if (jsResponse.Status == 400)
+        {
+            ToastService.ShowToast("Please correct the highlighted fields.", "danger");
+        }
+        else
+        {
+            ToastService.ShowToast("An unexpected error occurred.", "danger");
+        }
+#else
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:6051/api/Auth/login")
+        {
+            Content = JsonContent.Create(login)
+        };
+        var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
         if (response.IsSuccessStatusCode)
         {
-            UserInfoLoader.TriggerReload(); 
+            UserInfoLoader.TriggerReload();
             Nav.NavigateTo("/");
         }
         else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
             var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-          //  errorMessage = error?.Error ?? "Invalid credentials.";
-            ToastService.ShowToast("Invalid credentials.", "danger");
+            ToastService.ShowToast(error?.Error ?? "Invalid credentials.", "danger");
         }
         else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
         {
             ToastService.ShowToast("Please correct the highlighted fields.", "danger");
-           
         }
         else
         {
             ToastService.ShowToast("An unexpected error occurred.", "danger");
-
         }
+#endif
     }
 
     public class ErrorResponse
     {
         public string? Error { get; set; }
+    }
+
+    public class JsFetchResponse
+    {
+        public bool Ok { get; set; }
+        public int Status { get; set; }
+        public object? Json { get; set; }
     }
 }

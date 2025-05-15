@@ -1,9 +1,12 @@
 ﻿using iChat.Client.Services.Auth;
+using iChat.DTOs.Users.Messages;
 using System.Net.Http.Json;
 
 public class UserStateService
 {
     private readonly JwtAuthHandler _authHandler;
+    private UserProfileDto? _userProfile;
+
 
     public UserStateService(JwtAuthHandler authHandler)
     {

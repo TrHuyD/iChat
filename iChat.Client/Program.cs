@@ -8,6 +8,10 @@ using iChat.Client.Services.UI;
 using iChat.Client.Services.Bootstrap;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
+#if DEBUG
+using Microsoft.JSInterop;
+#endif
+
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.RootComponents.Add<App>("#app");
@@ -35,12 +39,18 @@ builder.Services.AddScoped<JwtAuthHandler>(sp =>
 {
     var tokenProvider = sp.GetRequiredService<TokenProvider>();
     var navigationManager = sp.GetRequiredService<NavigationManager>();
-
+#if DEBUG
+    var handler = new JwtAuthHandler(tokenProvider, navigationManager, sp.GetRequiredService<IJSRuntime>())
+    {
+        InnerHandler = new HttpClientHandler()
+    };
+#else
     var handler = new JwtAuthHandler(tokenProvider, navigationManager)
     {
         InnerHandler = new HttpClientHandler() 
     };
-
+    
+#endif
     return handler;
 });
 

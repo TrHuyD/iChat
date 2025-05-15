@@ -71,8 +71,8 @@ else
     });
 
 }
-    // Add services to the container.
-    builder.Services.AddControllers().AddRazorRuntimeCompilation();
+// Add services to the container.
+builder.Services.AddControllers();//.AddRazorRuntimeCompilation();
 
 builder.Configuration.AddUserSecrets<Program>();
 builder.Services.AddHttpContextAccessor();  
@@ -230,35 +230,20 @@ else
 
 // --- Static + Blazor setup ---
 app.UseStaticFiles();
-app.UseBlazorFrameworkFiles();
+if (!app.Environment.IsDevelopment())
+    app.UseBlazorFrameworkFiles();
 
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ✅ Global 401 handler for API
-app.Use(async (context, next) =>
-{
-    await next();
-
-    if (context.Request.Path.StartsWithSegments("/api") &&
-        context.Response.StatusCode == 401 &&
-        !context.Response.HasStarted)
-    {
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsync(JsonSerializer.Serialize(new
-        {
-            error = "Unauthorized",
-            message = "Authentication required or token invalid"
-        }));
-    }
-});
 
 // ✅ Map API controllers (will respect [Route("api/...")])
 app.MapControllers();
 
 // ✅ Blazor fallback
+if(!app.Environment.IsDevelopment())
 app.MapFallbackToFile("index.html");
 
 app.Run();
