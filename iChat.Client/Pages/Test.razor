@@ -1,0 +1,54 @@
+﻿@page "/signalr-test"
+
+<h3>SignalR Test</h3>
+
+<p>@statusMessage</p>
+
+@code {
+    private string statusMessage = "Connecting...";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await InitializeSignalRConnectionAsync();
+        }
+    }
+
+    private async Task InitializeSignalRConnectionAsync()
+    {
+        try
+        {
+            // Load SignalR JS library dynamically (optional in Blazor WebAssembly)
+            await JS.InvokeVoidAsync("eval", @"
+                window._signalrConnection = new signalR.HubConnectionBuilder()
+                    .withUrl('https://localhost:6051/api/chathub', { withCredentials: true })
+                    .configureLogging(signalR.LogLevel.Information)
+                    .build();
+
+                _signalrConnection.on('ReceiveMessage', (user, message) => {
+                    console.log(`[Message from ${user}]`, message);
+                });
+
+                _signalrConnection.start()
+                    .then(() => {
+                        console.log('✅ Connected!');
+                        _signalrConnection.invoke('JoinRoom', 'test-room')
+                            .then(() => console.log('🟢 Joined group'))
+                            .catch(err => console.error('❌ Failed to join group', err));
+                    })
+                    .catch(err => console.error('❌ Connection failed:', err));
+            ");
+
+            statusMessage = "✅ SignalR connection initiated.";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"❌ Error initializing SignalR: {ex.Message}";
+        }
+
+        StateHasChanged();
+    }
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+}

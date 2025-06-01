@@ -1,7 +1,10 @@
-﻿using System;
+﻿using iChat.DTOs.Shared.Converter;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace iChat.DTOs.Users.Messages
@@ -12,10 +15,12 @@ namespace iChat.DTOs.Users.Messages
         public string Content { get; set; } = string.Empty;
         public string ContentMedia { get; set; } = string.Empty;
         public int MessageType { get; set; }
-        public DateTime CreatedAt { get; set; }
+     //   [JsonConverter(typeof(DateTimeOffsetJsonConverter))]
+        public DateTimeOffset CreatedAt { get; set; }
         public long SenderId { get; set; }
-   //     public string? SenderName { get; set; } = string.Empty;
-    //   public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
-        
+        public long RoomId { get; set; }
+        //     public string? SenderName { get; set; } = string.Empty;
+        //   public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
+
     }
 }

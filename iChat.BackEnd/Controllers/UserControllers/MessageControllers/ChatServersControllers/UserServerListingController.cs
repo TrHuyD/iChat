@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServersControllers
 {
-    [Route("Chat")]
+    [Route("api/Chat")]
     [Authorize]
-    public class UserServerListingController : Controller
+    public class UserServerListingController : ControllerBase
     {
         private readonly ServerListService _userServerListService;
 
@@ -25,9 +25,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             }
 
             var servers = await _userServerListService.GetServerList(userId);
-            return View("~/Views/User/ChatServer/Listing.cshtml", servers); 
+            return Ok(servers);
+            //  return View("~/Views/User/ChatServer/Listing.cshtml", servers); 
         }
-        [HttpGet("{serverID}\\api\\ChannelList")]
+        [HttpGet("{serverID}\\ChannelList")]
         public async Task<List<string>?> ChannelList(string serverID)
         {
             var channels = await _userServerListService.GetChannelList(serverID);
@@ -40,7 +41,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
 
             var userId = "2";
             var servers = await _userServerListService.GetServerList(userId);
-            return View("~/Views/User/ChatServer/Listing.cshtml", servers);
+            return Ok(servers);
+            //         return View("~/Views/User/ChatServer/Listing.cshtml", servers);
         }
     }
 }

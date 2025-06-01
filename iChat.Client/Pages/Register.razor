@@ -1,6 +1,6 @@
 ﻿@page "/register"
+@attribute [AllowAnonymousAttribute]
 @using iChat.DTOs.Users.Auth
-
 @inject HttpClient Http
 @inject NavigationManager Nav
 
@@ -78,7 +78,7 @@
 
         passwordError = "";
 
-        var response = await Http.PostAsJsonAsync("https://localhost:6051/Auth/register", register);
+        var response = await Http.PostAsJsonAsync("https://localhost:6051/api/Auth/register", register);
         var result = await response.Content.ReadFromJsonAsync<OperationResult>();
 
         if (response.IsSuccessStatusCode && result?.Success == true)

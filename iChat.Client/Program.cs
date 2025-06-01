@@ -8,6 +8,15 @@ using iChat.Client.Services.UI;
 using iChat.Client.Services.Bootstrap;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
+using iChat.Client.Services.UserServices.ChatService;
+using iChat.Client.Services.UserServices;
+using Blazored.LocalStorage;
+using TG.Blazor.IndexedDB;
+
+
+
+
+
 #if DEBUG
 using Microsoft.JSInterop;
 #endif
@@ -22,8 +31,8 @@ builder.Services.AddScoped<FieldCssClassProvider, BootstrapFieldClassProvider>()
 builder.Services.AddSingleton<ToastService>();
 
 
-
-
+builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddScoped<LoginStateService>();
 builder.Services.AddScoped<TokenProvider>();
 
 
@@ -40,7 +49,7 @@ builder.Services.AddScoped<JwtAuthHandler>(sp =>
     var tokenProvider = sp.GetRequiredService<TokenProvider>();
     var navigationManager = sp.GetRequiredService<NavigationManager>();
 #if DEBUG
-    var handler = new JwtAuthHandler(tokenProvider, navigationManager, sp.GetRequiredService<IJSRuntime>())
+    var handler = new JwtAuthHandler(tokenProvider, navigationManager)
     {
         InnerHandler = new HttpClientHandler()
     };
@@ -53,8 +62,28 @@ builder.Services.AddScoped<JwtAuthHandler>(sp =>
 #endif
     return handler;
 });
+builder.Services.AddIndexedDB(dbStore =>
+{
+    dbStore.DbName = "ChatDB";
+    dbStore.Version = 1;
 
+    dbStore.Stores.Add(new StoreSchema
+    {
+        Name = "Messages",
+        PrimaryKey = new IndexSpec { Name = "id", KeyPath = "id", Auto = false },
+        Indexes = new List<IndexSpec>
+        {
+            new IndexSpec { Name = "roomId", KeyPath = "roomId", Auto = false, Unique = false },
+            new IndexSpec { Name = "createdAt", KeyPath = "createdAt", Auto = false, Unique = false },
+            new IndexSpec { Name = "messageId", KeyPath = "messageId", Auto = false, Unique = false }
+        }
+    });
+});
 
+builder.Services.AddScoped<MessageStorageService>();
+builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<UserStateService>();
+builder.Services.AddScoped<SignalRWorkerService>();
+builder.Services.AddScoped< ChatNavigationService>();
 
 await builder.Build().RunAsync();

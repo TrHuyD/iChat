@@ -20,7 +20,6 @@ public class JwtBearerPostConfigureOptions : IPostConfigureOptions<JwtBearerOpti
     {
         var publicKey = _jwtService.GetPublicJwk();
 
-        
         if (publicKey == null)
         {
             _logger.LogError("Public JWT key is null. Authentication configuration may fail.");
@@ -38,21 +37,32 @@ public class JwtBearerPostConfigureOptions : IPostConfigureOptions<JwtBearerOpti
 
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Cookies["access_token"];
+                var path = context.HttpContext.Request.Path;
+                _logger.LogInformation($"Received SignalR access_token: {accessToken}/{path}" );
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/api/chathub"))
+                {
+                  
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            },
             OnAuthenticationFailed = context =>
             {
-               
-                _logger.LogError(context.Exception,
-                    "JWT Authentication Failed: {ExceptionMessage}",
+                _logger.LogWarning(context.Exception,
+                    "JWT Authentication Failed: {Message}",
                     context.Exception?.Message);
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
-                // Log token validation success
-                _logger.LogInformation("JWT token validated successfully");
+                _logger.LogInformation("JWT token validated successfully.");
                 return Task.CompletedTask;
             }
         };
     }
 }
-

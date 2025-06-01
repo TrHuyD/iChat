@@ -1,10 +1,12 @@
 ﻿using iChat.BackEnd.Models.User.CassandraResults;
 using iChat.BackEnd.Models.User.MessageRequests;
+using iChat.DTOs.Shared;
+using iChat.DTOs.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.ChatServers
 {
     public interface IChatSendMessageService
     {
-        Task<bool> SendTextMessageAsync(MessageRequest request);
+        Task<OperationResultT<ChatMessageDto>> SendTextMessageAsync(MessageRequest request);
     }
 }

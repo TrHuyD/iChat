@@ -15,10 +15,10 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
         {
             _service = redisService;
         }
-        public async Task<bool> UploadMessageAsync(long messageId, MessageRequest message)
+        public async Task<bool> UploadMessageAsync(long messageId, ChatMessageDto message)
         {
             var db = _service.GetDatabase();
-            var channelId = message.ReceiveChannelId;
+            var channelId = message.RoomId;
             var json = JsonConvert.SerializeObject(message);
             var ttlSeconds = 1200;
 
@@ -40,7 +40,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
             var prepared = LuaScript.Prepare(script);
             var result = (int)(long)(await db.ScriptEvaluateAsync(prepared, new
             {
-                KEYS = new RedisKey[] { channelId },
+                KEYS = new RedisKey[] { channelId.ToString() },
                 ARGV = new RedisValue[] { json, messageId, ttlSeconds }
             }));
 
@@ -66,7 +66,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
                     Content = string.Empty,
                     ContentMedia = string.Empty,
                     MessageType = -1,
-                    CreatedAt = DateTime.UnixEpoch,
+                    CreatedAt = DateTimeOffset.Now,
                     SenderId = -1,
                 };
 

@@ -39,7 +39,7 @@ public class JwtService
         };
         if(roles!=null)
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-        var expires= DateTime.UtcNow.AddMinutes(_jwtOptions.ExpireMinutes);
+        var expires= DateTime.Now.AddMinutes(_jwtOptions.ExpireMinutes);
         var token = new JwtSecurityToken(
             issuer: _jwtOptions.Issuer,
             audience: _jwtOptions.Audience,
@@ -48,20 +48,21 @@ public class JwtService
             signingCredentials: _signingCredentials
         );
 
-        return new TokenResponse( new JwtSecurityTokenHandler().WriteToken(token),expires);
+        return new TokenResponse( new JwtSecurityTokenHandler().WriteToken(token),expires.AddMinutes(-1));
     }
-    //public TokenResponse GrantToken(string userId, HttpContext httpContext)
-    //{
-    //    var token = GenerateAccessToken(userId);
-    //    var cookieOptions = new CookieOptions
-    //    {
-    //        HttpOnly = false,
-    //        Secure = true,
-    //        SameSite = SameSiteMode.None,
-    //        //Domain = _domainOptions.CookieDomain
-    //    };
-    //    httpContext.Response.Cookies.Append("access_token", token, cookieOptions);
-    //}
+    public void AssignToken(TokenResponse token, HttpContext httpContext)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = false,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Domain = _domainOptions.CookieDomain,
+            Path= "/api/chathub",
+            Expires = token.ExpireTime,
+        };
+        httpContext.Response.Cookies.Append("access_token", token.AccessToken, cookieOptions);
+    }
     public TokenValidationParameters GetParam(bool validateLifetime)
     {
         return new TokenValidationParameters

@@ -4,10 +4,6 @@ using Microsoft.AspNetCore.Components;
 using System.Net.Http.Json;
 
 
-#if DEBUG
-using iChat.Client.DTOs.DEV;
-using Microsoft.JSInterop;
-#endif
 
 namespace iChat.Client.Services.Auth
 {
@@ -17,21 +13,11 @@ namespace iChat.Client.Services.Auth
         private readonly NavigationManager _navigation;
 
 
-#if DEBUG
-        private readonly IJSRuntime _iJS;
-        public JwtAuthHandler(TokenProvider tokenProvider, NavigationManager navigation, IJSRuntime iJS)
-        {
-            _tokenProvider = tokenProvider;
-            _navigation = navigation;
-            _iJS = iJS;
-        }
-#else
         public JwtAuthHandler(TokenProvider tokenProvider, NavigationManager navigation)
         {
             _tokenProvider = tokenProvider;
             _navigation = navigation;
         }
-#endif
 
         public async Task<HttpResponseMessage> SendAuthAsync(
             HttpRequestMessage request,
@@ -42,7 +28,7 @@ namespace iChat.Client.Services.Auth
 #if DEBUG
             request.RequestUri = new Uri("https://localhost:6051" + request.RequestUri);
 #endif
-            var token = _tokenProvider.AccessToken;
+            
             if(!browser_cache)
             {
                 request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue
@@ -54,6 +40,7 @@ namespace iChat.Client.Services.Auth
                 request.Headers.Pragma.ParseAdd("no-cache");
                 request.Headers.IfModifiedSince = DateTimeOffset.UtcNow;
             }
+            var token = await _tokenProvider.GetToken();
             if (!string.IsNullOrWhiteSpace(token))
             {
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -77,31 +64,18 @@ namespace iChat.Client.Services.Auth
                     return response;
             }
 
-            // Token missing or unauthorized
-#if DEBUG
-            var jsResponse = await _iJS.InvokeAsync<JsFetchResponse>("fetchWithCredentials", "https://localhost:6051/api/Auth/refreshtoken", null);
-            var refreshResponse = jsResponse.ToHttpResponseMessage();
+            //// Token missing or unauthorized
+            //var reset_token = await _tokenProvider.RetrieveNewToken();
+            //if (reset_token)
+            //{
 
-#else
-            var refreshRequest = new HttpRequestMessage(HttpMethod.Get, "/api/Auth/refreshtoken");
-            var refreshResponse = await base.SendAsync(refreshRequest, cancellationToken);
-#endif
-            if (refreshResponse.IsSuccessStatusCode)
-            {
-                var newToken = await refreshResponse.Content.ReadFromJsonAsync<TokenResponse>();
-                _tokenProvider.SetToken(newToken!.AccessToken);
+            //    request.Headers.Authorization =
+            //        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _tokenProvider.AccessToken);
 
-                request.Headers.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", newToken.AccessToken);
+            //    return await base.SendAsync(request, cancellationToken);
+            //}
 
-                return await base.SendAsync(request, cancellationToken);
-            }
-
-            _tokenProvider.ClearToken();
-            if (forceRedirectToLogin)
-                _navigation.NavigateTo("/login", forceLoad: false);
-
-            return new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized)
+            return new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
             {
                 RequestMessage = request,
                 Content = new StringContent("{\"error\": \"Token refresh failed\"}")

@@ -35,7 +35,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
                 return -1;
             }
         }
-        public async Task CreateServerAsync(string serverName, long adminUserId)
+        public async Task<string> CreateServerAsync(string serverName, long adminUserId)
         {
             var serverId = _serverIdGen.GenerateId();
             var channelId = _channelIdGen.GenerateId();
@@ -57,6 +57,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
             {
                 Console.WriteLine($"Error creating server: {ex.Message}");
             }
+            return serverId.ToString();
         }
 
     }

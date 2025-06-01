@@ -1,4 +1,5 @@
-﻿using iChat.BackEnd.Models.User;
+﻿using iChat.BackEnd.Models.Helpers;
+using iChat.BackEnd.Models.User;
 using iChat.Data.EF;
 using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Auth;
@@ -35,6 +36,9 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
             _refreshTokenService.RefreshIfNeeded(refreshToken, _context);
 
             var accesstoken = _accessKeyService.GenerateAccessToken(refreshToken.User.Id.ToString());
+            _accessKeyService.AssignToken(accesstoken, _context);
+
+
             return OperationResultT<TokenResponse>.Ok(accesstoken);
 
         }

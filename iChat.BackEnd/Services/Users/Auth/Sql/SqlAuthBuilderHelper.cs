@@ -1,4 +1,5 @@
 ﻿using iChat.BackEnd.Models.Helpers;
+using iChat.BackEnd.Services.Users.ChatServers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -10,7 +11,8 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
     {
         public void AddService(WebApplicationBuilder builder)
         {
-            
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
             builder.Services.Configure<DomainOptions>(builder.Configuration.GetSection("DomainOptions"));
             builder.Services.Configure<RefreshTokenOptions>(builder.Configuration.GetSection("RefreshToken"));
             var jwtOptCol = builder.Configuration.GetSection("Jwt"); var jwtOptions = jwtOptCol.Get<JwtOptions>();
@@ -21,41 +23,22 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
             builder.Services.AddTransient<ILoginService,SqlLoginService>();
             builder.Services.AddTransient<IRegisterService, CreateUserService>();
             builder.Services.AddSingleton<IPostConfigureOptions<JwtBearerOptions>, JwtBearerPostConfigureOptions>();
+
+            builder.Services.AddSignalR()
+            .AddJsonProtocol()
+            .AddHubOptions<ChatHub>(options =>
+            {
+                options.EnableDetailedErrors = true;
+                options.ClientTimeoutInterval = TimeSpan.FromMinutes(1);
+            });
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(options =>
-            {
-                var jwtService = builder.Services.BuildServiceProvider().GetRequiredService<JwtService>();
-                var publicKey = jwtService.GetPublicJwk();
+             .AddJwtBearer();
 
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = publicKey,
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
-                };
-
-                options.Events = new JwtBearerEvents
-                {
-                    OnAuthenticationFailed = context =>
-                    {
-                        // Logging logic
-                        return Task.CompletedTask;
-                    },
-                    OnTokenValidated = context =>
-                    {
-                        // Logging logic
-                        return Task.CompletedTask;
-                    }
-                };
-            });
 
         }
     }

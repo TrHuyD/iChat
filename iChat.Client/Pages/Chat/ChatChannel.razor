@@ -1,0 +1,260 @@
+﻿@page "/chat/{RoomId}"
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using iChat.Client.Services.UserServices.ChatService
+@using iChat.DTOs.Users.Messages
+@inject SignalRWorkerService SignalRService
+@inject MessageStorageService MessageStorage
+@inject UserStateService _userInfo
+@implements IDisposable
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h3>Chat Room @RoomId</h3>
+        <div class="connection-status">
+            <span class="@_connectionStatusClass">@_connectionStatus</span>
+        </div>
+    </div>
+
+    <div class="messages-container" @ref="_messagesContainer">
+        @foreach (var message in _messages)
+        {
+            <div class="message @(message.SenderId == _currentUserId ? "sent" : "received")">
+                <div class="message-content">@message.Content</div>
+                <div class="message-time">@message.CreatedAt.DateTime</div>
+            </div>
+        }
+    </div>
+
+    <div class="message-input">
+        <input type="text" @bind="_newMessage" @bind:event="oninput"
+        placeholder="Type your message..." @onkeypress="HandleKeyPress" />
+        <button @onclick="SendMessage" disabled="@string.IsNullOrEmpty(_newMessage)">Send</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string RoomId { get; set; }
+    [Inject] private IJSRuntime JSRuntime { get; set; }
+    [Inject] private NavigationManager Navigation { get; set; }
+
+    private List<ChatMessageDto> _messages = new();
+    private string _newMessage = string.Empty;
+    private ElementReference _messagesContainer;
+    private string _connectionStatus = "Disconnected";
+    private string _connectionStatusClass = "disconnected";
+    private long _currentUserId = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load messages from local storage
+        _messages = await MessageStorage.GetMessagesAsync(RoomId);
+
+        // Initialize SignalR
+        SignalRService.OnMessageReceived += HandleNewMessage;
+        SignalRService.OnConnected += UpdateConnectedStatus;
+        SignalRService.OnDisconnected += UpdateDisconnectedStatus;
+        SignalRService.OnReconnecting += UpdateReconnectingStatus;
+        SignalRService.OnReconnected += UpdateReconnectedStatus;
+        _currentUserId = _userInfo.GetUserId();
+        try
+        {
+            await SignalRService.InitializeAsync();
+            await SignalRService.JoinRoomAsync(RoomId);
+     
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error initializing SignalR: {ex.Message}");
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await JSRuntime.InvokeVoidAsync("signalRInterop.scrollToBottom", _messagesContainer);
+    }
+
+    private void HandleNewMessage(string messageJson)
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString
+        };
+
+        ChatMessageDto message = JsonSerializer.Deserialize<ChatMessageDto>(messageJson, options);
+
+        Console.WriteLine($"Received message: {message.Content} from {message.SenderId} at {message.CreatedAt}");
+        if (message != null)
+        {
+            _messages.Add(message);
+            _ = MessageStorage.StoreMessageAsync(RoomId, message);
+            InvokeAsync(StateHasChanged);
+            _ = ScrollToBottom();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_newMessage)) return;
+
+        var message = new ChatMessageDto
+            {
+           //     Id = DateTime.Now.Ticks,
+                Content = _newMessage,
+                CreatedAt = DateTime.Now,
+                SenderId = _currentUserId,
+                MessageType = 1 // Text message
+            };
+
+        try
+        {
+            await SignalRService.SendMessageAsync(RoomId, message);
+            _newMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error sending message: {ex.Message}");
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private void UpdateConnectedStatus()
+    {
+        _connectionStatus = "Connected";
+        _connectionStatusClass = "connected";
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateDisconnectedStatus()
+    {
+        _connectionStatus = "Disconnected";
+        _connectionStatusClass = "disconnected";
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateReconnectingStatus()
+    {
+        _connectionStatus = "Reconnecting...";
+        _connectionStatusClass = "reconnecting";
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateReconnectedStatus()
+    {
+        _connectionStatus = "Connected";
+        _connectionStatusClass = "connected";
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        SignalRService.OnMessageReceived -= HandleNewMessage;
+        SignalRService.OnConnected -= UpdateConnectedStatus;
+        SignalRService.OnDisconnected -= UpdateDisconnectedStatus;
+        SignalRService.OnReconnecting -= UpdateReconnectingStatus;
+        SignalRService.OnReconnected -= UpdateReconnectedStatus;
+
+        _ = SignalRService.LeaveRoomAsync(RoomId);
+    }
+}
+
+<style>
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        max-width: 800px;
+        margin: 0 auto;
+        border: 1px solid #ddd;
+    }
+
+    .chat-header {
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .messages-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+    }
+
+    .message {
+        margin: 5px 0;
+        padding: 8px 12px;
+        border-radius: 15px;
+        max-width: 70%;
+    }
+
+    .message.sent {
+        background-color: #007bff;
+        color: white;
+        margin-left: auto;
+    }
+
+    .message.received {
+        background-color: #e9ecef;
+        margin-right: auto;
+    }
+
+    .message-time {
+        font-size: 0.8em;
+        opacity: 0.7;
+        text-align: right;
+    }
+
+    .message-input {
+        display: flex;
+        padding: 10px;
+        border-top: 1px solid #ddd;
+    }
+
+    .message-input input {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-right: 8px;
+    }
+
+    .connection-status span {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+
+    .connected {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .reconnecting {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+</style>

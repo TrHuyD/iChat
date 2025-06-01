@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace iChat.DTOs.Users
 {
-    class UserCompleteDto
+    public class UserCompleteDto
     {
      public   List<ChatServerDto> ChatServers { get; set; } 
      public UserProfileDto UserProfile { get; set; }

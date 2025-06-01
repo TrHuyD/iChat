@@ -4,39 +4,40 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 {
-    [Route("Chat")]
+    [Route("api/Chat")]
     [Authorize]
-    public class ChannelServerCreateController : Controller
+    [ApiController]
+    public class ChannelServerCreateController : ControllerBase
     {
         private readonly CreateChatService _service;
         public ChannelServerCreateController(CreateChatService service)
         {
             _service = service;
         }
-        [HttpGet("Create")]
-        public IActionResult Create()
-        {
-            return View();
-        }
+        //[HttpGet("Create")]
+        //public IActionResult Create()
+        //{
+        //    return View();
+        //}
         [HttpPost("Create")]
         public async Task<IActionResult> CreateServer(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
                 ModelState.AddModelError("Name", "Server name is required.");
-                return View();
+                return BadRequest(ModelState);
             }
 
             var userId = new UserClaimHelper(User).GetUserId();
-            await _service.CreateServerAsync(name, userId);
-            return RedirectToAction("Index", "ChatServer");
+            var serverid= await _service.CreateServerAsync(name, userId);
+            return Ok(serverid);
         }
-        [HttpGet("{id}/CreateChannel")]
-        public IActionResult CreateChannel(long id)
-        {
-            ViewData["ServerId"] = id;
-            return PartialView("_CreateChannel"); 
-        }
+        //[HttpGet("{id}/CreateChannel")]
+        //public IActionResult CreateChannel(long id)
+        //{
+        //    ViewData["ServerId"] = id;
+        //    return PartialView("_CreateChannel"); 
+        //}
 
         [HttpPost("{id}/CreateChannel")]
         public async Task<IActionResult> CreateChannel(long id, string name)

@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.Users.Auth;
 using iChat.Data.Entities.Users;
+using iChat.DTOs.Users;
 using iChat.ViewModels.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,7 +16,11 @@ public class UserService : IUserService
         _userManager = userManager;
     }
 
-    
+    public Task<UserCompleteDto?> GetUserCompleteInfoAsync(string userId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<UserProfileDto?> GetUserProfileAsync(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
@@ -25,7 +30,8 @@ public class UserService : IUserService
         return new UserProfileDto
         {
             Name = user.Name,
-            //AvatarUrl = $"/profile?avatarid={user.Id}"
+            Id = user.Id,
+            AvatarUrl = $"https://cdn.discordapp.com/embed/avatars/index.png"
         };
     }
 }

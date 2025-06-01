@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Models.Helpers.CassandraOptionss;
 using iChat.DTOs.Users.Messages;
+using NRedisStack.DataTypes;
 using ISession = Cassandra.ISession;
 namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
 {
@@ -33,7 +34,7 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
                     MessageType = row.GetValue<short>("message_type"),
                     Content = row.GetValue<string>("text_content") ?? string.Empty,
                     ContentMedia = row.GetValue<string>("media_content") ?? string.Empty,
-                    CreatedAt = row.GetValue<DateTime>("timestamp")
+                    CreatedAt = new DateTimeOffset(row.GetValue<DateTime>("timestamp"), TimeSpan.Zero)//row.GetValue<DateTime>("timestamp")
                 });
             }
 

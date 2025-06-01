@@ -2,6 +2,9 @@
 using iChat.BackEnd.Services.Users.Infra.CassandraDB;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.BackEnd.Services.Validators.TextMessageValidators;
+using iChat.DTOs.Shared;
+using iChat.DTOs.Users.Messages;
+using iChat.ViewModels.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.ChatServers
 {
@@ -17,13 +20,24 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             _redis_dbservice = rWService;
         }
 
-        public async Task<bool> SendTextMessageAsync(MessageRequest request)
+        public async Task<OperationResultT<ChatMessageDto>> SendTextMessageAsync(MessageRequest request)
         {
             var cas_result= await _cas_dbservice.UploadMessageAsync(request);
             if(!cas_result.Success)
-                return false;
-            _ = Task.Run(() => _redis_dbservice.UploadMessageAsync(cas_result.MessageId,request));
-            return cas_result.Success;
+                return OperationResultT<ChatMessageDto>.Fail("400","");
+            
+            var rt = new ChatMessageDto
+            {
+                Id = cas_result.MessageId,
+                Content = request.TextContent,
+                ContentMedia = request.MediaContent,
+                MessageType = (int)MessageType.Text,
+                SenderId = long.Parse(request.SenderId),
+                RoomId = long.Parse(request.ReceiveChannelId),
+                CreatedAt=cas_result.CreatedAt
+            };
+            _ = Task.Run(() => _redis_dbservice.UploadMessageAsync(cas_result.MessageId, rt));
+            return OperationResultT<ChatMessageDto>.Ok(rt);
         }
     }
 

@@ -1,0 +1,26 @@
+﻿
+@using iChat.Client.Services.Auth
+@using iChat.Client.Services.UserServices
+@using iChat.Client.Services.UserServices.ChatService
+@inject LoginStateService LoginState
+@inject UserStateService UserState
+@inject NavigationManager _navigation
+@inject MessageStorageService MSS
+@ChildContent
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (await LoginState.CheckedIfLogin())
+        {
+            UserInfoLoader.TriggerReload();
+            _navigation.NavigateTo("/");
+        }
+        await MSS.ClearAllMessagesAsync();   
+    }
+    
+}

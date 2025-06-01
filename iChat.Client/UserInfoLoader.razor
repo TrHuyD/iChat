@@ -1,9 +1,13 @@
-﻿@inject UserStateService UserState
-
+﻿
+@using iChat.Client.Services.Auth
+@using iChat.Client.Services.UserServices
+@inject LoginStateService LoginState
+@inject UserStateService UserState
+@inject NavigationManager _navigation
 @if (!isReady)
 {
     <div class="user-info-loading">
-        <p>⚠️ Unable to load user info. Retrying in @cooldownSeconds seconds... (Attempt @attemptCount)</p>
+        <p>Loading user info...</p>
     </div>
 }
 else
@@ -14,66 +18,75 @@ else
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
 
-    private static bool _hasRun = false;
-    private bool isReady = false;
-    private int[] retryDelays = [1000, 1000, 1000];
+    private static bool isReady = false;
+    private int[] retryDelays = [1000, 3000, 5000];
     private int cooldownSeconds;
+    private const string AuthKey = "authState";
     private int attemptCount = 0;
 
     protected override async Task OnInitializedAsync()
     {
-        if (_hasRun)
+        await Load();
+    }
+    private async Task Load()
+    {
+        if (isReady)
         {
-            isReady = true;
             return;
         }
 
+        if (await LoginState.CheckedIfNotLogin())
+        {
+            _navigation.NavigateTo("/login");
+            return;
+        }
+        isReady = await TryLoadUserDataWithRetries();
+
         while (!isReady)
         {
+            cooldownSeconds = 30;
+            for (int s = cooldownSeconds; s > 0; s--)
+            {
+                cooldownSeconds = s;
+                StateHasChanged();
+                await Task.Delay(1000);
+            }
+
+            attemptCount++;
+            isReady = await TryLoadUserDataWithRetries();
+        }        
+    }
+    private async Task<bool> TryLoadUserDataWithRetries()
+    {
+
+        int[] retryDelays = [1000, 3000, 5000];
+        for (int i = 0; i < retryDelays.Length; i++)
+        {
+            attemptCount = i + 1;
             try
             {
-                var user = await UserState.GetUserAsync();
+                var package = await UserState.LoadAllDataAsync();
                 isReady = true;
-                _hasRun = true;
-                return;
+                return true;
             }
-            catch (HttpRequestException ex)
+            catch (HttpRequestException)
             {
-                if (attemptCount < retryDelays.Length)
+                cooldownSeconds = retryDelays[i] / 1000;
+                for (int s = cooldownSeconds; s > 0; s--)
                 {
-                    cooldownSeconds = retryDelays[attemptCount] / 1000;
-                    attemptCount++;
-
-                    while (cooldownSeconds > 0)
-                    {
-                        StateHasChanged();
-                        await Task.Delay(1000);
-                        cooldownSeconds--;
-                    }
-
-                    continue;
-                }
-
-                cooldownSeconds = 30;
-                while (true)
-                {
+                    cooldownSeconds = s;
                     StateHasChanged();
                     await Task.Delay(1000);
-                    cooldownSeconds--;
-                    if (cooldownSeconds == 0)
-                    {
-                        cooldownSeconds = 30;
-                        attemptCount++;
-                        break;
-                    }
                 }
             }
-
         }
+
+        return false;
     }
 
     public static void TriggerReload()
     {
-        _hasRun = false;
+        isReady = false;
+        
     }
 }

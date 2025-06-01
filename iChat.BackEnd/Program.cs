@@ -48,7 +48,7 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddControllers();
     builder.Services.AddCors(options =>
     {
-        options.AddDefaultPolicy(policy =>
+        options.AddPolicy("AllowClient", policy =>
         {
             policy.WithOrigins("https://localhost:7156")
                   .AllowAnyHeader()
@@ -211,12 +211,20 @@ app.Use(async (context, next) =>
         Console.WriteLine("API returned HTML — probably hit the Blazor fallback.");
     }
 });
-
+app.Use(async (context, next) =>
+{
+    if (context.WebSockets.IsWebSocketRequest)
+    {
+        Console.WriteLine("WebSocket request detected");
+    }
+    await next();
+});
 // --- Standard environment setup ---
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
+
 }
 else
 {
@@ -225,25 +233,24 @@ else
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
     });
-    app.UseCors(); // dev CORS
+    
 }
-
 // --- Static + Blazor setup ---
 app.UseStaticFiles();
 if (!app.Environment.IsDevelopment())
     app.UseBlazorFrameworkFiles();
 
 app.UseRouting();
-
+app.UseCors("AllowClient");
 app.UseAuthentication();
 app.UseAuthorization();
 
 
-// ✅ Map API controllers (will respect [Route("api/...")])
+// Map API controllers (will respect [Route("api/...")])
+app.MapHub<ChatHub>("/api/chathub");
 app.MapControllers();
-
-// ✅ Blazor fallback
-if(!app.Environment.IsDevelopment())
+// Blazor fallback
+if (!app.Environment.IsDevelopment())
 app.MapFallbackToFile("index.html");
 
 app.Run();

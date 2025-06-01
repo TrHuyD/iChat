@@ -1,6 +1,9 @@
 ﻿using iChat.BackEnd.Services.Users;
 using iChat.BackEnd.Services.Users.Auth;
+using iChat.BackEnd.Services.Users.ChatServers;
 using iChat.Data.Entities.Users;
+using iChat.DTOs.Users;
+using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -29,7 +32,29 @@ namespace iChat.BackEnd.Controllers
             if (userProfile == null)
                 return NotFound();
 
-            return Ok(userProfile); 
+            return Ok(userProfile);
+        }
+        [HttpGet("CompleteInfo")]
+        [Authorize]
+        public async Task<IActionResult> GetCompleteInfo([FromServices]ServerListService serverListService )
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userProfile = await _userService.GetUserProfileAsync(userId);
+            var userServerList = await serverListService.GetServerList(userId);
+            List<ChatServerDto> chatServerDtos = new List<ChatServerDto>();
+            foreach( var i in userServerList)
+            {
+                chatServerDtos.Add(new ChatServerDto { Id = i,Name=i });
+            }
+            var package = new UserCompleteDto
+            {
+                UserProfile = userProfile,
+                ChatServers = chatServerDtos
+            };
+            if (package == null)
+                return NotFound();
+            return Ok(package);
         }
     }
+
 }

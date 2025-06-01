@@ -28,8 +28,8 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
                 throw new ArgumentException("SenderId are required.");
 
             var messageId = idGen.GenerateId();
-            
-            var timestamp = DateTime.UtcNow;
+            var offsettimestamp = DateTimeOffset.Now;
+            var timestamp = offsettimestamp.DateTime;
 
            
 
@@ -49,7 +49,7 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
             );
 
             await session.ExecuteAsync(boundStatement);
-            return new CassMessageWriteResult { Success = true, MessageId = messageId};
+            return new CassMessageWriteResult { Success = true, MessageId = messageId,CreatedAt  =offsettimestamp};
         }
     }
 }

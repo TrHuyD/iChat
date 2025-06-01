@@ -36,7 +36,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
                 MediaContent = request.MediaContent,
             };
             var result = await _writeService.SendTextMessageAsync(r);
-            if (result)
+            if (result.Success)
             {
                 return Ok("Message sent successfully.");
             }
