@@ -57,6 +57,27 @@ window.signalRInterop = {
             }
         };
     },
+    setupInfiniteScroll: function (element, dotNetRef) {
+        element.addEventListener('scroll', async function () {
+            const scrollInfo = {
+                ScrollTop: element.scrollTop,
+                ScrollHeight: element.scrollHeight,
+                ClientHeight: element.clientHeight
+            };
+
+            if (element.scrollTop < 100) {
+                await dotNetRef.invokeMethodAsync('LoadMoreMessages');
+            }
+        });
+    },
+    getScrollInfo: function (element) {
+        return {
+            ScrollTop: element.scrollTop,
+            ScrollHeight: element.scrollHeight,
+            ClientHeight: element.clientHeight,
+            IsNearTop: element.scrollTop < 100
+        };
+    },
     scrollToBottom: function (element) {
         if (element) {
             element.scrollTop = element.scrollHeight;

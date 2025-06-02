@@ -86,7 +86,15 @@ namespace iChat.Client.Services.UserServices.ChatService
         {
             OnReconnected?.Invoke();
         }
+        public async Task<List<ChatMessageDto>> GetMessageHistoryAsync(string roomId, long? beforeMessageId = null)
+        {
+            if (!_initialized) throw new InvalidOperationException("Worker not initialized");
 
+            return await _worker.InvokeAsync<List<ChatMessageDto>>(
+                "getMessageHistory",
+                roomId,
+                beforeMessageId);
+        }
         public async ValueTask DisposeAsync()
         {
             if (_worker != null)
