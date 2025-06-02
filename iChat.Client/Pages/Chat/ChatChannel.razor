@@ -82,7 +82,7 @@
         await JSRuntime.InvokeVoidAsync("signalRInterop.scrollToBottom", _messagesContainer);
     }
 
-    private void HandleNewMessage(string messageJson)
+    private void HandleNewMessage(string messageJson,string isMain)
     {
         var options = new JsonSerializerOptions
         {
@@ -96,6 +96,7 @@
         if (message != null)
         {
             _messages.Add(message);
+            if(isMain=="true")
             _ = MessageStorage.StoreMessageAsync(RoomId, message);
             InvokeAsync(StateHasChanged);
             _ = ScrollToBottom();

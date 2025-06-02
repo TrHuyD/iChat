@@ -9,7 +9,7 @@ namespace iChat.Client.Services.UserServices.ChatService
     {
         private readonly IndexedDBManager _dbManager;
         //private readonly UserStateService _user;
-
+        
         public MessageStorageService(IndexedDBManager dbManager)
         {
             _dbManager = dbManager;
@@ -40,6 +40,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         {
             try
             {
+                await _dbManager.OpenDb();
                 await _dbManager.ClearStore("Messages");
             }
             catch (Exception ex)
@@ -68,7 +69,7 @@ namespace iChat.Client.Services.UserServices.ChatService
                         Content = m.Content,
                         ContentMedia = m.ContentMedia,
                         MessageType = m.MessageType,
-                        CreatedAt = new DateTimeOffset(m.CreatedAt, TimeSpan.Zero),
+                        CreatedAt = m.CreatedAt.ToLocalTime(),
                         SenderId = m.SenderId,
                         RoomId = long.Parse(roomId)
                     })
@@ -126,6 +127,14 @@ namespace iChat.Client.Services.UserServices.ChatService
                 Console.WriteLine($"Error counting messages: {ex.Message}");
                 return 0;
             }
+        }
+        private bool ranOnce = false;
+        public async Task Initial()
+        {
+            if (ranOnce)
+                return;
+            ranOnce = true;
+            await _dbManager.OpenDb();
         }
 
         public class IndexedMessage

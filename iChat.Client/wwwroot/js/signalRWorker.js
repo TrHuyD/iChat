@@ -9,7 +9,7 @@ window.signalRInterop = {
 
             switch (action) {
                 case 'MESSAGE_RECEIVED':
-                    dotNetRef.invokeMethodAsync('HandleMessageReceived', JSON.stringify(data));
+                    dotNetRef.invokeMethodAsync('HandleMessageReceived', JSON.stringify(data), event.data.isMain.toString());
                     break;
                 case 'SIGNALR_CONNECTED':
                     dotNetRef.invokeMethodAsync('HandleConnected');

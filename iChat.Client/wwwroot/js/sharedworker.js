@@ -240,14 +240,16 @@ function initSignalR(initiatingPort = null) {
         if (roomSubscriptions.has(roomId)) {
             const deadPorts = new Set();
             const roomSubs = roomSubscriptions.get(roomId);
-
+            let count = 0;
             roomSubs.forEach(port => {
                 try {
                     if (port && connectedPorts.has(port)) {
                         port.postMessage({
                             action: 'MESSAGE_RECEIVED',
-                            data: message
+                            data: message,
+                            isMain:count++==0
                         });
+
                     } else {
                         deadPorts.add(port);
                     }

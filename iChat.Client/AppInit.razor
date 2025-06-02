@@ -1,0 +1,19 @@
+﻿
+@using iChat.Client.Services.Auth
+@using iChat.Client.Services.UserServices
+@using iChat.Client.Services.UserServices.ChatService
+
+@inject MessageStorageService MSS
+@ChildContent
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await MSS.Initial();
+    }
+    
+}

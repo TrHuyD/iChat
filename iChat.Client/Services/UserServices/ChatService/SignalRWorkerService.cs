@@ -12,7 +12,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         private IJSObjectReference _worker;
         private bool _initialized = false;
 
-        public event Action<string> OnMessageReceived;
+        public event Action<string,string> OnMessageReceived;
         public event Action OnConnected;
         public event Action OnDisconnected;
         public event Action OnReconnecting;
@@ -58,9 +58,9 @@ namespace iChat.Client.Services.UserServices.ChatService
         }
 
         [JSInvokable]
-        public void HandleMessageReceived(string messageJson)
+        public void HandleMessageReceived(string messageJson,string isMain)
         {
-            OnMessageReceived?.Invoke(messageJson);
+            OnMessageReceived?.Invoke(messageJson,isMain);
         }
 
         [JSInvokable]

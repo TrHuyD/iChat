@@ -2,7 +2,7 @@
 @* <CascadingAuthenticationState> *@
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-
+        <AppInit>
         @if (routeData.PageType.IsDefined(typeof(AllowAnonymousAttribute), inherit: true))
         {
             <LoginRedirect>
@@ -15,7 +15,7 @@
                 <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
             </UserInfoLoader>
         }
-
+        </AppInit>
 
         </Found>
         <NotFound>
