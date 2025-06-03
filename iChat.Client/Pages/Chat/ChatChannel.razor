@@ -4,7 +4,6 @@
 @using iChat.Client.Services.UserServices.ChatService
 @using iChat.DTOs.Users.Messages
 @inject SignalRWorkerService SignalRService
-@inject MessageStorageService MessageStorage
 @inject UserStateService _userInfo
 @inject IJSRuntime JSRuntime
 @implements IDisposable
@@ -37,10 +36,9 @@
         <button @onclick="SendMessage" disabled="@string.IsNullOrEmpty(_newMessage)">Send</button>
     </div>
 </div>
-
 @code {
     [Parameter] public string RoomId { get; set; }
-    
+
     private List<ChatMessageDto> _messages = new();
     private string _newMessage = string.Empty;
     private ElementReference _messagesContainer;
@@ -52,25 +50,25 @@
     private long? _oldestMessageId = null;
     private bool _isFirstLoad = true;
     private bool _shouldScrollToBottom = false;
-    private DotNetObjectReference<ChatPage>? _dotNetRef;
+    private DotNetObjectReference<ChatChannel>? _dotNetRef;
 
     protected override async Task OnInitializedAsync()
     {
         _dotNetRef = DotNetObjectReference.Create(this);
         _currentUserId = _userInfo.GetUserId();
-        
+
         // Initialize SignalR
         SignalRService.OnMessageReceived += HandleNewMessage;
         SignalRService.OnConnected += UpdateConnectedStatus;
         SignalRService.OnDisconnected += UpdateDisconnectedStatus;
         SignalRService.OnReconnecting += UpdateReconnectingStatus;
         SignalRService.OnReconnected += UpdateReconnectedStatus;
-        
+
         try
         {
             await SignalRService.InitializeAsync();
             await SignalRService.JoinRoomAsync(RoomId);
-            
+
             // Load initial messages
             await LoadMessages();
         }
@@ -86,7 +84,7 @@
         {
             await JSRuntime.InvokeVoidAsync("signalRInterop.setupInfiniteScroll", _messagesContainer, _dotNetRef);
         }
-        
+
         if (_shouldScrollToBottom)
         {
             await ScrollToBottom();
@@ -97,50 +95,35 @@
     private async Task LoadMessages(bool loadOlder = false)
     {
         if (_isLoadingHistory) return;
-        
+
         _isLoadingHistory = true;
-        StateHasChanged(); // Show loading indicator
+        StateHasChanged();
 
         try
         {
-            // Load from local storage first
-            var storedMessages = await MessageStorage.GetMessagesAsync(RoomId);
-            
             if (loadOlder && _oldestMessageId.HasValue)
             {
-                // Load older messages from server
+                // Load older messages from server via SharedWorker
                 var olderMessages = await SignalRService.GetMessageHistoryAsync(RoomId, _oldestMessageId.Value);
-                
+
                 if (olderMessages.Count == 0)
                 {
                     _hasMoreHistory = false;
                     return;
                 }
-                
-                // Prepend to existing messages
+
                 _messages.InsertRange(0, olderMessages);
                 _oldestMessageId = olderMessages.First().Id;
-                
-                // Store new messages
-                await MessageStorage.StoreMessagesAsync(RoomId, olderMessages);
             }
             else if (!loadOlder)
             {
-                // Initial load
-                _messages = storedMessages;
-                
+                // Initial load - get all messages from server via SharedWorker
+                var initialMessages = await SignalRService.GetMessageHistoryAsync(RoomId);
+                _messages = initialMessages;
+
                 if (_messages.Count > 0)
                 {
                     _oldestMessageId = _messages.First().Id;
-                }
-                
-                // Load any new messages from server
-                var newMessages = await SignalRService.GetMessageHistoryAsync(RoomId);
-                _messages.AddRange(newMessages);
-                
-                if (newMessages.Count > 0)
-                {
-                    await MessageStorage.StoreMessagesAsync(RoomId, newMessages);
                     _shouldScrollToBottom = true;
                 }
             }
@@ -164,9 +147,8 @@
 
     private async Task HandleScroll()
     {
-        // Check if we're near the top of the scroll container
         var scrollInfo = await JSRuntime.InvokeAsync<ScrollInfo>("signalRInterop.getScrollInfo", _messagesContainer);
-        
+
         if (scrollInfo.IsNearTop && !_isLoadingHistory && _hasMoreHistory)
         {
             await LoadMessages(loadOlder: true);
@@ -178,30 +160,25 @@
         await JSRuntime.InvokeVoidAsync("signalRInterop.scrollToBottom", _messagesContainer);
     }
 
-    private void HandleNewMessage(string messageJson, string isMain)
+    private void HandleNewMessage(string messageJson)
     {
         var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString
-        };
+            {
+                PropertyNameCaseInsensitive = true,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString
+            };
 
         var message = JsonSerializer.Deserialize<ChatMessageDto>(messageJson, options);
 
-        if (message != null)
+        if (message != null && message.RoomId.ToString() == RoomId)
         {
             _messages.Add(message);
-            
-            if (isMain == "true")
-            {
-                _ = MessageStorage.StoreMessageAsync(RoomId, message);
-            }
-            
+
             if (!_isFirstLoad)
             {
                 _shouldScrollToBottom = true;
             }
-            
+
             StateHasChanged();
         }
     }
@@ -211,10 +188,12 @@
         if (string.IsNullOrWhiteSpace(_newMessage)) return;
 
         var message = new ChatMessageDto
-        {
-            Content = _newMessage,
-            MessageType = 1 // Text message
-        };
+            {
+                Content = _newMessage,
+                MessageType = 1,
+                RoomId = long.Parse(RoomId),
+                SenderId = _currentUserId
+            };
 
         try
         {
@@ -226,6 +205,7 @@
             Console.Error.WriteLine($"Error sending message: {ex.Message}");
         }
     }
+
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {

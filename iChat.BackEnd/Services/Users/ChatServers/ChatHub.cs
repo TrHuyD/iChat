@@ -30,13 +30,13 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         public async Task JoinRoom(string groupName)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", "System", $"{Context.ConnectionId} joined {groupName}");
+   //         await Clients.Group(groupName).SendAsync("ReceiveMessage", "System", $"{Context.ConnectionId} joined {groupName}");
         }
 
         public async Task LeaveRoom(string groupName)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", "System", $"{Context.ConnectionId} left {groupName}");
+         //   await Clients.Group(groupName).SendAsync("ReceiveMessage", "System", $"{Context.ConnectionId} left {groupName}");
         }
 
         public async Task SendMessage(string roomId, ChatMessageDto message, [FromServices] IChatSendMessageService _writeService)
@@ -57,5 +57,18 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             _logger.LogInformation($"Message sent to room {roomId} by {Context.UserIdentifier}");
             await Clients.Group(roomId).SendAsync("ReceiveMessage", result.Value);
         }
+        public async Task<List<ChatMessageDto>> GetMessageHistory([FromServices] IChatReadMessageService _writeService,long roomId, long? beforeMessageId = null)
+        {
+            var rq = new UserGetRecentMessageRequest
+            {
+                UserId = new UserClaimHelper(Context.User).GetUserIdStr(),
+                ChannelId = roomId.ToString(),
+            };
+            var message = await _writeService.RetrieveRecentMessage(rq);
+            _logger.LogInformation($"Requesting message history for room {roomId} before message ID {beforeMessageId}");
+            return message; 
+        }
+        
+
     }
 }

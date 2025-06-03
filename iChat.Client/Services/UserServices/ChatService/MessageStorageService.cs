@@ -2,18 +2,34 @@
 using System.Text.Json.Serialization;
 using TG.Blazor.IndexedDB;
 using iChat.DTOs.Users.Messages;
+using Microsoft.JSInterop;
 
 namespace iChat.Client.Services.UserServices.ChatService
 {
-    public class MessageStorageService
+    public class MessageStorageService : IAsyncDisposable
     {
         private readonly IndexedDBManager _dbManager;
-        //private readonly UserStateService _user;
-        
-        public MessageStorageService(IndexedDBManager dbManager)
+        private readonly IJSRuntime _jsRuntime;
+        private DotNetObjectReference<MessageStorageService>? _dotNetRef;
+        private bool ranOnce = false;
+
+        public MessageStorageService(IndexedDBManager dbManager, IJSRuntime jsRuntime)
         {
             _dbManager = dbManager;
+            _jsRuntime = jsRuntime;
+            _dotNetRef = DotNetObjectReference.Create(this);
+        }
+
+        public async Task InitializeAsync()
+        {
+            if (ranOnce)
+                return;
+
+            ranOnce = true;
+            await _dbManager.OpenDb();
+
             
+          // await _jsRuntime.InvokeVoidAsync("registerMessageStorageInterop", _dotNetRef);
         }
 
         public async Task StoreMessageAsync(string roomId, ChatMessageDto message)
@@ -36,6 +52,13 @@ namespace iChat.Client.Services.UserServices.ChatService
 
             await _dbManager.AddRecord(record);
         }
+
+        public async Task StoreMessagesAsync(string roomId, List<ChatMessageDto> messages)
+        {
+            var tasks = messages.Select(message => StoreMessageAsync(roomId, message));
+            await Task.WhenAll(tasks);
+        }
+
         public async Task ClearAllMessagesAsync()
         {
             try
@@ -48,6 +71,7 @@ namespace iChat.Client.Services.UserServices.ChatService
                 Console.WriteLine($"Error clearing all messages: {ex.Message}");
             }
         }
+
         public async Task<List<ChatMessageDto>> GetMessagesAsync(string roomId, int limit = 100)
         {
             try
@@ -96,11 +120,10 @@ namespace iChat.Client.Services.UserServices.ChatService
 
                 if (messages == null) return;
 
-                foreach (var message in messages)
-                {
-                    // Correct way to delete a record by its primary key
-                    await _dbManager.DeleteRecord<string>("Messages", message.Id);
-                }
+                var tasks = messages.Select(message =>
+                    _dbManager.DeleteRecord<string>("Messages", message.Id));
+
+                await Task.WhenAll(tasks);
             }
             catch (Exception ex)
             {
@@ -128,39 +151,62 @@ namespace iChat.Client.Services.UserServices.ChatService
                 return 0;
             }
         }
-        private bool ranOnce = false;
-        public async Task Initial()
+
+        [JSInvokable]
+        public async Task StoreMessageAsyncFromJs(string roomId, JsonElement messageJson)
         {
-            if (ranOnce)
-                return;
-            ranOnce = true;
-            await _dbManager.OpenDb();
+            var message = JsonSerializer.Deserialize<ChatMessageDto>(messageJson.ToString()!);
+            if (message != null)
+            {
+                await StoreMessageAsync(roomId, message);
+            }
+        }
+
+        [JSInvokable]
+        public async Task StoreMessagesAsyncFromJs(string roomId, JsonElement messagesJson)
+        {
+            var messages = JsonSerializer.Deserialize<List<ChatMessageDto>>(messagesJson.ToString()!);
+            if (messages != null)
+            {
+                await StoreMessagesAsync(roomId, messages);
+            }
+        }
+
+        [JSInvokable]
+        public async Task DeleteMessagesInRoomAsyncFromJs(string roomId)
+        {
+            await ClearMessagesAsync(roomId);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            _dotNetRef?.Dispose();
         }
 
         public class IndexedMessage
         {
-            [System.Text.Json.Serialization.JsonPropertyName("id")]
+            [JsonPropertyName("id")]
             public string Id { get; set; }
 
-            [System.Text.Json.Serialization.JsonPropertyName("roomId")]
+            [JsonPropertyName("roomId")]
             public string RoomId { get; set; }
 
-            [System.Text.Json.Serialization.JsonPropertyName("messageId")]
+            [JsonPropertyName("messageId")]
             public long MessageId { get; set; }
 
-            [System.Text.Json.Serialization.JsonPropertyName("content")]
+            [JsonPropertyName("content")]
             public string Content { get; set; }
 
-            [System.Text.Json.Serialization.JsonPropertyName("contentMedia")]
+            [JsonPropertyName("contentMedia")]
             public string ContentMedia { get; set; }
 
-            [System.Text.Json.Serialization.JsonPropertyName("messageType")]
+            [JsonPropertyName("messageType")]
             public int MessageType { get; set; }
 
-            [System.Text.Json.Serialization.JsonPropertyName("createdAt")]
+            [JsonPropertyName("createdAt")]
             public DateTime CreatedAt { get; set; }
 
-            [System.Text.Json.Serialization.JsonPropertyName("senderId")]
+            [JsonPropertyName("senderId")]
             public long SenderId { get; set; }
         }
     }

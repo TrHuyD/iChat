@@ -12,7 +12,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         private IJSObjectReference _worker;
         private bool _initialized = false;
 
-        public event Action<string,string> OnMessageReceived;
+        public event Action<string> OnMessageReceived;
         public event Action OnConnected;
         public event Action OnDisconnected;
         public event Action OnReconnecting;
@@ -58,9 +58,9 @@ namespace iChat.Client.Services.UserServices.ChatService
         }
 
         [JSInvokable]
-        public void HandleMessageReceived(string messageJson,string isMain)
+        public void HandleMessageReceived(string messageJson)
         {
-            OnMessageReceived?.Invoke(messageJson,isMain);
+            OnMessageReceived?.Invoke(messageJson);
         }
 
         [JSInvokable]
@@ -90,11 +90,30 @@ namespace iChat.Client.Services.UserServices.ChatService
         {
             if (!_initialized) throw new InvalidOperationException("Worker not initialized");
 
-            return await _worker.InvokeAsync<List<ChatMessageDto>>(
+            
+                var result =await _worker.InvokeAsync<List<ChatMessageDto>>(
                 "getMessageHistory",
                 roomId,
                 beforeMessageId);
+            return result;
         }
+        [JSInvokable]
+        public void HandleMessageHistory(List<ChatMessageDto> messages)
+        {
+            OnMessageHistoryReceived?.Invoke(messages);
+        }
+
+        [JSInvokable]
+        public void HandleMessageHistoryError(string error)
+        {
+            Console.Error.WriteLine($"Error getting message history: {error}");
+            OnMessageHistoryReceived?.Invoke(new List<ChatMessageDto>());
+        }
+
+        public event Action<List<ChatMessageDto>> OnMessageHistoryReceived;
+
+
+
         public async ValueTask DisposeAsync()
         {
             if (_worker != null)

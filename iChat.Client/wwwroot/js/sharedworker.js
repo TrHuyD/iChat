@@ -1,87 +1,56 @@
 ﻿// sharedWorker.js
 console.warn("Worker starting");
 importScripts("https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js");
+importScripts("/js/messageStorage.js");
+importScripts("/js/sharedworkerSrc/connectionManager.js");
 
 let hubConnection;
-const roomSubscriptions = new Map(); // Map<roomId, Set<port>>
-const connectedPorts = new Set();
-const pendingRoomJoins = new Set(); // Track rooms waiting to be joined
-let heartbeatInterval;
-
+const messageStorage = new MessageStorageService();
+(async () => {
+    await messageStorage.initialize();
+})();
+let actionQueue = Promise.resolve();
 self.onconnect = function (e) {
-    const port = e.ports[0];
-    connectedPorts.add(port);
-
-    // Handle port disconnection
-    port.addEventListener('close', () => {
-        connectedPorts.delete(port);
-        cleanupPortSubscriptions(port);
-    });
+    const port = connectionManager.initializePort(e.ports[0]);
 
     port.onmessage = function (event) {
         const { action, data } = event.data;
 
-        switch (action) {
-            case 'INIT_SIGNALR':
-                initSignalR(port);
-                break;
-            case 'JOIN_ROOM':
-                handleJoinRoom(port, data.roomId);
-                break;
-            case 'LEAVE_ROOM':
-                handleLeaveRoom(port, data.roomId);
-                break;
-            case 'SEND_MESSAGE':
-                handleSendMessage(data.roomId, data.message);
-                break;
-            case 'HEARTBEAT':
-                handleHeartbeat(port);
-                break;
-        }
+        actionQueue = actionQueue.then(() => {
+            console.log(`[Queue] Executing ${action}`);
+            switch (action) {
+                case 'INIT_SIGNALR':
+                    return initSignalR(port); 
+                case 'JOIN_ROOM':
+                    return handleJoinRoom(port, data.roomId);
+                case 'LEAVE_ROOM':
+                    return handleLeaveRoom(port, data.roomId);
+                case 'SEND_MESSAGE':
+                    return handleSendMessage(data.roomId, data.message);
+                case 'HEARTBEAT':
+                    return connectionManager.handleHeartbeat(port); 
+                case 'GET_MESSAGE_HISTORY':
+                    return handleGetMessageHistory(port, data.roomId, data.beforeMessageId);
+            }
+        }).catch(err => {
+            console.error("Action failed:", err);
+        });
     };
-
-    port.start();
 };
 
-function cleanupPortSubscriptions(port) {
-    for (const [roomId, ports] of roomSubscriptions.entries()) {
-        if (ports.has(port)) {
-            ports.delete(port);
-            if (ports.size === 0) {
-                // Only leave if we're actually connected
-                if (hubConnection?.state === signalR.HubConnectionState.Connected) {
-                    hubConnection.invoke("LeaveRoom", roomId)
-                        .catch(err => console.error("LeaveRoom failed:", err));
-                }
-                roomSubscriptions.delete(roomId);
-            }
-        }
-    }
-    // Ensure port is removed from connectedPorts
-    connectedPorts.delete(port);
-}
-
 async function handleJoinRoom(port, roomId) {
-    // Initialize room subscription tracking
-    if (!roomSubscriptions.has(roomId)) {
-        roomSubscriptions.set(roomId, new Set());
-    }
-    roomSubscriptions.get(roomId).add(port);
+    const roomIdToJoin = connectionManager.addRoomSubscription(port, roomId);
 
-    // Only attempt to join if connection is established
     if (hubConnection?.state === signalR.HubConnectionState.Connected) {
         try {
-            await hubConnection.invoke("JoinRoom", roomId);
-            pendingRoomJoins.delete(roomId);
-            console.log(`Successfully joined room: ${roomId}`);
+            await hubConnection.invoke("JoinRoom", roomIdToJoin);
+            connectionManager.clearPendingRoomJoin(roomIdToJoin);
+            console.log(`Successfully joined room: ${roomIdToJoin}`);
         } catch (err) {
             console.error("JoinRoom failed:", err);
-            pendingRoomJoins.add(roomId); // Add to retry queue
         }
     } else {
-        console.warn(`Deferred joining room ${roomId} - connection not ready`);
-        pendingRoomJoins.add(roomId);
-        // Ensure connection is starting if not already
+        console.warn(`Deferred joining room ${roomIdToJoin} - connection not ready`);
         if (!hubConnection || hubConnection.state === signalR.HubConnectionState.Disconnected) {
             initSignalR();
         }
@@ -89,111 +58,92 @@ async function handleJoinRoom(port, roomId) {
 }
 
 function handleLeaveRoom(port, roomId) {
-    if (roomSubscriptions.has(roomId)) {
-        const ports = roomSubscriptions.get(roomId);
-        ports.delete(port);
-
-        if (ports.size === 0) {
-            if (hubConnection?.state === signalR.HubConnectionState.Connected) {
-                hubConnection.invoke("LeaveRoom", roomId)
-                    .catch(err => console.error("LeaveRoom failed:", err));
-            }
-            roomSubscriptions.delete(roomId);
-        }
+    const roomIdToLeave = connectionManager.removeRoomSubscription(port, roomId);
+    if (roomIdToLeave && hubConnection?.state === signalR.HubConnectionState.Connected) {
+        hubConnection.invoke("LeaveRoom", roomIdToLeave)
+            .catch(err => console.error("LeaveRoom failed:", err));
     }
 }
 
 async function handleSendMessage(roomId, message) {
-    // 1. Check connection state first
     if (!hubConnection || hubConnection.state !== signalR.HubConnectionState.Connected) {
         console.error("Cannot send message - connection not established");
         return;
     }
 
-    // 2. Safely check room subscriptions
-    const roomSubs = roomSubscriptions.get(roomId);
+    const roomSubs = connectionManager.roomSubscriptions.get(roomId);
     if (!roomSubs || roomSubs.size === 0) {
         console.error(`Cannot send to room ${roomId} - no active subscriptions`);
         return;
     }
 
-    // 3. Verify at least one port is still connected
-    let hasActiveSubscribers = false;
-    try {
-        roomSubs.forEach(port => {
-            if (connectedPorts.has(port)) {
-                hasActiveSubscribers = true;
-            }
-        });
-    } catch (e) {
-        console.error("Error checking subscribers:", e);
-        return;
-    }
-
-    if (!hasActiveSubscribers) {
-        console.error(`No active subscribers in room ${roomId}`);
-        return;
-    }
-
-    // 4. Send the message
     try {
         await hubConnection.invoke("SendMessage", roomId, message);
     } catch (err) {
         console.error("SendMessage failed:", err);
-        // Optionally notify ports about the failure
-        notifyPortsInRoom(roomId, {
+        connectionManager.notifyPortsInRoom(roomId, {
             action: 'MESSAGE_ERROR',
             data: `Failed to send message: ${err.message}`
         });
     }
 }
 
-// Helper function to notify all ports in a room
-function notifyPortsInRoom(roomId, message) {
-    const roomSubs = roomSubscriptions.get(roomId);
-    if (!roomSubs) return;
-
-    const deadPorts = new Set();
-
-    roomSubs.forEach(port => {
-        try {
-            // Double-check port is still connected
-            if (port && connectedPorts.has(port)) {
-                port.postMessage(message);
-            } else {
-                deadPorts.add(port);
-            }
-        } catch (e) {
-            console.error("Failed to notify port:", e);
-            deadPorts.add(port);
-        }
-    });
-
-    // Clean up dead ports
-    deadPorts.forEach(port => {
-        connectedPorts.delete(port);
-        roomSubs.delete(port);
-    });
-
-    // Remove empty room subscriptions
-    if (roomSubs.size === 0) {
-        roomSubscriptions.delete(roomId);
-    }
-}
-function handleHeartbeat(port) {
+async function handleGetMessageHistory(port, roomId, beforeMessageId) {
     try {
-        port.postMessage({ action: 'HEARTBEAT_RESPONSE' });
-    } catch (e) {
-        connectedPorts.delete(port);
-        cleanupPortSubscriptions(port);
+        await waitForSignalRConnectionReady();
+        // Always get from server first
+        const serverMessages = await hubConnection.invoke(
+            "GetMessageHistory",
+            Number(roomId),
+            beforeMessageId ? Number(beforeMessageId) : null
+        );
+
+        // Format messages to ensure proper types
+        const formattedMessages = serverMessages.map(msg => ({
+            id: Number(msg.id),
+            roomId: Number(msg.roomId),
+            content: msg.content,
+            contentMedia: msg.contentMedia || null,
+            messageType: Number(msg.messageType),
+            createdAt: msg.createdAt,
+            senderId: Number(msg.senderId),
+            // Add other required fields
+        }));
+
+        // Store in IndexedDB
+        if (formattedMessages.length > 0) {
+            await messageStorage.storeMessages(roomId, formattedMessages);
+        }
+
+        port.postMessage({
+            action: 'MESSAGE_HISTORY',
+            data: formattedMessages
+        });
+    } catch (err) {
+        console.error("Error getting message history:", err);
+
+        // Fallback to IndexedDB if server fails
+        try {
+            const localMessages = await messageStorage.getMessages(roomId);
+            port.postMessage({
+                action: 'MESSAGE_HISTORY',
+                data: localMessages
+            });
+        } catch (dbError) {
+            console.error("Error getting local messages:", dbError);
+            port.postMessage({
+                action: 'MESSAGE_HISTORY_ERROR',
+                data: err.toString()
+            });
+        }
     }
 }
 
 function initSignalR(initiatingPort = null) {
+    
     if (hubConnection) {
-        // If we already have a connection, just notify the initiating port
         if (initiatingPort) {
-            notifyPortAboutConnectionState(initiatingPort);
+            connectionManager.notifyPortAboutConnectionState(initiatingPort, hubConnection.state);
         }
         return;
     }
@@ -207,80 +157,45 @@ function initSignalR(initiatingPort = null) {
         .withAutomaticReconnect({
             nextRetryDelayInMilliseconds: retryContext => {
                 if (retryContext.elapsedMilliseconds < 60000) {
-                    return Math.random() * 2000 + 2000; // 2-4 seconds
+                    return Math.random() * 2000 + 2000;
                 }
-                return Math.random() * 5000 + 10000; // 10-15 seconds
+                return Math.random() * 5000 + 10000;
             }
         })
         .configureLogging(signalR.LogLevel.Warning)
         .build();
 
-    // In your heartbeat interval
-    heartbeatInterval = setInterval(() => {
-        const deadPorts = new Set();
+    connectionManager.setupHeartbeat();
 
-        connectedPorts.forEach(port => {
-            try {
-                port.postMessage({ action: 'HEARTBEAT_CHECK' });
-            } catch (e) {
-                deadPorts.add(port);
-            }
-        });
+    hubConnection.on("ReceiveMessage", async (message) => {
+        const roomId = String(message.roomId);
 
-        // Clean up dead ports
-        deadPorts.forEach(port => {
-            connectedPorts.delete(port);
-            cleanupPortSubscriptions(port);
-        });
-    }, 30000);
+        try {
 
-    // Message handler
-    hubConnection.on("ReceiveMessage", (message) => {
-        const roomId = '' + message.roomId;
-        if (roomSubscriptions.has(roomId)) {
-            const deadPorts = new Set();
-            const roomSubs = roomSubscriptions.get(roomId);
-            let count = 0;
-            roomSubs.forEach(port => {
-                try {
-                    if (port && connectedPorts.has(port)) {
-                        port.postMessage({
-                            action: 'MESSAGE_RECEIVED',
-                            data: message,
-                            isMain:count++==0
-                        });
-
-                    } else {
-                        deadPorts.add(port);
-                    }
-                } catch (e) {
-                    console.error("Message delivery failed:", e);
-                    deadPorts.add(port);
-                }
-            });
-
-            // Clean up dead ports
-            deadPorts.forEach(port => {
-                connectedPorts.delete(port);
-                roomSubs.delete(port);
-            });
+            await messageStorage.storeMessage(roomId, message);
+        } catch (e) {
+            console.error("Failed to store message:", e);
         }
+
+        connectionManager.notifyPortsInRoom(roomId, {
+            action: 'MESSAGE_RECEIVED',
+            data: message,
+        });
     });
 
-    // Connection state handlers
     hubConnection.onclose(() => {
-        notifyAllPorts({ action: 'SIGNALR_DISCONNECTED' });
+        connectionManager.notifyAllPorts({ action: 'SIGNALR_DISCONNECTED' });
     });
 
     hubConnection.onreconnecting(() => {
-        notifyAllPorts({ action: 'SIGNALR_RECONNECTING' });
+        connectionManager.notifyAllPorts({ action: 'SIGNALR_RECONNECTING' });
     });
 
     hubConnection.onreconnected(async (connectionId) => {
         console.log("Reconnected with ID:", connectionId);
-        // Rejoin all active rooms
         const rejoinPromises = [];
-        roomSubscriptions.forEach((_, roomId) => {
+
+        connectionManager.roomSubscriptions.forEach((_, roomId) => {
             rejoinPromises.push(
                 hubConnection.invoke("JoinRoom", roomId)
                     .catch(err => console.error("Rejoin failed:", err))
@@ -288,60 +203,45 @@ function initSignalR(initiatingPort = null) {
         });
 
         await Promise.all(rejoinPromises);
-        notifyAllPorts({ action: 'SIGNALR_RECONNECTED' });
+        connectionManager.notifyAllPorts({ action: 'SIGNALR_RECONNECTED' });
     });
 
-    // Start the connection
     hubConnection.start()
         .then(() => {
             console.log("SignalR connection established");
-            // Process any pending room joins
-            pendingRoomJoins.forEach(roomId => handleJoinRoom(null, roomId));
-            pendingRoomJoins.clear();
-            notifyAllPorts({ action: 'SIGNALR_CONNECTED' });
+            connectionManager.getPendingRoomJoins().forEach(roomId => handleJoinRoom(null, roomId));
+            connectionManager.notifyAllPorts({ action: 'SIGNALR_CONNECTED' });
         })
         .catch(err => {
             console.error("Connection failed:", err);
-            notifyAllPorts({
+            connectionManager.notifyAllPorts({
                 action: 'SIGNALR_ERROR',
                 data: err.toString()
             });
-            // Auto-retry after delay
             setTimeout(() => initSignalR(), 5000);
         });
 }
+function waitForSignalRConnectionReady(timeout = 10000) {
+    return new Promise((resolve, reject) => {
+        const start = Date.now();
 
-function notifyAllPorts(message) {
-    connectedPorts.forEach(port => {
-        try {
-            port.postMessage(message);
-        } catch (e) {
-            connectedPorts.delete(port);
-            cleanupPortSubscriptions(port);
+        function check() {
+            if (hubConnection && hubConnection.state === signalR.HubConnectionState.Connected) {
+                resolve();
+            } else if (Date.now() - start > timeout) {
+                reject(new Error("SignalR connection timeout"));
+            } else {
+                setTimeout(check, 20);
+            }
         }
+
+        check();
     });
-}
-
-function notifyPortAboutConnectionState(port) {
-    if (!hubConnection) {
-        port.postMessage({ action: 'SIGNALR_DISCONNECTED' });
-        return;
-    }
-
-    switch (hubConnection.state) {
-        case signalR.HubConnectionState.Connected:
-            port.postMessage({ action: 'SIGNALR_CONNECTED' });
-            break;
-        case signalR.HubConnectionState.Connecting:
-        case signalR.HubConnectionState.Reconnecting:
-            port.postMessage({ action: 'SIGNALR_RECONNECTING' });
-            break;
-        default:
-            port.postMessage({ action: 'SIGNALR_DISCONNECTED' });
-    }
 }
 
 self.addEventListener('error', (e) => {
     console.error("SharedWorker error:", e);
-    clearInterval(heartbeatInterval);
+    if (connectionManager.heartbeatInterval) {
+        clearInterval(connectionManager.heartbeatInterval);
+    }
 });
