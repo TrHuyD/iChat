@@ -4,5 +4,6 @@
     {
         public string UserId { get; set; }
         public string ChannelId { get; set; }
+        public long? LastMessageId { get; set; }
     }
 }

@@ -22,7 +22,7 @@ namespace iChat.BackEnd.Services.Users.Auth
         {
             var user = new AppUser
             {
-                Id = _idGen.GenerateId(),
+                Id = _idGen.GenerateId().Id,
                 UserName = request.UserName,
                 Email = request.Email,
                 Name = request.Name,

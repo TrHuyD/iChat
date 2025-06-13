@@ -8,11 +8,11 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
 {
     public class CassandraMessageWriteService
     {
-        private readonly SnowflakeService idGen;
+      //  private readonly SnowflakeService idGen;
         private ISession session;
-        public CassandraMessageWriteService(CasandraService _cs,SnowflakeService snowflakeService)
+        public CassandraMessageWriteService(CasandraService _cs)
         {
-            idGen = snowflakeService;
+          //  idGen = snowflakeService;
             session=_cs.GetSession();
         }
         /// <summary>
@@ -22,12 +22,12 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
         /// <param name="request"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public async Task<CassMessageWriteResult> UploadMessageAsync(MessageRequest request)
+        public async Task<CassMessageWriteResult> UploadMessageAsync(MessageRequest request,long messageId)
         {
             if (request.SenderId is null)
                 throw new ArgumentException("SenderId are required.");
 
-            var messageId = idGen.GenerateId();
+          //  var messageId = idGen.GenerateId();
             var offsettimestamp = DateTimeOffset.Now;
             var timestamp = offsettimestamp.DateTime;
 
@@ -49,7 +49,7 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
             );
 
             await session.ExecuteAsync(boundStatement);
-            return new CassMessageWriteResult { Success = true, MessageId = messageId,CreatedAt  =offsettimestamp};
+            return new CassMessageWriteResult { Success = true,CreatedAt  =offsettimestamp};
         }
     }
 }

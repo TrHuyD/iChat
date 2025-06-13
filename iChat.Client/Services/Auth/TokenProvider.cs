@@ -79,13 +79,14 @@ public TokenProvider(NavigationManager navigation)
         {
             if(string.IsNullOrWhiteSpace(AccessToken))
             {
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 6; i++)
                 {
                     var rt = await RetrieveNewToken();
                     switch (rt)
                     {
                         case RetrieveTokenResult.Unauthorized:
                             _navigation.NavigateTo("/login");
+                            throw new HttpRequestException("Fail to connect to Server", null, System.Net.HttpStatusCode.Unauthorized);
                             return;
                         case RetrieveTokenResult.Success:
                             return;

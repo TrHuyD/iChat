@@ -1,7 +1,18 @@
 ﻿window.signalRInterop = {
-    initialize: function (csSignalRServiceRef) {
+    initialize: async function (csSignalRServiceRef) {
         const worker = new SharedWorker('/js/sharedWorker.js');
         worker.port.start();
+
+        // Create a promise that resolves when the worker is ready
+        const workerReady = new Promise((resolve) => {
+            const readyHandler = (event) => {
+                if (event.data.action === 'WORKER_READY') {
+                    worker.port.removeEventListener('message', readyHandler);
+                    resolve();
+                }
+            };
+            worker.port.addEventListener('message', readyHandler);
+        });
 
         worker.port.onmessage = function (event) {
             const { action, data } = event.data;
@@ -33,6 +44,9 @@
                 case 'MESSAGE_HISTORY_ERROR':
                     csSignalRServiceRef.invokeMethodAsync('HandleMessageHistoryError', data);
                     break;
+                case 'WORKER_READY':
+                    // Handled by the workerReady promise
+                    break;
             }
         };
 
@@ -41,6 +55,8 @@
             worker.port.postMessage({ action, data });
         };
 
+        // Wait for the worker to be ready before initializing SignalR
+        await workerReady;
         sendToWorker('INIT_SIGNALR');
 
         return {
@@ -80,6 +96,7 @@
             }
         };
     },
+
 
     setupInfiniteScroll: function (element, dotNetRef) {
         element.addEventListener('scroll', async function () {

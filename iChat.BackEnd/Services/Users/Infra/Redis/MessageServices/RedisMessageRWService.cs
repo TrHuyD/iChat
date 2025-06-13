@@ -1,8 +1,10 @@
-﻿using iChat.BackEnd.Models.User.MessageRequests;
+﻿using Azure.Core;
+using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.Infra.Redis.Enums;
 using iChat.DTOs.Users.Messages;
 using Newtonsoft.Json;
 using StackExchange.Redis;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 
@@ -15,38 +17,51 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
         {
             _service = redisService;
         }
-        public async Task<bool> UploadMessageAsync(long messageId, ChatMessageDto message)
+        public async Task<bool> UploadMessageAsync(ChatMessageDto message)
         {
+            if (message == null)
+            {
+                return false;
+            }
+
             var db = _service.GetDatabase();
-            var channelId = message.RoomId;
+            var channelKey = (RedisKey)$"c:{message.RoomId}:m";
             var json = JsonConvert.SerializeObject(message);
             var ttlSeconds = 1200;
 
             var script = @"
-                local zset_key = 'c:' .. KEYS[1] .. ':m'
-                local json = ARGV[1]
-                local score = tonumber(ARGV[2])
-                local expire = tonumber(ARGV[3])
+        local zset_key = KEYS[1]
+        local json = ARGV[1]
+        local score = tonumber(ARGV[2])
+        local expire = tonumber(ARGV[3])
 
-                if redis.call('EXISTS', zset_key) == 1 then
-                    redis.call('ZADD', zset_key, score, json)
-                    redis.call('ZREMRANGEBYRANK', zset_key, 0, -41)
-                    redis.call('EXPIRE', zset_key, expire)
-                    return 1
-                else
-                    return 0
-                end";
+        if redis.call('EXISTS', zset_key) == 1 then
+            redis.call('ZADD', zset_key, score, json)
+            redis.call('ZREMRANGEBYRANK', zset_key, 0, -41)
+            redis.call('EXPIRE', zset_key, expire)
+            return 1
+        else
+            return 0
+        end";
 
-            var prepared = LuaScript.Prepare(script);
-            var result = (int)(long)(await db.ScriptEvaluateAsync(prepared, new
+            try
             {
-                KEYS = new RedisKey[] { channelId.ToString() },
-                ARGV = new RedisValue[] { json, messageId, ttlSeconds }
-            }));
+                var prepared = LuaScript.Prepare(script);
+                var result = (int)(long)(await db.ScriptEvaluateAsync(prepared, new
+                {
+                    KEYS = new RedisKey[] { channelKey },
+                    ARGV = new RedisValue[] { json, message.Id, ttlSeconds }  
+                }));
 
-            return result == 1;
+                return result == 1;
+            }
+            catch (Exception ex)
+            {
+                // Log the error appropriately
+                Console.WriteLine($"Error in UploadMessageAsync: {ex.Message}");
+                return false;
+            }
         }
-
         public async Task<bool> UploadMessage_Bulk(string channelId, List<ChatMessageDto> messages)
         {
             if (string.IsNullOrWhiteSpace(channelId) || messages == null)
@@ -90,19 +105,45 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
         }
 
 
-        public async Task<List<ChatMessageDto>> GetRecentMessage(string channelId)
+        public async Task<List<ChatMessageDto>> GetRecentMessage(string channelId,long? lastMessageId)
+        {
+
+            var db = _service.GetDatabase();
+            RedisValue[] rawMessages; 
+            if (lastMessageId is null || lastMessageId < 1000000000000000l)
+                 rawMessages = await db.SortedSetRangeByRankAsync(RedisVariableKey.GetRecentChatMessageKey(channelId), -40, -1) ;
+            else
+                rawMessages = await db.SortedSetRangeByScoreAsync(
+                RedisVariableKey.GetRecentChatMessageKey(channelId),
+                start:  (double)lastMessageId, 
+                stop: double.PositiveInfinity,
+                exclude: Exclude.Start, 
+                order: Order.Ascending
+            );
+
+            var messages = rawMessages
+                    .Select(m => JsonConvert.DeserializeObject<ChatMessageDto>(m))
+                    .ToList();
+
+            return messages;
+        }
+
+        public async Task<List<ChatMessageDto>> GetMessagesAfterId(string channelId, long afterSnowflakeId)
         {
             var db = _service.GetDatabase();
-            RedisValue[] rawMessages = await db.SortedSetRangeByRankAsync(RedisVariableKey.GetRecentChatMessageKey(channelId), -40, -1) ;
-            
-                //return new List<ChatMessageDto>();
+            RedisValue[] rawMessages = await db.SortedSetRangeByScoreAsync(
+                RedisVariableKey.GetRecentChatMessageKey(channelId),
+                start: afterSnowflakeId , 
+                stop: long.MaxValue,
+                exclude: Exclude.Start,
+                order: Order.Ascending
+            );
+
             var messages = rawMessages
                 .Select(m => JsonConvert.DeserializeObject<ChatMessageDto>(m))
                 .ToList();
 
             return messages;
         }
-
-
     }
 }

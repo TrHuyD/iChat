@@ -40,37 +40,24 @@ else
             _navigation.NavigateTo("/login");
             return;
         }
-        isReady = await TryLoadUserDataWithRetries();
-
-        while (!isReady)
-        {
-            cooldownSeconds = 30;
-            for (int s = cooldownSeconds; s > 0; s--)
-            {
-                cooldownSeconds = s;
-                StateHasChanged();
-                await Task.Delay(1000);
-            }
-
-            attemptCount++;
-            isReady = await TryLoadUserDataWithRetries();
-        }        
+        isReady = await TryLoadUserDataWithRetries();      
     }
     private async Task<bool> TryLoadUserDataWithRetries()
     {
 
-        int[] retryDelays = [1000, 3000, 5000];
+        int[] retryDelays = [1000, 1000,1000,1000,1000,1000,1000,1000,1000];
         for (int i = 0; i < retryDelays.Length; i++)
         {
             attemptCount = i + 1;
             try
             {
                 var package = await UserState.LoadAllDataAsync();
-                isReady = true;
                 return true;
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException e)
             {
+                if (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    return false;
                 cooldownSeconds = retryDelays[i] / 1000;
                 for (int s = cooldownSeconds; s > 0; s--)
                 {

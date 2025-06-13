@@ -1,4 +1,5 @@
-﻿// sharedWorker.js
+﻿
+// sharedWorker.js
 console.warn("Worker starting");
 importScripts("https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js");
 importScripts("/js/messageStorage.js");
@@ -6,37 +7,43 @@ importScripts("/js/sharedworkerSrc/connectionManager.js");
 
 let hubConnection;
 const messageStorage = new MessageStorageService();
-(async () => {
-    await messageStorage.initialize();
-})();
-let actionQueue = Promise.resolve();
+let actionQueue = Promise.resolve(); // Initialize actionQueue
+
 self.onconnect = function (e) {
     const port = connectionManager.initializePort(e.ports[0]);
+
+    // Notify that the worker is ready
+    port.postMessage({ action: 'WORKER_READY' });
 
     port.onmessage = function (event) {
         const { action, data } = event.data;
 
-        actionQueue = actionQueue.then(() => {
-            console.log(`[Queue] Executing ${action}`);
-            switch (action) {
-                case 'INIT_SIGNALR':
-                    return initSignalR(port); 
-                case 'JOIN_ROOM':
-                    return handleJoinRoom(port, data.roomId);
-                case 'LEAVE_ROOM':
-                    return handleLeaveRoom(port, data.roomId);
-                case 'SEND_MESSAGE':
-                    return handleSendMessage(data.roomId, data.message);
-                case 'HEARTBEAT':
-                    return connectionManager.handleHeartbeat(port); 
-                case 'GET_MESSAGE_HISTORY':
-                    return handleGetMessageHistory(port, data.roomId, data.beforeMessageId);
-            }
-        }).catch(err => {
-            console.error("Action failed:", err);
-        });
+        actionQueue = actionQueue
+            .then(() => messageStorage.initialize()) // Wait for indexedDB to be ready
+            .then(() => {
+                console.log(`[Queue] Executing ${action}`);
+                switch (action) {
+                    case 'INIT_SIGNALR':
+                        return initSignalR(port);
+                    case 'JOIN_ROOM':
+                        return handleJoinRoom(port, data.roomId);
+                    case 'LEAVE_ROOM':
+                        return handleLeaveRoom(port, data.roomId);
+                    case 'SEND_MESSAGE':
+                        return handleSendMessage(data.roomId, data.message);
+                    case 'HEARTBEAT':
+                        return connectionManager.handleHeartbeat(port);
+                    case 'GET_MESSAGE_HISTORY':
+                        return handleGetMessageHistory(port, data.roomId, data.beforeMessageId);
+                }
+            })
+            .catch(err => {
+                console.error("Action failed:", err);
+            });
     };
 };
+
+
 
 async function handleJoinRoom(port, roomId) {
     const roomIdToJoin = connectionManager.addRoomSubscription(port, roomId);
@@ -88,17 +95,27 @@ async function handleSendMessage(roomId, message) {
     }
 }
 
-async function handleGetMessageHistory(port, roomId, beforeMessageId) {
+async function handleGetMessageHistory(port, roomId, beforeMessageId = null) {
     try {
+        // Step 1: Get latest message from local IndexedDB if no ID is provided
+        if (!beforeMessageId) {
+            const localMessages = await messageStorage.getMessages(roomId, 1); // get latest 1 message
+            if (localMessages.length > 0) {
+                beforeMessageId = Number(localMessages[0].messageId);
+            }
+        }
+
+        // Step 2: Wait for SignalR to connect
         await waitForSignalRConnectionReady();
-        // Always get from server first
+
+        // Step 3: Fetch from server before that ID
         const serverMessages = await hubConnection.invoke(
             "GetMessageHistory",
             Number(roomId),
             beforeMessageId ? Number(beforeMessageId) : null
         );
 
-        // Format messages to ensure proper types
+        // Step 4: Normalize messages
         const formattedMessages = serverMessages.map(msg => ({
             id: Number(msg.id),
             roomId: Number(msg.roomId),
@@ -107,14 +124,14 @@ async function handleGetMessageHistory(port, roomId, beforeMessageId) {
             messageType: Number(msg.messageType),
             createdAt: msg.createdAt,
             senderId: Number(msg.senderId),
-            // Add other required fields
         }));
 
-        // Store in IndexedDB
+        // Step 5: Store in IndexedDB
         if (formattedMessages.length > 0) {
             await messageStorage.storeMessages(roomId, formattedMessages);
         }
 
+        // Step 6: Send messages back to client
         port.postMessage({
             action: 'MESSAGE_HISTORY',
             data: formattedMessages
@@ -122,7 +139,7 @@ async function handleGetMessageHistory(port, roomId, beforeMessageId) {
     } catch (err) {
         console.error("Error getting message history:", err);
 
-        // Fallback to IndexedDB if server fails
+        // Step 7: Fallback to existing local messages
         try {
             const localMessages = await messageStorage.getMessages(roomId);
             port.postMessage({
@@ -138,6 +155,7 @@ async function handleGetMessageHistory(port, roomId, beforeMessageId) {
         }
     }
 }
+
 
 function initSignalR(initiatingPort = null) {
     

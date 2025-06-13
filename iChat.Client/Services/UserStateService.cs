@@ -3,6 +3,7 @@ using iChat.Client.Services.UserServices;
 using iChat.Client.Services.UserServices.ChatService;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
+using System.Net;
 using System.Net.Http.Json;
 
 public class UserStateService
@@ -35,8 +36,9 @@ public class UserStateService
             HasLoadedUserData = true;
             return package;
         }
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            return null;
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized|| response.StatusCode==System.Net.HttpStatusCode.BadRequest)
+        {
+            throw new HttpRequestException(message: "is not Log in", inner: null, HttpStatusCode.Unauthorized); }
         throw new HttpRequestException(message: "Server no responding", inner: null, statusCode: System.Net.HttpStatusCode.InternalServerError);
     }
     public async Task<bool> LoadAllDataAsync()

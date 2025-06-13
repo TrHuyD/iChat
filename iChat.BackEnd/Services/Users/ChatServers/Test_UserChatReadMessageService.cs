@@ -27,8 +27,9 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         public async Task<List<ChatMessageDto>> RetrieveRecentMessage(UserGetRecentMessageRequest request)
         {
             var channelId = request.ChannelId;
+            
             return await _lockService.GetOrRenewWithLockAsync(
-                () => _redisService.GetRecentMessage(channelId),
+                () => _redisService.GetRecentMessage(channelId,request.LastMessageId),
                 async () => await _cassService.GetMessagesByChannelAsync(channelId) ?? throw new Exception("Failed to connect to _cassService"),
                 async data => await _redisService.UploadMessage_Bulk(channelId, data),
                 () => RedisVariableKey.GetRecentChatMessageKey_Lock(channelId),
@@ -36,6 +37,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
                 maxRetry: 3,
                 delayMs: 250
             );
+
         }
     }
 }

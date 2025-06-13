@@ -16,7 +16,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
         }
         public async Task<long> CreateChannelAsync(long serverId, string channelName, long adminUserId)
         {
-            var channelId = _channelIdGen.GenerateId();
+            var channelId = _channelIdGen.GenerateId().Id;
             var query = @"
                 MATCH (s:ChatServer {id: $serverId})
                 CREATE (c:Channel {id: $channelId, name: $channelName})
@@ -37,8 +37,8 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
         }
         public async Task<string> CreateServerAsync(string serverName, long adminUserId)
         {
-            var serverId = _serverIdGen.GenerateId();
-            var channelId = _channelIdGen.GenerateId();
+            var serverId = _serverIdGen.GenerateId().Id;
+            var channelId = _channelIdGen.GenerateId().Id;
 
             var query = @"
                 MATCH (u:User {id: $adminUserId})
