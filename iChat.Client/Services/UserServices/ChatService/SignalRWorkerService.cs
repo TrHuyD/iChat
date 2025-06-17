@@ -17,6 +17,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         public event Action OnDisconnected;
         public event Action OnReconnecting;
         public event Action OnReconnected;
+        public event Action<List<ChatMessageDto>> OnMessageHistoryReceived;
 
         public SignalRWorkerService(IJSRuntime jsRuntime)
         {
@@ -27,15 +28,10 @@ namespace iChat.Client.Services.UserServices.ChatService
         public async Task InitializeAsync()
         {
             if (_initialized) return;
+
             _worker = await _jsRuntime.InvokeAsync<IJSObjectReference>(
-                "eval", "window.signalRInterop");
+                "signalRInterop.initialize", _dotNetRef);
 
-            // Initialize the worker with .NET reference and token
-            var workerInstance = await _worker.InvokeAsync<IJSObjectReference>(
-                "initialize", _dotNetRef);
-
-            // Store the worker instance for later use
-            _worker = workerInstance;
             _initialized = true;
         }
 
@@ -55,6 +51,13 @@ namespace iChat.Client.Services.UserServices.ChatService
         {
             if (!_initialized) throw new InvalidOperationException("Worker not initialized");
             await _worker.InvokeVoidAsync("sendMessage", roomId, message);
+        }
+
+        public async Task<List<ChatMessageDto>> GetMessageHistoryAsync(string roomId, long? beforeMessageId = null)
+        {
+            if (!_initialized) throw new InvalidOperationException("Worker not initialized");
+            return await _worker.InvokeAsync<List<ChatMessageDto>>(
+                "getMessageHistory", roomId, beforeMessageId);
         }
 
         [JSInvokable]
@@ -86,17 +89,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         {
             OnReconnected?.Invoke();
         }
-        public async Task<List<ChatMessageDto>> GetMessageHistoryAsync(string roomId, long? beforeMessageId = null)
-        {
-            if (!_initialized) throw new InvalidOperationException("Worker not initialized");
 
-            
-                var result =await _worker.InvokeAsync<List<ChatMessageDto>>(
-                "getMessageHistory",
-                roomId,
-                beforeMessageId);
-            return result;
-        }
         [JSInvokable]
         public void HandleMessageHistory(List<ChatMessageDto> messages)
         {
@@ -109,10 +102,6 @@ namespace iChat.Client.Services.UserServices.ChatService
             Console.Error.WriteLine($"Error getting message history: {error}");
             OnMessageHistoryReceived?.Invoke(new List<ChatMessageDto>());
         }
-
-        public event Action<List<ChatMessageDto>> OnMessageHistoryReceived;
-
-
 
         public async ValueTask DisposeAsync()
         {

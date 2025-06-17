@@ -12,7 +12,11 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
         public void AddService(WebApplicationBuilder builder)
         {
             builder.Logging.ClearProviders();
-            builder.Logging.AddConsole();
+            builder.Logging.AddSimpleConsole(options =>
+            {
+                options.TimestampFormat = "[yyyy-MM-dd HH:mm:ss] ";
+                options.IncludeScopes = true;
+            });
             builder.Services.Configure<DomainOptions>(builder.Configuration.GetSection("DomainOptions"));
             builder.Services.Configure<RefreshTokenOptions>(builder.Configuration.GetSection("RefreshToken"));
             var jwtOptCol = builder.Configuration.GetSection("Jwt"); var jwtOptions = jwtOptCol.Get<JwtOptions>();

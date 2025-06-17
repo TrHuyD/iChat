@@ -22,13 +22,13 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
         /// <param name="request"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public async Task<CassMessageWriteResult> UploadMessageAsync(MessageRequest request,long messageId)
+        public async Task<CassMessageWriteResult> UploadMessageAsync(MessageRequest request,SnowflakeIdDto messageId)
         {
             if (request.SenderId is null)
                 throw new ArgumentException("SenderId are required.");
 
-          //  var messageId = idGen.GenerateId();
-            var offsettimestamp = DateTimeOffset.Now;
+            //  var messageId = idGen.GenerateId();
+            var offsettimestamp = messageId.CreatedAt; //DateTimeOffset.Now;
             var timestamp = offsettimestamp.DateTime;
 
            
@@ -40,7 +40,7 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
             var preparedStatement = await session.PrepareAsync(query);
             var boundStatement = preparedStatement.Bind(
                 long.Parse(request.ReceiveChannelId),
-                messageId,
+                messageId.Id,
                 long.Parse(request.SenderId),
                 (short)request.messageType,
                 request.TextContent ?? string.Empty,

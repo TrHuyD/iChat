@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS db_user_message.messages (
+﻿CREATE TABLE IF NOT EXISTS messages (
     channel_id BIGINT,
     message_id BIGINT,
     sender_id BIGINT,
@@ -7,4 +7,4 @@
     media_content TEXT,
     timestamp TIMESTAMP,
     PRIMARY KEY ((channel_id), message_id, sender_id)
-) WITH CLUSTERING ORDER BY (message_id DESC,sender_id ASEC);
+) WITH CLUSTERING ORDER BY (message_id DESC, sender_id ASC);

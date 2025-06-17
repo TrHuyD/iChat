@@ -73,6 +73,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Helpers
             await Task.Delay(300);
             return await fetchFromCache();
         }
+
         public async Task<T?> GetOrRenewWithLockAsync<T>(
             Func<Task<T?>> fetchFromCache,
             Func<Task<T>> fetchFromDb,

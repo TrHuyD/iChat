@@ -7,6 +7,7 @@
 @inject UserStateService _userInfo
 @inject IJSRuntime JSRuntime
 @implements IDisposable
+@implements IAsyncDisposable
 
 <div class="chat-container">
     <div class="chat-header">
@@ -16,11 +17,13 @@
         </div>
     </div>
 
-    <div class="messages-container" @ref="_messagesContainer" @onscroll="HandleScroll">
+    <div class="messages-container" @ref="_messagesContainer"
+         @onscroll="HandleScroll"
+         style="overflow-y: scroll; height: calc(100vh - 150px);">
         <div class="loading-indicator" style="display: @(_isLoadingHistory ? "block" : "none")">
             Loading older messages...
         </div>
-        
+
         @foreach (var message in _messages)
         {
             <div class="message @(message.SenderId == _currentUserId ? "sent" : "received")" @key="message.Id">
@@ -36,10 +39,11 @@
         <button @onclick="SendMessage" disabled="@string.IsNullOrEmpty(_newMessage)">Send</button>
     </div>
 </div>
+
 @code {
     [Parameter] public string RoomId { get; set; }
 
-    private List<ChatMessageDto> _messages = new();
+    private SortedSet<ChatMessageDto> _messages = new(new ChatMessageComparer());
     private string _newMessage = string.Empty;
     private ElementReference _messagesContainer;
     private string _connectionStatus = "Disconnected";
@@ -51,6 +55,12 @@
     private bool _isFirstLoad = true;
     private bool _shouldScrollToBottom = false;
     private DotNetObjectReference<ChatChannel>? _dotNetRef;
+    private double _lastScrollTop = 0;
+    private double _lastScrollHeight = 0;
+    private double _lastClientHeight = 0;
+    private bool _isNearTop = false;
+    private Timer? _scrollTimer;
+    private const int ScrollDebounceMs = 200;
 
     protected override async Task OnInitializedAsync()
     {
@@ -68,8 +78,6 @@
         {
             await SignalRService.InitializeAsync();
             await SignalRService.JoinRoomAsync(RoomId);
-
-            // Load initial messages
             await LoadMessages();
         }
         catch (Exception ex)
@@ -82,7 +90,11 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("signalRInterop.setupInfiniteScroll", _messagesContainer, _dotNetRef);
+            // Initialize scroll timer
+            _scrollTimer = new Timer(ScrollTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
+
+            // Get initial container height for scroll calculations
+            await UpdateContainerMetrics();
         }
 
         if (_shouldScrollToBottom)
@@ -92,6 +104,67 @@
         }
     }
 
+    private async Task UpdateContainerMetrics()
+    {
+        try
+        {
+            var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>(
+                "scrollHelpers.getScrollMetrics",
+                _messagesContainer);
+
+            _lastScrollHeight = metrics.ScrollHeight;
+            _lastClientHeight = metrics.ClientHeight;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error getting scroll metrics: {ex.Message}");
+        }
+    }
+
+    private async void HandleScroll()
+    {
+        // Debounce scroll events
+        _scrollTimer?.Change(ScrollDebounceMs, Timeout.Infinite);
+    }
+
+    private async void ScrollTimerCallback(object? state)
+    {
+        try
+        {
+            await InvokeAsync(async () =>
+            {
+                var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>("scrollHelpers.getScrollMetrics", _messagesContainer);
+                _lastScrollTop = metrics.ScrollTop;
+                _lastScrollHeight = metrics.ScrollHeight;
+                _lastClientHeight = metrics.ClientHeight;
+                _isNearTop = _lastScrollTop < 100;
+
+                if (_isNearTop && !_isLoadingHistory && _hasMoreHistory)
+                {
+                    await LoadMessages(loadOlder: true);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error in scroll timer callback: {ex.Message}");
+        }
+    }
+    private async Task RestoreScrollPosition(double prevScrollHeight, double prevScrollTop)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync(
+                "scrollHelpers.restoreScrollPosition",
+                _messagesContainer,
+                prevScrollHeight,
+                prevScrollTop);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error restoring scroll position: {ex.Message}");
+        }
+    }
     private async Task LoadMessages(bool loadOlder = false)
     {
         if (_isLoadingHistory) return;
@@ -103,8 +176,17 @@
         {
             if (loadOlder && _oldestMessageId.HasValue)
             {
-                // Load older messages from server via SharedWorker
-                var olderMessages = await SignalRService.GetMessageHistoryAsync(RoomId, _oldestMessageId.Value);
+                // Store current scroll position before adding new messages
+                var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>(
+                    "scrollHelpers.getScrollMetrics",
+                    _messagesContainer);
+
+                var prevScrollHeight = metrics.ScrollHeight;
+                var prevScrollTop = metrics.ScrollTop;
+
+                var olderMessages = await SignalRService.GetMessageHistoryAsync(
+                    RoomId,
+                    _oldestMessageId.Value);
 
                 if (olderMessages.Count == 0)
                 {
@@ -112,20 +194,26 @@
                     return;
                 }
 
-                _messages.InsertRange(0, olderMessages);
-                _oldestMessageId = olderMessages.First().Id;
+                foreach (var msg in olderMessages)
+                {
+                    _messages.Add(msg);
+                }
+
+                _oldestMessageId = _messages.FirstOrDefault()?.Id;
+
+                // After render, adjust scroll position to maintain view
+                await InvokeAsync(StateHasChanged);
+                await RestoreScrollPosition(prevScrollHeight, prevScrollTop);
             }
             else if (!loadOlder)
             {
-                // Initial load - get all messages from server via SharedWorker
                 var initialMessages = await SignalRService.GetMessageHistoryAsync(RoomId);
-                _messages = initialMessages;
 
-                if (_messages.Count > 0)
-                {
-                    _oldestMessageId = _messages.First().Id;
-                    _shouldScrollToBottom = true;
-                }
+                _messages = new SortedSet<ChatMessageDto>(
+                    initialMessages, new ChatMessageComparer());
+
+                _oldestMessageId = _messages.FirstOrDefault()?.Id;
+                _shouldScrollToBottom = _messages.Count > 0;
             }
         }
         finally
@@ -136,42 +224,33 @@
         }
     }
 
-    [JSInvokable]
-    public async Task LoadMoreMessages()
-    {
-        if (!_isLoadingHistory && _hasMoreHistory)
-        {
-            await LoadMessages(loadOlder: true);
-        }
-    }
-
-    private async Task HandleScroll()
-    {
-        var scrollInfo = await JSRuntime.InvokeAsync<ScrollInfo>("signalRInterop.getScrollInfo", _messagesContainer);
-
-        if (scrollInfo.IsNearTop && !_isLoadingHistory && _hasMoreHistory)
-        {
-            await LoadMessages(loadOlder: true);
-        }
-    }
-
     private async Task ScrollToBottom()
     {
-        await JSRuntime.InvokeVoidAsync("signalRInterop.scrollToBottom", _messagesContainer);
+        try
+        {
+            await JSRuntime.InvokeVoidAsync(
+                "scrollHelpers.scrollToBottom",
+                _messagesContainer);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error scrolling to bottom: {ex.Message}");
+        }
     }
 
     private void HandleNewMessage(string messageJson)
     {
         var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                NumberHandling = JsonNumberHandling.AllowReadingFromString
-            };
+        {
+            PropertyNameCaseInsensitive = true,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString
+        };
 
         var message = JsonSerializer.Deserialize<ChatMessageDto>(messageJson, options);
 
         if (message != null && message.RoomId.ToString() == RoomId)
         {
+            _messages.RemoveWhere(m => m.Id == message.Id);
             _messages.Add(message);
 
             if (!_isFirstLoad)
@@ -188,12 +267,12 @@
         if (string.IsNullOrWhiteSpace(_newMessage)) return;
 
         var message = new ChatMessageDto
-            {
-                Content = _newMessage,
-                MessageType = 1,
-                RoomId = long.Parse(RoomId),
-                SenderId = _currentUserId
-            };
+        {
+            Content = _newMessage,
+            MessageType = 1,
+            RoomId = long.Parse(RoomId),
+            SenderId = _currentUserId
+        };
 
         try
         {
@@ -205,7 +284,6 @@
             Console.Error.WriteLine($"Error sending message: {ex.Message}");
         }
     }
-
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
@@ -243,108 +321,40 @@
         StateHasChanged();
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        await Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     public void Dispose()
     {
-        SignalRService.OnMessageReceived -= HandleNewMessage;
-        SignalRService.OnConnected -= UpdateConnectedStatus;
-        SignalRService.OnDisconnected -= UpdateDisconnectedStatus;
-        SignalRService.OnReconnecting -= UpdateReconnectingStatus;
-        SignalRService.OnReconnected -= UpdateReconnectedStatus;
-
-        _ = SignalRService.LeaveRoomAsync(RoomId);
-        _dotNetRef?.Dispose();
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
-    public class ScrollInfo
+
+    protected virtual async ValueTask Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            SignalRService.OnMessageReceived -= HandleNewMessage;
+            SignalRService.OnConnected -= UpdateConnectedStatus;
+            SignalRService.OnDisconnected -= UpdateDisconnectedStatus;
+            SignalRService.OnReconnecting -= UpdateReconnectingStatus;
+            SignalRService.OnReconnected -= UpdateReconnectedStatus;
+
+            _ = SignalRService.LeaveRoomAsync(RoomId);
+            _dotNetRef?.Dispose();
+
+            _scrollTimer?.Dispose();
+            _scrollTimer = null;
+        }
+    }
+
+    private class ScrollMetrics
     {
         public double ScrollTop { get; set; }
         public double ScrollHeight { get; set; }
         public double ClientHeight { get; set; }
-        public bool IsNearTop => ScrollTop < 100;
     }
 }
-
-
-<style>
-    .chat-container {
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        max-width: 800px;
-        margin: 0 auto;
-        border: 1px solid #ddd;
-    }
-
-    .chat-header {
-        padding: 10px;
-        background-color: #f5f5f5;
-        border-bottom: 1px solid #ddd;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .messages-container {
-        flex: 1;
-        overflow-y: auto;
-        padding: 10px;
-    }
-
-    .message {
-        margin: 5px 0;
-        padding: 8px 12px;
-        border-radius: 15px;
-        max-width: 70%;
-    }
-
-    .message.sent {
-        background-color: #007bff;
-        color: white;
-        margin-left: auto;
-    }
-
-    .message.received {
-        background-color: #e9ecef;
-        margin-right: auto;
-    }
-
-    .message-time {
-        font-size: 0.8em;
-        opacity: 0.7;
-        text-align: right;
-    }
-
-    .message-input {
-        display: flex;
-        padding: 10px;
-        border-top: 1px solid #ddd;
-    }
-
-    .message-input input {
-        flex: 1;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-right: 8px;
-    }
-
-    .connection-status span {
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 0.9em;
-    }
-
-    .connected {
-        background-color: #d4edda;
-        color: #155724;
-    }
-
-    .disconnected {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
-
-    .reconnecting {
-        background-color: #fff3cd;
-        color: #856404;
-    }
-</style>

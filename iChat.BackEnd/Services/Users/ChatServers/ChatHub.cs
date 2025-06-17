@@ -59,14 +59,14 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         }
         public async Task<List<ChatMessageDto>> GetMessageHistory([FromServices] IChatReadMessageService _writeService,long roomId, long? beforeMessageId = null)
         {
-            var rq = new UserGetRecentMessageRequest
-            {
-                UserId = new UserClaimHelper(Context.User).GetUserIdStr(),
-                ChannelId = roomId.ToString(),
-            };
-            var message = await _writeService.RetrieveRecentMessage(rq);
-            _logger.LogInformation($"Requesting message history for room {roomId} before message ID {beforeMessageId}");
-            return message; 
+            //var rq = new UserGetRecentMessageRequest
+            //{
+            //    UserId = new UserClaimHelper(Context.User).GetUserIdStr(),
+            //    ChannelId = roomId.ToString(),
+            //};
+            //var message = await _writeService.RetrieveRecentMessage(rq);
+            //_logger.LogInformation($"Requesting message history for room {roomId} before message ID {beforeMessageId}");
+            return new(); 
         }
         
 

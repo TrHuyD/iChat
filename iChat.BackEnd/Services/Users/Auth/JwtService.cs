@@ -58,7 +58,7 @@ public class JwtService
             Secure = true,
             SameSite = SameSiteMode.None,
             Domain = _domainOptions.CookieDomain,
-            Path= "/api/chathub",
+            Path= "/",
             Expires = token.ExpireTime,
         };
         httpContext.Response.Cookies.Append("access_token", token.AccessToken, cookieOptions);

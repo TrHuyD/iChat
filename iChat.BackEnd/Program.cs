@@ -110,8 +110,8 @@ builder.Services.AddTransient(provider =>
 builder.Services.AddTransient<Neo4jChatListingService>();
 builder.Services.AddTransient<UserRelationService>();
 builder.Services.AddTransient<RedisUserServerService>();
-builder.Services.AddTransient<RedisMessageRWService>();
-
+builder.Services.AddTransient<RedisChatCache>();
+builder.Services.AddTransient<RedisSegmentCache>();
 
 
 builder.Services.AddTransient<ServerListService>();

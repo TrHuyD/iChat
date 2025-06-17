@@ -10,17 +10,20 @@ namespace iChat.BackEnd.Services.Users.ChatServers
 {
     public class Test_UserChatReadMessageService : IChatReadMessageService
     {
-        private readonly RedisMessageRWService _redisService;
+        private readonly RedisChatCache _redisService;
         private readonly CassandraMessageReadService _cassService;
         private readonly ThreadSafeCacheService _lockService;
+        private readonly RedisSegmentCache _redisSegmentCache;
         public Test_UserChatReadMessageService(
-            RedisMessageRWService redisService, 
+            RedisChatCache redisService, 
             CassandraMessageReadService cassService,
-            ThreadSafeCacheService lockService)
+            ThreadSafeCacheService lockService,
+            RedisSegmentCache redisSegmentCache)
         {
             _redisService = redisService;
             _cassService = cassService;
             _lockService = lockService;
+            _redisSegmentCache= redisSegmentCache;
         }
 
 
@@ -38,6 +41,43 @@ namespace iChat.BackEnd.Services.Users.ChatServers
                 delayMs: 250
             );
 
+        }
+        public async Task<List<ChatMessageDto>> GetMessagesContainingAsync(string channelId, long messageId)
+        {
+            // 1. Try Redis first
+            var segment = await _redisSegmentCache.TryGetSegmentContaining(channelId, messageId);
+            if (segment != null && segment.Count > 0)
+                return segment;
+
+            // 2. Fallback to Cassandra
+            var cassandraMessages = await _cassService.GetMessagesAroundMessageIdAsync(channelId, messageId, before: 20, after: 22);
+            if (cassandraMessages.Count == 0)
+                return new List<ChatMessageDto>();
+
+            // 3. Check if the requested message ID actually exists in result
+            if (!cassandraMessages.Any(m => m.Id == messageId))
+            {
+                Console.WriteLine($"[Warning] Message ID {messageId} not found in channel {channelId} — possible cross-channel or corrupted jump.");
+                return new List<ChatMessageDto>();
+            }
+
+            // 4. Sort and cache segment
+            var sorted = cassandraMessages.OrderBy(m => m.Id).ToList();
+            if (sorted.Count >= 15)
+                await _redisSegmentCache.UploadSegmentAsync(channelId, sorted);
+
+            return sorted;
+        }
+
+
+        public async Task<List<(long Start, long End)>> GetCachedRanges(string channelId)
+        {
+            return await _redisSegmentCache.GetCachedSegments(channelId);
+        }
+
+        public async Task<bool> IsMessageCached(string channelId, long messageId)
+        {
+            return await _redisSegmentCache.IsMessageCached(channelId, messageId);
         }
     }
 }

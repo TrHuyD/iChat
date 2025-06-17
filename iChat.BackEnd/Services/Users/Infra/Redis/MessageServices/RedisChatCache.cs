@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 
 namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
 {
-    public class RedisMessageRWService
+    public class RedisChatCache
     {
         private readonly AppRedisService _service;
-        public RedisMessageRWService(AppRedisService redisService)
+        public RedisChatCache(AppRedisService redisService)
         {
             _service = redisService;
         }

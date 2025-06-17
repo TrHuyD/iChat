@@ -5,7 +5,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
 {
     public interface IChatReadMessageService
     {
-
-        public Task<List<ChatMessageDto>> RetrieveRecentMessage(UserGetRecentMessageRequest request);
+        Task<List<ChatMessageDto>> RetrieveRecentMessage(UserGetRecentMessageRequest request);
+        Task<List<ChatMessageDto>> GetMessagesContainingAsync(string channelId, long messageId);
     }
 }

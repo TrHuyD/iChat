@@ -9,7 +9,15 @@ using System.Threading.Tasks;
 
 namespace iChat.DTOs.Users.Messages
 {
-   public class ChatMessageDto
+    public class ChatMessageComparer : IComparer<ChatMessageDto>
+    {
+        public int Compare(ChatMessageDto? x, ChatMessageDto? y)
+        {
+            if (x == null || y == null) return 0;
+            return x.Id.CompareTo(y.Id);
+        }
+    }
+    public class ChatMessageDto
     {
         public long Id { get; set; }
         public string Content { get; set; } = string.Empty;

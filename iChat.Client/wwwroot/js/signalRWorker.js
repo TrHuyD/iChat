@@ -1,10 +1,9 @@
 ﻿window.signalRInterop = {
-    initialize: async function (csSignalRServiceRef) {
+    initialize: async function (dotNetRef) {
         const worker = new SharedWorker('/js/sharedWorker.js');
         worker.port.start();
 
-        // Create a promise that resolves when the worker is ready
-        const workerReady = new Promise((resolve) => {
+        await new Promise((resolve) => {
             const readyHandler = (event) => {
                 if (event.data.action === 'WORKER_READY') {
                     worker.port.removeEventListener('message', readyHandler);
@@ -16,119 +15,56 @@
 
         worker.port.onmessage = function (event) {
             const { action, data } = event.data;
-            console.log('[SignalRInterop] Received from worker:', action, data);
 
             switch (action) {
                 case 'MESSAGE_RECEIVED':
-                    csSignalRServiceRef.invokeMethodAsync('HandleMessageReceived', JSON.stringify(data));
+                    dotNetRef.invokeMethodAsync('HandleMessageReceived', JSON.stringify(data));
                     break;
                 case 'SIGNALR_CONNECTED':
-                    csSignalRServiceRef.invokeMethodAsync('HandleConnected');
+                    dotNetRef.invokeMethodAsync('HandleConnected');
                     break;
                 case 'SIGNALR_DISCONNECTED':
-                    csSignalRServiceRef.invokeMethodAsync('HandleDisconnected');
+                    dotNetRef.invokeMethodAsync('HandleDisconnected');
                     break;
                 case 'SIGNALR_RECONNECTING':
-                    csSignalRServiceRef.invokeMethodAsync('HandleReconnecting');
+                    dotNetRef.invokeMethodAsync('HandleReconnecting');
                     break;
                 case 'SIGNALR_RECONNECTED':
-                    csSignalRServiceRef.invokeMethodAsync('HandleReconnected');
-                    break;
-                case 'HEARTBEAT_CHECK':
-                    console.log('[SignalRInterop] Sending HEARTBEAT back to worker');
-                    worker.port.postMessage({ action: 'HEARTBEAT' });
+                    dotNetRef.invokeMethodAsync('HandleReconnected');
                     break;
                 case 'MESSAGE_HISTORY':
-                    csSignalRServiceRef.invokeMethodAsync('HandleMessageHistory', data);
+                    dotNetRef.invokeMethodAsync('HandleMessageHistory', data);
                     break;
                 case 'MESSAGE_HISTORY_ERROR':
-                    csSignalRServiceRef.invokeMethodAsync('HandleMessageHistoryError', data);
-                    break;
-                case 'WORKER_READY':
-                    // Handled by the workerReady promise
+                    dotNetRef.invokeMethodAsync('HandleMessageHistoryError', data);
                     break;
             }
         };
 
         const sendToWorker = (action, data) => {
-            console.log('[SignalRInterop] Sending to worker:', action, data);
             worker.port.postMessage({ action, data });
         };
 
-        // Wait for the worker to be ready before initializing SignalR
-        await workerReady;
         sendToWorker('INIT_SIGNALR');
 
         return {
-            joinRoom: function (roomId) {
-                sendToWorker('JOIN_ROOM', { roomId });
-            },
-            leaveRoom: function (roomId) {
-                sendToWorker('LEAVE_ROOM', { roomId });
-            },
-            sendMessage: function (roomId, message) {
-                sendToWorker('SEND_MESSAGE', { roomId, message });
-            },
-            getMessageHistory: function (roomId, beforeMessageId) {
+            joinRoom: (roomId) => sendToWorker('JOIN_ROOM', { roomId }),
+            leaveRoom: (roomId) => sendToWorker('LEAVE_ROOM', { roomId }),
+            sendMessage: (roomId, message) => sendToWorker('SEND_MESSAGE', { roomId, message }),
+            getMessageHistory: (roomId, beforeMessageId) => {
                 return new Promise((resolve) => {
                     const tempHandler = (e) => {
                         const { action, data } = e.data;
-                        console.log('[SignalRInterop] TempHandler received:', action, data);
-
                         if (action === 'MESSAGE_HISTORY' || action === 'MESSAGE_HISTORY_ERROR') {
                             worker.port.removeEventListener('message', tempHandler);
-                            if (action === 'MESSAGE_HISTORY_ERROR') {
-                                console.error('[SignalRInterop] Error getting message history:', data);
-                                resolve([]);
-                            } else {
-                                resolve(data);
-                            }
+                            resolve(action === 'MESSAGE_HISTORY' ? data : []);
                         }
                     };
                     worker.port.addEventListener('message', tempHandler);
-
                     sendToWorker('GET_MESSAGE_HISTORY', { roomId, beforeMessageId });
                 });
             },
-            dispose: function () {
-                console.log('[SignalRInterop] Disposing worker');
-                worker.port.close();
-            }
+            dispose: () => worker.port.close()
         };
-    },
-
-
-    setupInfiniteScroll: function (element, dotNetRef) {
-        element.addEventListener('scroll', async function () {
-            const scrollInfo = {
-                ScrollTop: element.scrollTop,
-                ScrollHeight: element.scrollHeight,
-                ClientHeight: element.clientHeight
-            };
-
-            console.log('[SignalRInterop] Scroll event:', scrollInfo);
-
-            if (element.scrollTop < 100) {
-                await dotNetRef.invokeMethodAsync('LoadMoreMessages');
-            }
-        });
-    },
-
-    getScrollInfo: function (element) {
-        const info = {
-            ScrollTop: element.scrollTop,
-            ScrollHeight: element.scrollHeight,
-            ClientHeight: element.clientHeight,
-            IsNearTop: element.scrollTop < 100
-        };
-        console.log('[SignalRInterop] getScrollInfo:', info);
-        return info;
-    },
-
-    scrollToBottom: function (element) {
-        if (element) {
-            console.log('[SignalRInterop] Scrolling to bottom');
-            element.scrollTop = element.scrollHeight;
-        }
     }
 };

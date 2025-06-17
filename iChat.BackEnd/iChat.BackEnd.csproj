@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="secrets\chatgptquerry.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include=".wwwroot\css\site.css" />
     <Content Include=".wwwroot\favicon.ico" />
     <Content Include=".wwwroot\js\ProfileService.js" />
