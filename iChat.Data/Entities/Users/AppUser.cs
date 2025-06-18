@@ -1,4 +1,6 @@
-﻿using iChat.Data.Entities.Users.Auth;
+﻿using iChat.Data.Entities.Servers;
+using iChat.Data.Entities.Servers.ChatRoles;
+using iChat.Data.Entities.Users.Auth;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -13,8 +15,11 @@ namespace iChat.Data.Entities.Users
         public string Name { get; set; }
         public DateTime Dob { get; set; }
         
-        public List<RefreshToken> RefreshTokens { get; set; } = new();
-        public DateTime LastSeen { get; set; }
+        public ICollection<RefreshToken> RefreshTokens { get; set; }
+        public DateTimeOffset LastSeen { get; set; }
+        public ICollection<UserChatServer> UserChatServers { get; set; } = new List<UserChatServer>();
+
+        public ICollection<UserChatRole> UserRoles { get; set; } = new HashSet<UserChatRole>();
 
     }
 }

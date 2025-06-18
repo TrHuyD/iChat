@@ -36,6 +36,7 @@ using Microsoft.AspNetCore.Authentication;
 using iChat.BackEnd.Services.Users.Auth.Sql;
 using iChat.Client;
 using System.Text.Json;
+using iChat.BackEnd.Controllers.UserControllers.MessageControllers;
 //using Microsoft.AspNetCore.Authentication;
 //using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);

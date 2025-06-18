@@ -1,4 +1,5 @@
-﻿using System;
+﻿using iChat.Data.Entities.Servers.ChatRoles;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,5 +11,10 @@ namespace iChat.Data.Entities.Servers
     {
         public long Id { get; set; }
         public string Name { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public long ServerId { get; set; }
+        //public long ChatServerId {get;set;}
+        public ChatServer Server { get; set; }
+        public ICollection<ChannelPermissionOverride> Overrides { get; set; } = new List<ChannelPermissionOverride>();
     }
 }

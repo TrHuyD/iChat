@@ -12,21 +12,21 @@ namespace iChat.Data.EF
     class iChatDbContextFactory: IDesignTimeDbContextFactory<iChatDbContext>
     {
         public iChatDbContext CreateDbContext(string[] args)
-    {
-            //var config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build();
-       
-        var optionsBuilder = new DbContextOptionsBuilder<iChatDbContext>();
-            var dbPath = Path.Combine(AppContext.BaseDirectory, "app.db");
-            var connectionString = $"Data Source={dbPath};";
+        {
+            // Initialize configuration builder
+            var config = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddUserSecrets<iChatDbContextFactory>()  
+                .Build();
 
-            optionsBuilder.UseSqlite(connectionString);
+            var optionsBuilder = new DbContextOptionsBuilder<iChatDbContext>();
 
-            //optionsBuilder.UseSqlServer(config.GetConnectionString("iChatdev"));
-            //  optionsBuilder.usesqlli
+            var connectionString = config["PostgreSQL:ConnectionString"];
+            optionsBuilder.UseNpgsql(connectionString);
             optionsBuilder.EnableSensitiveDataLogging();
 
-        return new iChatDbContext(optionsBuilder.Options);
-    }
+            return new iChatDbContext(optionsBuilder.Options);
+        }
 
-}
+    }
 }
