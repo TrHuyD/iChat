@@ -19,11 +19,11 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
     {
         private readonly UserManager<AppUser> _userManager;
         //private readonly SignInManager<AppUser> _signInManager;
-        private readonly UserRelationService _neo4jService;
+
         private readonly RefreshTokenService _rfService;
         private readonly DomainOptions _domainOptions;
         private readonly iChatDbContext _dbContext;
-        public SqlLoginService(UserRelationService neo4JService,UserManager<AppUser> userManager
+        public SqlLoginService(UserManager<AppUser> userManager
             /*SignInManager<AppUser> signInManager*/,
             RefreshTokenService rfService,
             iChatDbContext dbContext
@@ -33,7 +33,7 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
             )
         {
             _domainOptions = domainOptions.Value;
-            _neo4jService = neo4JService;
+
             _userManager = userManager;
             _rfService = rfService;
             _dbContext = dbContext;

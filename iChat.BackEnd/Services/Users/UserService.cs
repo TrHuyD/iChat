@@ -16,14 +16,14 @@ public class UserService : IUserService
         _userManager = userManager;
     }
 
-    public Task<UserCompleteDto?> GetUserCompleteInfoAsync(string userId)
+    public Task<UserCompleteDto?> GetUserCompleteInfoAsync(long userId)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<UserProfileDto?> GetUserProfileAsync(string userId)
+    public async Task<UserProfileDto?> GetUserProfileAsync(long userId)
     {
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
             return null;
 

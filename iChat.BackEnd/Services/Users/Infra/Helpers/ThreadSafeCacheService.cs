@@ -152,7 +152,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Helpers
 
         public async Task<bool> CheckAndFetchAsync(
             string key,
-            string member,
+            long member,
             Func<Task<int>> fetchFromCache,
             Func<Task<List<string>>> fetchFromDb,
             Func<List<string>, Task> saveToCache)
@@ -172,7 +172,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Helpers
                     var dbResult = await fetchFromDb();
                     await saveToCache(dbResult);
 
-                    return dbResult.Contains(member);
+                    return dbResult.Contains(member.ToString());
                 }
                 finally
                 {

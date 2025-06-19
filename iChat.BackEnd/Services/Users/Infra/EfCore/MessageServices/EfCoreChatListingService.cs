@@ -14,29 +14,29 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _dbContext = dbContext;
         }
 
-        public async Task<List<long>> GetServerChannelListAsync(string serverId)
+        public async Task<List<long>> GetServerChannelListAsync(long serverId)
         {
-            var sid = long.Parse(serverId);
+          
             return await _dbContext.ChatChannels
-                .Where(c => c.ServerId == sid)
+                .Where(c => c.ServerId == serverId)
                 .Select(c => c.Id)
                 .ToListAsync();
         }
 
-        public async Task<List<long>> GetUserServersAsync(string userId)
+        public async Task<List<long>> GetUserServersAsync(long userId)
         {
-            var uid = long.Parse(userId);
+        
             return await _dbContext.UserChatServers
-                .Where(ucs => ucs.UserId == uid)
+                .Where(ucs => ucs.UserId == userId)
                 .Select(ucs => ucs.ChatServerId)
                 .ToListAsync();
         }
 
-        public async Task<List<long>> GetServerMembersAsync(string serverId)
+        public async Task<List<long>> GetServerMembersAsync(long serverId)
         {
-            var sid = long.Parse(serverId);
+           
             return await _dbContext.UserChatServers
-                .Where(ucs => ucs.ChatServerId == sid)
+                .Where(ucs => ucs.ChatServerId == serverId)
                 .Select(ucs => ucs.UserId)
                 .ToListAsync();
         }

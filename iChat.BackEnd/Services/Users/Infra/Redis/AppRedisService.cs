@@ -63,7 +63,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
         }
 
         /// <summary> Checks if a member exists in a set and extends its expiry. </summary>
-        public async Task<int> CheckAndExtendMembershipExpiryAsync(string setKey, string member, TimeSpan expiry)
+        public async Task<int> CheckAndExtendMembershipExpiryAsync(string setKey, long member, TimeSpan expiry)
         {
             var script = @"
                     -- Check if the list exists
@@ -81,7 +81,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
                 ";
 
             var result = (long?)await _db.ScriptEvaluateAsync(script,
-                new RedisKey[] { setKey },
+                new RedisKey[] { setKey.ToString() },
                 new RedisValue[] { member, (int)expiry.TotalSeconds });
 
             return (int)(result ?? 2); 

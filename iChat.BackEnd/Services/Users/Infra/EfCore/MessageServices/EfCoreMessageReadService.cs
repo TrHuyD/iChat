@@ -2,71 +2,77 @@
 using iChat.Data.EF;
 using iChat.Data.Entities.Users.Messages;
 using iChat.DTOs.Users.Messages;
-using System;
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+
 namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
 {
     public class EfCoreMessageReadService : IMessageReadService
     {
         private readonly iChatDbContext _context;
 
+        private static readonly Expression<Func<Message, ChatMessageDto>> _toDto = m => new ChatMessageDto
+        {
+            Id = m.Id,
+            SenderId = m.SenderId,
+            MessageType = m.MessageType,
+            Content = m.TextContent ?? "",
+            ContentMedia = m.MediaContent ?? "",
+            CreatedAt = m.Timestamp
+        };
+
         public EfCoreMessageReadService(iChatDbContext context)
         {
             _context = context;
         }
 
-        public async Task<List<ChatMessageDto>> GetMessagesByChannelAsync(long channelId, int limit = 40)
+        public Task<List<ChatMessageDto>> GetMessagesByChannelAsync(long channelId, int limit = 40)
         {
-            return await _context.Messages
+            return _context.Messages
+                .AsNoTracking()
                 .Where(m => m.ChannelId == channelId)
                 .OrderByDescending(m => m.Id)
                 .Take(limit)
-                .Select(ToDto())
+                .Select(_toDto)
                 .ToListAsync();
         }
 
-        public async Task<List<ChatMessageDto>> GetMessagesAroundMessageIdAsync(long channelId, long messageId, int before = 20, int after = 22)
+        public async Task<List<ChatMessageDto>> GetMessagesAroundMessageIdAsync(long channelId, long messageId, int beforeIndex = 20, int AfterIndex = 22)
         {
-            var beforeMessages = await _context.Messages
+            var beforeTask = _context.Messages
+                .AsNoTracking()
                 .Where(m => m.ChannelId == channelId && m.Id <= messageId)
                 .OrderByDescending(m => m.Id)
-                .Take(before + 1)
-                .Select(ToDto())
+                .Take(beforeIndex + 1)
+                .Select(_toDto)
                 .ToListAsync();
 
-            var afterMessages = await _context.Messages
+            var afterTask = _context.Messages
+                .AsNoTracking()
                 .Where(m => m.ChannelId == channelId && m.Id > messageId)
                 .OrderBy(m => m.Id)
-                .Take(after)
-                .Select(ToDto())
+                .Take(AfterIndex)
+                .Select(_toDto)
                 .ToListAsync();
 
-            beforeMessages.Reverse();
-            return beforeMessages.Concat(afterMessages).ToList();
+            await Task.WhenAll(beforeTask, afterTask);
+
+            var before = beforeTask.Result;
+            var after = afterTask.Result;
+            before.Reverse();
+
+            return before.Concat(after).ToList();
         }
 
-        public async Task<List<ChatMessageDto>> GetMessagesInRangeAsync(long channelId, long startId, long endId, int limit = 50)
+        public Task<List<ChatMessageDto>> GetMessagesInRangeAsync(long channelId, long startId, long endId, int limit = 50)
         {
-            return await _context.Messages
+            return _context.Messages
+                .AsNoTracking()
                 .Where(m => m.ChannelId == channelId && m.Id >= startId && m.Id <= endId)
                 .OrderBy(m => m.Id)
                 .Take(limit)
-                .Select(ToDto())
+                .Select(_toDto)
                 .ToListAsync();
-        }
-
-        private static Expression<Func<Message, ChatMessageDto>> ToDto()
-        {
-            return m => new ChatMessageDto
-            {
-                Id = m.Id,
-                SenderId = m.SenderId,
-                MessageType = m.MessageType,
-                Content = m.TextContent ?? string.Empty,
-                ContentMedia = m.MediaContent ?? string.Empty,
-                CreatedAt = m.Timestamp
-            };
         }
     }
 }

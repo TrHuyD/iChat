@@ -39,6 +39,7 @@ using System.Text.Json;
 using iChat.BackEnd.Controllers.UserControllers.MessageControllers;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices;
+using iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices;
 //using Microsoft.AspNetCore.Authentication;
 //using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
@@ -96,14 +97,14 @@ builder.Services.AddSingleton<RedisChatServerService>();
 new IdBuilderHelper().AddService(builder, WorkerIdConfig);
 //new Auth0BuilderHelper().AddService(builder);
 //builder.Services.AddSingleton<IDriver>(GraphDatabase.Driver(neo4jConfig["Uri"], AuthTokens.Basic(neo4jConfig["Username"], neo4jConfig["Password"]!)));
-builder.Services.AddTransient<IAsyncSession>(provider =>
-{
-    var driver = provider.GetRequiredService<IDriver>();
-    return driver.AsyncSession();
-});
-builder.Services.AddTransient(provider =>
-    new Lazy<IAsyncSession>(() => provider.GetRequiredService<IAsyncSession>()));
-new CassandraBuilderHelper().AddService(builder);
+//builder.Services.AddTransient<IAsyncSession>(provider =>
+//{
+//    var driver = provider.GetRequiredService<IDriver>();
+//    return driver.AsyncSession();
+//});
+//builder.Services.AddTransient(provider =>
+//    new Lazy<IAsyncSession>(() => provider.GetRequiredService<IAsyncSession>()));
+//new CassandraBuilderHelper().AddService(builder);
 new ValidatorsHelper(builder);
 //builder.Services.AddSingleton<UserSendTextMessageService>();
 //builder.Services.AddTransient<Neo4jChatChannelEditService>();
@@ -111,7 +112,8 @@ builder.Services.AddTransient<IChatServerEditService,EfCoreChatServerEditService
 //builder.Services.AddTransient(provider =>
 //    new Lazy<Neo4jChatListingService>(() => provider.GetRequiredService<Neo4jChatListingService>()));
 builder.Services.AddTransient<IChatListingService,EfCoreChatListingService>();
-
+builder.Services.AddTransient<IMessageReadService, EfCoreMessageReadService>();
+builder.Services.AddTransient<IMessageWriteService, EfCoreMessageWriteService>();
 builder.Services.AddTransient<RedisUserServerService>();
 builder.Services.AddTransient<RedisChatCache>();
 builder.Services.AddTransient<RedisSegmentCache>();
@@ -119,13 +121,16 @@ builder.Services.AddTransient<RedisSegmentCache>();
 
 builder.Services.AddTransient<ServerListService>();
 
-builder.Services.AddSingleton<IChatSendMessageService, Test_UserSendTextMessageService > ();
-builder.Services.AddSingleton<IChatReadMessageService, Test_UserChatReadMessageService>();
+builder.Services.AddTransient<IChatSendMessageService, Test_UserSendTextMessageService > ();
+builder.Services.AddTransient<IChatReadMessageService, Test_UserChatReadMessageService>();
 
 
 // Database Context
 builder.Services.AddDbContext<iChatDbContext>(options =>
-    options.UseSqlite($"Data Source={builder.Configuration.GetValue<string>("ConnectionStrings:sqlite")};"));
+    options.UseNpgsql($"{builder.Configuration.GetValue<string>("PostgreSQL:ConnectionString")}")
+     .LogTo(Console.WriteLine, LogLevel.Information));
+    
+
 
 // Identity Configuration with Cookie Authentication
 builder.Services.AddIdentity<AppUser, Role>(options =>

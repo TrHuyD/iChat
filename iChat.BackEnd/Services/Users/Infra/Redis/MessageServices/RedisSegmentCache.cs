@@ -13,13 +13,13 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
             _service = redisService;
         }
 
-        private static string GetSegmentKey(string channelId, long startId, long endId)
+        private static string GetSegmentKey(long channelId, long startId, long endId)
             => $"c:{channelId}:{startId}~{endId}";
 
-        private static string GetSegmentIndexKey(string channelId)
+        private static string GetSegmentIndexKey(long channelId)
             => $"c:{channelId}:segments";
 
-        public async Task<bool> UploadSegmentAsync(string channelId, List<ChatMessageDto> messages)
+        public async Task<bool> UploadSegmentAsync(long channelId, List<ChatMessageDto> messages)
         {
             if (messages == null || messages.Count == 0) return false;
 
@@ -53,7 +53,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
             return true;
         }
 
-        public async Task<List<ChatMessageDto>> TryGetSegmentContaining(string channelId, long messageId)
+        public async Task<List<ChatMessageDto>> TryGetSegmentContaining(long channelId, long messageId)
         {
             var db = _service.GetDatabase();
             string indexKey = GetSegmentIndexKey(channelId);
@@ -80,7 +80,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
             return null;
         }
 
-        public async Task<List<(long startId, long endId)>> GetCachedSegments(string channelId)
+        public async Task<List<(long startId, long endId)>> GetCachedSegments(long channelId)
         {
             var db = _service.GetDatabase();
             string indexKey = GetSegmentIndexKey(channelId);
@@ -102,7 +102,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
             return segments;
         }
 
-        public async Task<bool> IsMessageCached(string channelId, long messageId)
+        public async Task<bool> IsMessageCached(long channelId, long messageId)
         {
             var segment = await TryGetSegmentContaining(channelId, messageId);
             return segment != null;

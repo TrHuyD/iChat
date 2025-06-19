@@ -1,4 +1,5 @@
-﻿using iChat.BackEnd.Services.Users.ChatServers;
+﻿using iChat.BackEnd.Models.Helpers;
+using iChat.BackEnd.Services.Users.ChatServers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,28 +19,27 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
         [HttpGet]
         public async Task<IActionResult> ServerList()
         {
-            var userId = new UserClaimHelper(User).GetUserIdStr();
-            if (string.IsNullOrEmpty(userId))
-            {
-                return BadRequest("User ID is required.");
-            }
+            var userId = new UserClaimHelper(User).GetUserId();
+
 
             var servers = await _userServerListService.GetServerList(userId);
             return Ok(servers);
             //  return View("~/Views/User/ChatServer/Listing.cshtml", servers); 
         }
         [HttpGet("{serverID}\\ChannelList")]
-        public async Task<List<string>?> ChannelList(string serverID)
+        public async Task<IActionResult> ChannelList(string serverID)
         {
-            var channels = await _userServerListService.GetChannelList(serverID);
-            return channels;
+            if(!ValueParser.TryLong(serverID, out var _serverId))
+                return BadRequest("Invalid server ID format.");
+            var channels = await _userServerListService.GetChannelList(_serverId);
+            return Ok(channels);
         }
         [HttpGet("test")]
         [AllowAnonymous]
         public async Task<IActionResult> test()
         {
 
-            var userId = "2";
+            var userId = 2;
             var servers = await _userServerListService.GetServerList(userId);
             return Ok(servers);
             //         return View("~/Views/User/ChatServer/Listing.cshtml", servers);

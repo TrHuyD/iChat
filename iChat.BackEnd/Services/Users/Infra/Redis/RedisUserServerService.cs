@@ -18,29 +18,29 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
         }
         
 
-        public async Task<int> CheckIfUserInServer(string userId, string serverId)
+        public async Task<int> CheckIfUserInServer(long userId, long serverId)
         {
             var key = RedisVariableKey.GetUserServerKey(userId);
             return await _service.CheckAndExtendMembershipExpiryAsync(key, serverId, expiryTimeSpan);
         }
-        public async Task<int> AddUserServersAsync(string userId, IEnumerable<string> serverIds)
+        public async Task<int> AddUserServersAsync(long userId, IEnumerable<string> serverIds)
         {
             var key = RedisVariableKey.GetUserServerKey(userId);
             var result = await _service.AddListAsync(key, expiryTime, serverIds);
             return (int)result!;
         }
-        public async Task<List<string>?> GetUserServersAsync(string userId)
+        public async Task<List<string>?> GetUserServersAsync(long userId)
         {
             var serverKey = RedisVariableKey.GetUserServerKey(userId);
             var result = await _service.GetListAsync(serverKey);
             return result;
         }
-        public async Task<List<string>?> GetServerChannelsAsync(string serverId)
+        public async Task<List<string>?> GetServerChannelsAsync(long serverId)
         {
             var key = RedisVariableKey.GetServerChannelKey(serverId);
             return await _service.GetListAsync(key);
         }
-        public async Task<int> AddServerChannelsAsync(string serverId, IEnumerable<string> channelIds)
+        public async Task<int> AddServerChannelsAsync(long serverId, IEnumerable<string> channelIds)
         {
             var key = RedisVariableKey.GetServerChannelKey(serverId);
             int expiryTime = 86400;
@@ -49,13 +49,13 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
         }
 
 
-        public async Task<ChannelPermissionResult> CheckUserChannelPermissionAsync(string userId, string serverId, string channelId)
+        public async Task<ChannelPermissionResult> CheckUserChannelPermissionAsync(long userId, long serverId, long channelId)
         {
             var keys = new RedisKey[]
             {
-                userId,
-                serverId,
-                channelId
+                userId.ToString(),
+                serverId.ToString(),
+                channelId.ToString()
             };
 
             try

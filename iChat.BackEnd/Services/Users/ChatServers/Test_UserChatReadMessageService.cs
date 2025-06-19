@@ -12,17 +12,17 @@ namespace iChat.BackEnd.Services.Users.ChatServers
     public class Test_UserChatReadMessageService : IChatReadMessageService
     {
         private readonly RedisChatCache _redisService;
-        private readonly CassandraMessageReadService _cassService;
+        private readonly IMessageReadService _chatReadService;
         private readonly ThreadSafeCacheService _lockService;
         private readonly RedisSegmentCache _redisSegmentCache;
         public Test_UserChatReadMessageService(
-            RedisChatCache redisService, 
-            CassandraMessageReadService cassService,
+            RedisChatCache redisService,
+            IMessageReadService readservice,
             ThreadSafeCacheService lockService,
             RedisSegmentCache redisSegmentCache)
         {
             _redisService = redisService;
-            _cassService = cassService;
+            _chatReadService = readservice;
             _lockService = lockService;
             _redisSegmentCache= redisSegmentCache;
         }
@@ -34,7 +34,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             
             return await _lockService.GetOrRenewWithLockAsync(
                 () => _redisService.GetRecentMessage(channelId,request.LastMessageId),
-                async () => await _cassService.GetMessagesByChannelAsync(channelId) ?? throw new Exception("Failed to connect to _cassService"),
+                async () => await _chatReadService.GetMessagesByChannelAsync(channelId) ?? throw new Exception("Failed to connect to _cassService"),
                 async data => await _redisService.UploadMessage_Bulk(channelId, data),
                 () => RedisVariableKey.GetRecentChatMessageKey_Lock(channelId),
                 result => result?.Count == 0,
@@ -43,7 +43,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             );
 
         }
-        public async Task<List<ChatMessageDto>> GetMessagesContainingAsync(string channelId, long messageId)
+        public async Task<List<ChatMessageDto>> GetMessagesContainingAsync(long channelId, long messageId)
         {
             // 1. Try Redis first
             var segment = await _redisSegmentCache.TryGetSegmentContaining(channelId, messageId);
@@ -51,7 +51,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
                 return segment;
 
             // 2. Fallback to Cassandra
-            var cassandraMessages = await _cassService.GetMessagesAroundMessageIdAsync(channelId, messageId, before: 20, after: 22);
+            var cassandraMessages = await _chatReadService.GetMessagesAroundMessageIdAsync(channelId, messageId, before: 20, after: 22);
             if (cassandraMessages.Count == 0)
                 return new List<ChatMessageDto>();
 
@@ -71,12 +71,12 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         }
 
 
-        public async Task<List<(long Start, long End)>> GetCachedRanges(string channelId)
+        public async Task<List<(long Start, long End)>> GetCachedRanges(long channelId)
         {
             return await _redisSegmentCache.GetCachedSegments(channelId);
         }
 
-        public async Task<bool> IsMessageCached(string channelId, long messageId)
+        public async Task<bool> IsMessageCached(long channelId, long messageId)
         {
             return await _redisSegmentCache.IsMessageCached(channelId, messageId);
         }

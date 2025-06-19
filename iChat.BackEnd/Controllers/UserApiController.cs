@@ -26,7 +26,7 @@ namespace iChat.BackEnd.Controllers
         [Authorize]
         public async Task<IActionResult> GetProfile()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = new UserClaimHelper(User).GetUserId();
 
             var userProfile = await _userService.GetUserProfileAsync(userId);
             if (userProfile == null)
@@ -38,7 +38,7 @@ namespace iChat.BackEnd.Controllers
         [Authorize]
         public async Task<IActionResult> GetCompleteInfo([FromServices]ServerListService serverListService )
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = new UserClaimHelper(User).GetUserId();
             var userProfile = await _userService.GetUserProfileAsync(userId);
             var userServerList = await serverListService.GetServerList(userId);
             List<ChatServerDto> chatServerDtos = new List<ChatServerDto>();

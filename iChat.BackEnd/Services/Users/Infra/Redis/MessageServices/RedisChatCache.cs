@@ -62,10 +62,9 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
                 return false;
             }
         }
-        public async Task<bool> UploadMessage_Bulk(string channelId, List<ChatMessageDto> messages)
+        public async Task<bool> UploadMessage_Bulk(long channelId, List<ChatMessageDto> messages)
         {
-            if (string.IsNullOrWhiteSpace(channelId) || messages == null)
-                return false;
+
 
             var db = _service.GetDatabase();
             var zsetKey = RedisVariableKey.GetRecentChatMessageKey(channelId);
@@ -105,7 +104,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
         }
 
 
-        public async Task<List<ChatMessageDto>> GetRecentMessage(string channelId,long? lastMessageId)
+        public async Task<List<ChatMessageDto>> GetRecentMessage(long channelId,long? lastMessageId)
         {
 
             var db = _service.GetDatabase();
@@ -128,7 +127,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
             return messages;
         }
 
-        public async Task<List<ChatMessageDto>> GetMessagesAfterId(string channelId, long afterSnowflakeId)
+        public async Task<List<ChatMessageDto>> GetMessagesAfterId(long channelId, long afterSnowflakeId)
         {
             var db = _service.GetDatabase();
             RedisValue[] rawMessages = await db.SortedSetRangeByScoreAsync(

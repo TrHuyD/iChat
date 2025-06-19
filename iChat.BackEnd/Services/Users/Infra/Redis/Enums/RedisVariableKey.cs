@@ -4,31 +4,28 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.Enums
 {
     public static class RedisVariableKey
     {
-        internal static string GetUserServerKey(string userId)
+        internal static string GetUserServerKey(long userId)
         {
             return $"{Key.User}:{userId}:{Key.ChatServer}";
         }
-        internal static string GetUserServerKey_Lock(string userId)
+        internal static string GetUserServerKey_Lock(long userId)
         {
             return GetServerChannelKey(userId) + "_l";
         }
+
         internal static string GetServerChannelKey(long serverId)
         {
             return $"{Key.ChatServer}:{serverId}:{Key.ChatChannel}";
         }
-        internal static string GetServerChannelKey(string serverId)
-        {
-            return $"{Key.ChatServer}:{serverId}:{Key.ChatChannel}";
-        }
-        internal static string GetServerChannelKey_Lock(string serverId)
+        internal static string GetServerChannelKey_Lock(long serverId)
         {
             return GetServerChannelKey(serverId) + "_l";
         }
-        internal static string GetRecentChatMessageKey(string channelId)
+        internal static string GetRecentChatMessageKey(long channelId)
         {
             return $"{Key.ChatChannel}:{channelId}:{Key.Message}";
         }
-        internal static string GetRecentChatMessageKey_Lock(string channelId)
+        internal static string GetRecentChatMessageKey_Lock(long channelId)
         {
             return GetRecentChatMessageKey(channelId) + "_l";
         }

@@ -13,14 +13,14 @@ namespace iChat.BackEnd.Services.Users.ChatServers
     public class Test_UserSendTextMessageService  : IChatSendMessageService
 
     {
-        readonly CassandraMessageWriteService _cas_dbservice;
+        readonly IMessageWriteService _chatWriteService;
         readonly RedisChatCache _redis_dbservice;
         readonly SnowflakeService _idGen;
-        public Test_UserSendTextMessageService( CassandraMessageWriteService dbservice
+        public Test_UserSendTextMessageService(IMessageWriteService dbservice
             ,RedisChatCache rWService
             ,SnowflakeService snowflakeService)
         {
-            _cas_dbservice = dbservice;
+            _chatWriteService = dbservice;
             _redis_dbservice = rWService;
             _idGen = snowflakeService;
         }
@@ -30,7 +30,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             var messageIdResult = _idGen.GenerateId();
 
             // Faf Cassandra upload
-            _ = Task.Run(() => _cas_dbservice.UploadMessageAsync(request, messageIdResult));
+            _ = Task.Run(() => _chatWriteService.UploadMessageAsync(request, messageIdResult));
 
             var rt = new ChatMessageDto
             {

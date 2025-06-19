@@ -2,8 +2,8 @@
 {
     public class UserGetRecentMessageRequest
     {
-        public string UserId { get; set; }
-        public string ChannelId { get; set; }
+        public long UserId { get; set; }
+        public long ChannelId { get; set; }
         public long? LastMessageId { get; set; }
     }
 }

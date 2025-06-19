@@ -24,10 +24,15 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             //{
             //    return BadRequest("User ID is required.");
             //}
+            if(long.TryParse(channelId, out long channelIdLong) == false|| (channelIdLong <= 1000000000000000l))
+            {
+                return BadRequest("Invalid channel ID format.");
+            }
+
             var request = new UserGetRecentMessageRequest
             {
-                ChannelId = channelId,
-                UserId = "2"
+                ChannelId = channelIdLong,
+                UserId = 2
             };
             var messages = await _chatReadMessageService.RetrieveRecentMessage(request);
             return Ok(messages);
@@ -35,15 +40,15 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
         [HttpGet("{channelId}/read")]
         public async Task<IActionResult> ReadMessages(string channelId)
         {
-            var userId = new UserClaimHelper(User).GetUserIdStr();
-            if (string.IsNullOrEmpty(userId))
+            var userId = new UserClaimHelper(User).GetUserId();
+            if (long.TryParse(channelId, out long channelIdLong) == false || (channelIdLong <= 1000000000000000l))
             {
-                return BadRequest("User ID is required.");
+                return BadRequest("Invalid channel ID format.");
             }
             var request = new UserGetRecentMessageRequest
             {
-                ChannelId = channelId,
-                UserId = "2"
+                ChannelId = channelIdLong,
+                UserId = userId
             };
             var messages = await _chatReadMessageService.RetrieveRecentMessage(request);
             return Ok(messages);
