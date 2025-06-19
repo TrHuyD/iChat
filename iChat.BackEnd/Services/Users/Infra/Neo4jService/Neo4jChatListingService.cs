@@ -1,15 +1,16 @@
-﻿using Neo4j.Driver;
+﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using Neo4j.Driver;
 
 namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
 {
-    public class Neo4jChatListingService
+    public class Neo4jChatListingService : IChatListingService
     {
         private readonly Lazy<IAsyncSession> __session;
         public Neo4jChatListingService(Lazy<IAsyncSession> session)
         {
             __session = session;
         }
-        public async Task<List<string>> GetServerChannelListAsync(string serverId)
+        public async Task<List<long>> GetServerChannelListAsync(string serverId)
         {
             var query = @"
                     MATCH (s:ChatServer {id: toInteger($serverId)})-[:HAS_CHANNEL]->(c:ChatChannel)
@@ -18,9 +19,9 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
             var _session = __session.Value;
             var result = await _session.RunAsync(query, new { serverId });
             var record = await result.SingleAsync();
-            return record["channelIds"].As<List<string>>();
+            return record["channelIds"].As<List<long>>();
         }
-        public async Task<List<string>> GetUserServersAsync(string userId)
+        public async Task<List<long>> GetUserServersAsync(string userId)
         {
             var query = @"
                     MATCH (u:User {id: toInteger($userId)})-[:MEMBER_OF]->(s:ChatServer)
@@ -29,10 +30,10 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
             var _session = __session.Value;
             var result = await _session.RunAsync(query, new { userId });
             var record = await result.SingleAsync();
-            return record["serverIds"].As<List<string>>();
+            return record["serverIds"].As<List<long>>();
 
         }
-        public async Task<List<string>> GetServerMembersAsync(string serverId)
+        public async Task<List<long>> GetServerMembersAsync(string serverId)
         {
             var query = @"
                     MATCH (s:ChatServer {id: toInteger($serverId)})<-[:MEMBER_OF]-(u:User)
@@ -41,7 +42,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
             var _session = __session.Value;
             var result = await _session.RunAsync(query, new { serverId });
             var record = await result.SingleAsync();
-            return record["userIds"].As<List<string>>();
+            return record["userIds"].As<List<long>>();
         }
         //public async Task<bool>
     }

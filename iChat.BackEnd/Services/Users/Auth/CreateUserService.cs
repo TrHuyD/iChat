@@ -11,12 +11,12 @@ namespace iChat.BackEnd.Services.Users.Auth
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly UserIdService _idGen;
-        private readonly Neo4jCreateUserService _neo4j;
-        public CreateUserService(UserManager<AppUser> userManager,UserIdService IdGen,Neo4jCreateUserService neo4J)
+
+        public CreateUserService(UserManager<AppUser> userManager,UserIdService IdGen)
         {
             _userManager = userManager;
             _idGen = IdGen;
-            _neo4j=neo4J;
+
         }
         public async Task<OperationResult> RegisterAsync(RegisterRequest request)
         {
@@ -42,7 +42,7 @@ namespace iChat.BackEnd.Services.Users.Auth
                 var combined = string.Join(", ", errors.Select(e => e.Description));
                 return OperationResult.Fail("identity_error", combined);
             }
-            _ = _neo4j.CreateUserNode(user.Id); 
+
             return OperationResult.Ok();
         }
 

@@ -1,44 +1,36 @@
-﻿using iChat.BackEnd.Models.Helpers.CassandraOptionss;
-using iChat.BackEnd.Models.User.CassandraResults;
+﻿using iChat.BackEnd.Models.User.CassandraResults;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
-using Microsoft.AspNetCore.Mvc;
+using Cassandra;
 using ISession = Cassandra.ISession;
+using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
+
 namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
 {
-    public class CassandraMessageWriteService
+    public class CassandraMessageWriteService : IMessageWriteService
     {
-      //  private readonly SnowflakeService idGen;
-        private ISession session;
-        public CassandraMessageWriteService(CasandraService _cs)
+        private readonly ISession _session;
+
+        public CassandraMessageWriteService(CasandraService cassandraService)
         {
-          //  idGen = snowflakeService;
-            session=_cs.GetSession();
+            _session = cassandraService.GetSession();
         }
-        /// <summary>
-        /// Straight upload message to the database
-        /// No validation is done here
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException"></exception>
-        public async Task<CassMessageWriteResult> UploadMessageAsync(MessageRequest request,SnowflakeIdDto messageId)
+
+        public async Task<DbWriteResult> UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId)
         {
-            if (request.SenderId is null)
-                throw new ArgumentException("SenderId are required.");
+            if (string.IsNullOrEmpty(request.SenderId))
+                throw new ArgumentException("SenderId is required.");
 
-            //  var messageId = idGen.GenerateId();
-            var offsettimestamp = messageId.CreatedAt; //DateTimeOffset.Now;
-            var timestamp = offsettimestamp.DateTime;
+            var offsetTimestamp = messageId.CreatedAt;
+            var timestamp = offsetTimestamp.UtcDateTime;
 
-           
+            const string query = @"
+                INSERT INTO user_upload.messages 
+                (channel_id, message_id, sender_id, message_type, text_content, media_content, timestamp) 
+                VALUES (?, ?, ?, ?, ?, ?, ?);";
 
-            var query = "INSERT INTO user_upload.messages " +
-                        "(channel_id, message_id, sender_id, message_type, text_content, media_content, timestamp) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?);";
-
-            var preparedStatement = await session.PrepareAsync(query);
-            var boundStatement = preparedStatement.Bind(
+            var prepared = await _session.PrepareAsync(query);
+            var bound = prepared.Bind(
                 long.Parse(request.ReceiveChannelId),
                 messageId.Id,
                 long.Parse(request.SenderId),
@@ -48,8 +40,18 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
                 timestamp
             );
 
-            await session.ExecuteAsync(boundStatement);
-            return new CassMessageWriteResult { Success = true,CreatedAt  =offsettimestamp};
+            await _session.ExecuteAsync(bound);
+
+            return new DbWriteResult
+            {
+                Success = true,
+                CreatedAt = offsetTimestamp
+            };
+        }
+
+        public Task<DbWriteResult> UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages)
+        {
+            throw new NotImplementedException();
         }
     }
 }

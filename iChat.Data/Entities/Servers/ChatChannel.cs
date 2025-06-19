@@ -13,6 +13,7 @@ namespace iChat.Data.Entities.Servers
         public string Name { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public long ServerId { get; set; }
+        public short Order { get; set; } = 0;
         //public long ChatServerId {get;set;}
         public ChatServer Server { get; set; }
         public ICollection<ChannelPermissionOverride> Overrides { get; set; } = new List<ChannelPermissionOverride>();

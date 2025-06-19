@@ -37,6 +37,8 @@ using iChat.BackEnd.Services.Users.Auth.Sql;
 using iChat.Client;
 using System.Text.Json;
 using iChat.BackEnd.Controllers.UserControllers.MessageControllers;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices;
 //using Microsoft.AspNetCore.Authentication;
 //using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
@@ -77,7 +79,7 @@ builder.Services.AddControllers();//.AddRazorRuntimeCompilation();
 
 builder.Configuration.AddUserSecrets<Program>();
 builder.Services.AddHttpContextAccessor();  
-var neo4jConfig = builder.Configuration.GetSection("Neo4j");
+//var neo4jConfig = builder.Configuration.GetSection("Neo4j");
 
 var WorkerIdConfig = new ConfigurationBuilder()
     .AddJsonFile("workerSettings.json", optional: true, reloadOnChange: true)
@@ -93,7 +95,7 @@ builder.Services.AddSingleton<RedisLiveTime>();
 builder.Services.AddSingleton<RedisChatServerService>();
 new IdBuilderHelper().AddService(builder, WorkerIdConfig);
 //new Auth0BuilderHelper().AddService(builder);
-builder.Services.AddSingleton<IDriver>(GraphDatabase.Driver(neo4jConfig["Uri"], AuthTokens.Basic(neo4jConfig["Username"], neo4jConfig["Password"]!)));
+//builder.Services.AddSingleton<IDriver>(GraphDatabase.Driver(neo4jConfig["Uri"], AuthTokens.Basic(neo4jConfig["Username"], neo4jConfig["Password"]!)));
 builder.Services.AddTransient<IAsyncSession>(provider =>
 {
     var driver = provider.GetRequiredService<IDriver>();
@@ -104,12 +106,12 @@ builder.Services.AddTransient(provider =>
 new CassandraBuilderHelper().AddService(builder);
 new ValidatorsHelper(builder);
 //builder.Services.AddSingleton<UserSendTextMessageService>();
-builder.Services.AddTransient<Neo4jChatChannelEditService>();
-builder.Services.AddTransient<Neo4jChatServerEditService>();
-builder.Services.AddTransient(provider =>
-    new Lazy<Neo4jChatListingService>(() => provider.GetRequiredService<Neo4jChatListingService>()));
-builder.Services.AddTransient<Neo4jChatListingService>();
-builder.Services.AddTransient<UserRelationService>();
+//builder.Services.AddTransient<Neo4jChatChannelEditService>();
+builder.Services.AddTransient<IChatServerEditService,EfCoreChatServerEditService>();
+//builder.Services.AddTransient(provider =>
+//    new Lazy<Neo4jChatListingService>(() => provider.GetRequiredService<Neo4jChatListingService>()));
+builder.Services.AddTransient<IChatListingService,EfCoreChatListingService>();
+
 builder.Services.AddTransient<RedisUserServerService>();
 builder.Services.AddTransient<RedisChatCache>();
 builder.Services.AddTransient<RedisSegmentCache>();
@@ -153,8 +155,8 @@ new SqlAuthBuilderHelper().AddService(builder);
 //    });
 
 
-builder.Services.AddTransient<CreateChatService>();
-builder.Services.AddTransient < Neo4jCreateUserService>();
+builder.Services.AddTransient<IChatCreateService,EfCoreChatCreateService>();
+//builder.Services.AddTransient < Neo4jCreateUserService>();
 builder.Services.AddTransient<CreateUserService>();
 builder.Services.AddTransient<IUserService, UserService>();
 //builder.Services.AddScoped<IAuthService, AuthService>();

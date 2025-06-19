@@ -1,14 +1,15 @@
-﻿using iChat.BackEnd.Services.Users.Infra.IdGenerator;
+﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using Neo4j.Driver;
 
 namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
 {
-    public class CreateChatService
+    public class Neo4jCreateChatService :IChatCreateService
     {
         private readonly ChannelIdService _channelIdGen;
         private readonly ServerIdService _serverIdGen;
         private readonly IAsyncSession _session;
-        public CreateChatService(ChannelIdService ChannelId,ServerIdService serverIdService,IAsyncSession session)
+        public Neo4jCreateChatService(ChannelIdService ChannelId,ServerIdService serverIdService,IAsyncSession session)
         {
             _channelIdGen = ChannelId;
             _serverIdGen = serverIdService;

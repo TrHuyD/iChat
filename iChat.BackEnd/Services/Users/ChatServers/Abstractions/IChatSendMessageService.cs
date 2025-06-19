@@ -3,7 +3,7 @@ using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Messages;
 
-namespace iChat.BackEnd.Services.Users.ChatServers
+namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
 {
     public interface IChatSendMessageService
     {

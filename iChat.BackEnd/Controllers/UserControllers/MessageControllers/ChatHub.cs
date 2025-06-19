@@ -1,6 +1,6 @@
 ﻿
 using iChat.BackEnd.Models.User.MessageRequests;
-using iChat.BackEnd.Services.Users.ChatServers;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
 using Microsoft.AspNetCore.Authorization;

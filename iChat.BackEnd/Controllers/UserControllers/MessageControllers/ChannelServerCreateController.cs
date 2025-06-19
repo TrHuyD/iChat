@@ -9,8 +9,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
     [ApiController]
     public class ChannelServerCreateController : ControllerBase
     {
-        private readonly CreateChatService _service;
-        public ChannelServerCreateController(CreateChatService service)
+        private readonly Neo4jCreateChatService _service;
+        public ChannelServerCreateController(Neo4jCreateChatService service)
         {
             _service = service;
         }
