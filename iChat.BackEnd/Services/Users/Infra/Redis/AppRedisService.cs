@@ -105,84 +105,8 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
             }
             return result;
         }
-        public async Task<List<string>> GetListAsync(string listKey)
-        {
-            string luaScript = @"
-                            local listKey = KEYS[1]
 
-                            -- Check if listKey exists
-                            if redis.call('EXISTS', listKey) == 0 then
-                                return nil
-                            end
 
-                            -- Return all members of the set
-                            return redis.call('SMEMBERS', listKey)
-                        ";
-
-            RedisKey[] keys = { listKey };
-
-            var result = await _db.ScriptEvaluateAsync(luaScript, keys);
-
-            if (result.IsNull)
-                return new List<string>(); // Return empty list if key is missing
-
-            return ((RedisResult[])result).Select(r => (string)r!).ToList();
-        }
-
-        public async Task<bool> AddToList(string listKey, string member, TimeSpan expiry)
-        {
-            string luaScript = @"
-                    local listKey = KEYS[1]
-                    local member = ARGV[1]
-                    local expiry = tonumber(ARGV[2])
-
-                    -- Add member to the set
-                    redis.call('SADD', listKey, member)
-
-                    -- If the key was just created, set expiry
-                    if redis.call('SCARD', listKey) == 1 then
-                        redis.call('EXPIRE', listKey, expiry)
-                    end
-
-                    return true
-                ";
-
-                        RedisKey[] keys = { listKey };
-                        RedisValue[] values = { member, (int)expiry.TotalSeconds };
-
-                        var result = await _db.ScriptEvaluateAsync(luaScript, keys, values);
-                        return (bool)result;
-                    }
-
-        public async Task<int> AddListAsync(string key, int expiryTime, IEnumerable<string> serverIds)
-        {
-            string luaScript = @"
-                local userServerKey = KEYS[1]
-                local expiryTime = ARGV[#ARGV] -- Last argument is expiry time
-                table.remove(ARGV, #ARGV) -- Remove expiry time from ARGV
-
-                -- Add all elements to the set
-                redis.call('SADD', userServerKey, unpack(ARGV))
-
-                -- Set expiration on the set
-                redis.call('EXPIRE', userServerKey, expiryTime)
-
-                -- Return total count
-                return redis.call('SCARD', userServerKey)
-                 ";
-
-            RedisKey[] keys = { key };
-            RedisValue[] values = serverIds.Select(id => (RedisValue)id).Append(expiryTime).ToArray();
-
-            var result = await _db.ScriptEvaluateAsync(luaScript, keys, values);
-            return (int)result!;
-        }
-
-        /// <summary> Releases a distributed lock for set memberships. </summary>
-        private async Task ReleaseLockAsync(string setKey, string member)
-        {
-            await _db.KeyDeleteAsync($"{setKey}:{member}:lock");
-        }
         public async Task CacheListAsync<T>(string cacheKey, List<T> list, TimeSpan expiry)
         {
             var batch = _db.CreateBatch();

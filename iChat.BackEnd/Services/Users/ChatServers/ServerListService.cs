@@ -3,6 +3,7 @@ using iChat.BackEnd.Services.Users.Infra.Helpers;
 using iChat.BackEnd.Services.Users.Infra.Neo4jService;
 using iChat.BackEnd.Services.Users.Infra.Redis;
 using iChat.BackEnd.Services.Users.Infra.Redis.Enums;
+using iChat.DTOs.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.ChatServers
 {
@@ -18,12 +19,12 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             _chatListingService = neo4jService;
             _redisUserSerivce = redisUserSerivce;
         }
-        public async Task<List<string>> GetServerList(long userId)
+        public async Task<List<ChatServerDto>> GetServerList(long userId)
         {
             return await _lock.GetOrAddAsync(
                 getLockKey: () => RedisVariableKey.GetUserServerKey_Lock(userId),
                 fetchFromCache: () => _redisUserSerivce.GetUserServersAsync(userId),
-                fetchFromDb: () => _chatListingService.GetUserServersAsStringAsync(userId),
+                fetchFromDb: () => _chatListingService.GetUserChatServersAsync(userId),
                 saveToCache: servers => _redisUserSerivce.AddUserServersAsync(userId, servers));
         }
         public async Task<List<string>> GetChannelList(long serverId)
@@ -40,7 +41,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
                 key: $"user:servers:{userId}",
                 member: serverId,
                 fetchFromCache: () => _redisUserSerivce.CheckIfUserInServer(userId, serverId),
-                fetchFromDb: () => _chatListingService.GetUserServersAsStringAsync(userId),
+                fetchFromDb: () => _chatListingService.GetUserChatServersAsync(userId),
                 saveToCache: servers => _redisUserSerivce.AddUserServersAsync(userId, servers));
         }
     }
