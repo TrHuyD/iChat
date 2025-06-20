@@ -40,6 +40,7 @@ using iChat.BackEnd.Controllers.UserControllers.MessageControllers;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices;
 using iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices;
+using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 //using Microsoft.AspNetCore.Authentication;
 //using Microsoft.Extensions.DependencyInjection;
 var builder = WebApplication.CreateBuilder(args);
@@ -91,6 +92,7 @@ builder.Services.AddSingleton<IRedisConnectionService>(provider =>
     var configuration = provider.GetRequiredService<IConfiguration>();
     return new CloudRedisCacheService(configuration);
 });
+builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<AppRedisService>();
 builder.Services.AddSingleton<RedisLiveTime>();
 builder.Services.AddSingleton<RedisChatServerService>();
@@ -117,7 +119,7 @@ builder.Services.AddTransient<IMessageWriteService, EfCoreMessageWriteService>()
 builder.Services.AddTransient<RedisUserServerService>();
 builder.Services.AddTransient<RedisChatCache>();
 builder.Services.AddTransient<RedisSegmentCache>();
-
+builder.Services.AddTransient<MemCacheUserChatService>();
 
 builder.Services.AddTransient<ServerListService>();
 

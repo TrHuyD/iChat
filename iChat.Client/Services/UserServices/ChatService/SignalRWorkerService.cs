@@ -19,7 +19,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         public event Action OnDisconnected;
         public event Action OnReconnecting;
         public event Action OnReconnected;
-        public event Action<List<ChatMessageDto>> OnMessageHistoryReceived;
+        public event Action<List<ChatMessageDtoSafe>> OnMessageHistoryReceived;
 
         public SignalRWorkerService(IJSRuntime jsRuntime)
         {
@@ -37,16 +37,16 @@ namespace iChat.Client.Services.UserServices.ChatService
             _initialized = true;
         }
 
-        public async Task SendMessageAsync(string roomId, ChatMessageDto message)
+        public async Task SendMessageAsync(string roomId, ChatMessageDtoSafe message)
         {
             if (!_initialized) throw new InvalidOperationException("Worker not initialized");
             await _worker.InvokeVoidAsync("sendMessage", roomId, message);
         }
 
-        public async Task<List<ChatMessageDto>> GetMessageHistoryAsync(string roomId, long? beforeMessageId = null)
+        public async Task<List<ChatMessageDtoSafe>> GetMessageHistoryAsync(string roomId, string? beforeMessageId = null)
         {
             if (!_initialized) throw new InvalidOperationException("Worker not initialized");
-            return await _worker.InvokeAsync<List<ChatMessageDto>>(
+            return await _worker.InvokeAsync<List<ChatMessageDtoSafe>>(
                 "getMessageHistory", roomId, beforeMessageId);
         }
 
@@ -81,7 +81,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         }
 
         [JSInvokable]
-        public void HandleMessageHistory(List<ChatMessageDto> messages)
+        public void HandleMessageHistory(List<ChatMessageDtoSafe> messages)
         {
             OnMessageHistoryReceived?.Invoke(messages);
         }
@@ -90,7 +90,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         public void HandleMessageHistoryError(string error)
         {
             Console.Error.WriteLine($"Error getting message history: {error}");
-            OnMessageHistoryReceived?.Invoke(new List<ChatMessageDto>());
+            OnMessageHistoryReceived?.Invoke(new List<ChatMessageDtoSafe>());
         }
 
         public async ValueTask DisposeAsync()

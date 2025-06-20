@@ -42,16 +42,27 @@
 
 @code {
     [Parameter] public string RoomId { get; set; }
-
-    private SortedSet<ChatMessageDto> _messages = new(new ChatMessageComparer());
+    private long? _lRoomId;
+    public long LRoomId
+    {
+        get
+        {
+            if (_lRoomId == null)
+            {
+                _lRoomId = long.TryParse(RoomId, out var parsed) ? parsed : 0;
+            }
+            return _lRoomId.Value;
+        }
+    }
+    private SortedSet<ChatMessageDtoSafe> _messages = new(new ChatMessageDtoSafeComparer());
     private string _newMessage = string.Empty;
     private ElementReference _messagesContainer;
     private string _connectionStatus = "Disconnected";
     private string _connectionStatusClass = "disconnected";
-    private long _currentUserId = 1;
+    private string _currentUserId = "";
     private bool _isLoadingHistory = false;
     private bool _hasMoreHistory = true;
-    private long? _oldestMessageId = null;
+    private string? _oldestMessageId = null;
     private bool _isFirstLoad = true;
     private bool _shouldScrollToBottom = false;
     private DotNetObjectReference<ChatChannel>? _dotNetRef;
@@ -65,7 +76,7 @@
     protected override async Task OnInitializedAsync()
     {
         _dotNetRef = DotNetObjectReference.Create(this);
-        _currentUserId = _userInfo.GetUserId();
+        _currentUserId = _userInfo.GetUserId().ToString();
 
         SignalRService.OnMessageReceived += HandleNewMessage;
         SignalRService.OnConnected += UpdateConnectedStatus;
@@ -170,7 +181,7 @@
 
         try
         {
-            if (loadOlder && _oldestMessageId.HasValue)
+            if (loadOlder && !string.IsNullOrEmpty(_oldestMessageId))
             {
                 var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>(
                     "scrollHelpers.getScrollMetrics",
@@ -181,7 +192,7 @@
 
                 var olderMessages = await SignalRService.GetMessageHistoryAsync(
                     RoomId,
-                    _oldestMessageId.Value);
+                    _oldestMessageId);
 
                 if (olderMessages.Count == 0)
                 {
@@ -203,8 +214,8 @@
             {
                 var initialMessages = await SignalRService.GetMessageHistoryAsync(RoomId);
 
-                _messages = new SortedSet<ChatMessageDto>(
-                    initialMessages, new ChatMessageComparer());
+                _messages = new SortedSet<ChatMessageDtoSafe>(
+                    initialMessages, new ChatMessageDtoSafeComparer());
 
                 _oldestMessageId = _messages.FirstOrDefault()?.Id;
                 _shouldScrollToBottom = _messages.Count > 0;
@@ -240,9 +251,8 @@
             NumberHandling = JsonNumberHandling.AllowReadingFromString
         };
 
-        var message = JsonSerializer.Deserialize<ChatMessageDto>(messageJson, options);
-
-        if (message != null && message.RoomId.ToString() == RoomId)
+        var message = JsonSerializer.Deserialize<ChatMessageDtoSafe>(messageJson, options);
+        if (message.RoomId == RoomId)
         {
             _messages.RemoveWhere(m => m.Id == message.Id);
             _messages.Add(message);
@@ -254,17 +264,18 @@
 
             StateHasChanged();
         }
+
     }
 
     private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(_newMessage)) return;
 
-        var message = new ChatMessageDto
+        var message = new ChatMessageDtoSafe
         {
             Content = _newMessage,
             MessageType = 1,
-            RoomId = long.Parse(RoomId),
+            RoomId = RoomId,
             SenderId = _currentUserId
         };
 

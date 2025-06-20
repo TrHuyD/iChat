@@ -149,7 +149,7 @@ function initSignalR() {
 
     hubConnection.on("ReceiveMessage", async (message) => {
         try {
-            await messageStorage.storeMessage(String(message.roomId), message);
+            await messageStorage.storeMessage(message.roomId, message);
             connectionManager.notifyAllPorts({
                 action: 'MESSAGE_RECEIVED',
                 data: message
