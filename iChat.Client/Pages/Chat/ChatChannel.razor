@@ -67,7 +67,6 @@
         _dotNetRef = DotNetObjectReference.Create(this);
         _currentUserId = _userInfo.GetUserId();
 
-        // Initialize SignalR
         SignalRService.OnMessageReceived += HandleNewMessage;
         SignalRService.OnConnected += UpdateConnectedStatus;
         SignalRService.OnDisconnected += UpdateDisconnectedStatus;
@@ -77,7 +76,6 @@
         try
         {
             await SignalRService.InitializeAsync();
-            await SignalRService.JoinRoomAsync(RoomId);
             await LoadMessages();
         }
         catch (Exception ex)
@@ -90,10 +88,7 @@
     {
         if (firstRender)
         {
-            // Initialize scroll timer
             _scrollTimer = new Timer(ScrollTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
-
-            // Get initial container height for scroll calculations
             await UpdateContainerMetrics();
         }
 
@@ -123,7 +118,6 @@
 
     private async void HandleScroll()
     {
-        // Debounce scroll events
         _scrollTimer?.Change(ScrollDebounceMs, Timeout.Infinite);
     }
 
@@ -150,6 +144,7 @@
             Console.Error.WriteLine($"Error in scroll timer callback: {ex.Message}");
         }
     }
+
     private async Task RestoreScrollPosition(double prevScrollHeight, double prevScrollTop)
     {
         try
@@ -165,6 +160,7 @@
             Console.Error.WriteLine($"Error restoring scroll position: {ex.Message}");
         }
     }
+
     private async Task LoadMessages(bool loadOlder = false)
     {
         if (_isLoadingHistory) return;
@@ -176,7 +172,6 @@
         {
             if (loadOlder && _oldestMessageId.HasValue)
             {
-                // Store current scroll position before adding new messages
                 var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>(
                     "scrollHelpers.getScrollMetrics",
                     _messagesContainer);
@@ -201,7 +196,6 @@
 
                 _oldestMessageId = _messages.FirstOrDefault()?.Id;
 
-                // After render, adjust scroll position to maintain view
                 await InvokeAsync(StateHasChanged);
                 await RestoreScrollPosition(prevScrollHeight, prevScrollTop);
             }
@@ -343,9 +337,7 @@
             SignalRService.OnReconnecting -= UpdateReconnectingStatus;
             SignalRService.OnReconnected -= UpdateReconnectedStatus;
 
-            _ = SignalRService.LeaveRoomAsync(RoomId);
             _dotNetRef?.Dispose();
-
             _scrollTimer?.Dispose();
             _scrollTimer = null;
         }
@@ -356,5 +348,13 @@
         public double ScrollTop { get; set; }
         public double ScrollHeight { get; set; }
         public double ClientHeight { get; set; }
+    }
+
+    private class ChatMessageComparer : IComparer<ChatMessageDto>
+    {
+        public int Compare(ChatMessageDto x, ChatMessageDto y)
+        {
+            return x.Id.CompareTo(y.Id);
+        }
     }
 }

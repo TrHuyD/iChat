@@ -1,6 +1,8 @@
-﻿using iChat.DTOs.Users.Messages;
+﻿// SignalRWorkerService.cs
+using iChat.DTOs.Users.Messages;
 using Microsoft.JSInterop;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace iChat.Client.Services.UserServices.ChatService
@@ -33,18 +35,6 @@ namespace iChat.Client.Services.UserServices.ChatService
                 "signalRInterop.initialize", _dotNetRef);
 
             _initialized = true;
-        }
-
-        public async Task JoinRoomAsync(string roomId)
-        {
-            if (!_initialized) throw new InvalidOperationException("Worker not initialized");
-            await _worker.InvokeVoidAsync("joinRoom", roomId);
-        }
-
-        public async Task LeaveRoomAsync(string roomId)
-        {
-            if (!_initialized) return;
-            await _worker.InvokeVoidAsync("leaveRoom", roomId);
         }
 
         public async Task SendMessageAsync(string roomId, ChatMessageDto message)

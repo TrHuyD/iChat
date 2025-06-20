@@ -2,14 +2,15 @@
     constructor(dbName = "ChatDB") {
         this.dbName = dbName;
         this.db = null;
-        this.ranOnce = false;
+        this.initialized = false;
+        this.initializationPromise = null;
     }
 
     async initialize() {
-        if (this.ranOnce) return;
-        this.ranOnce = true;
+        if (this.initialized) return;
+        if (this.initializationPromise) return this.initializationPromise;
 
-        this.db = await new Promise((resolve, reject) => {
+        this.initializationPromise = new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, 1);
 
             request.onupgradeneeded = (event) => {
@@ -20,12 +21,43 @@
                 }
             };
 
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
+            request.onsuccess = (event) => {
+                this.db = event.target.result;
+                this.initialized = true;
+
+                // Handle database closure
+                this.db.onclose = () => {
+                    this.db = null;
+                    this.initialized = false;
+                };
+
+                this.db.onerror = (event) => {
+                    console.error('Database error:', event.target.error);
+                };
+
+                resolve(this.db);
+            };
+
+            request.onerror = (event) => {
+                console.error('Database opening failed:', event.target.error);
+                reject(event.target.error);
+            };
         });
+
+        return this.initializationPromise;
+    }
+
+    async ensureDatabaseReady() {
+        if (!this.initialized) {
+            await this.initialize();
+        }
+        if (!this.db) {
+            throw new Error('Database connection is not available');
+        }
     }
 
     async storeMessage(roomId, message) {
+        await this.ensureDatabaseReady();
         const tx = this.db.transaction("Messages", "readwrite");
         const store = tx.objectStore("Messages");
         const record = {
@@ -39,14 +71,18 @@
             senderId: message.senderId,
         };
         store.put(record);
-        await tx.done;
+        return new Promise((resolve, reject) => {
+            tx.oncomplete = resolve;
+            tx.onerror = (event) => reject(event.target.error);
+        });
     }
 
     async storeMessages(roomId, messages) {
+        await this.ensureDatabaseReady();
         const tx = this.db.transaction("Messages", "readwrite");
         const store = tx.objectStore("Messages");
 
-        for (const message of messages) {
+        const promises = messages.map(message => {
             const record = {
                 id: `${roomId}_${message.id}`,
                 roomId,
@@ -57,31 +93,48 @@
                 createdAt: new Date(message.createdAt).toISOString(),
                 senderId: message.senderId,
             };
-            store.put(record);
-        }
-        await tx.done;
+            return new Promise((resolve, reject) => {
+                const request = store.put(record);
+                request.onsuccess = resolve;
+                request.onerror = (event) => reject(event.target.error);
+            });
+        });
+
+        await Promise.all(promises);
+        return new Promise((resolve, reject) => {
+            tx.oncomplete = resolve;
+            tx.onerror = (event) => reject(event.target.error);
+        });
     }
 
     async getMessages(roomId, limit = 100) {
+        await this.ensureDatabaseReady();
         const tx = this.db.transaction("Messages", "readonly");
         const store = tx.objectStore("Messages");
         const index = store.index("roomId");
 
-        const messages = [];
-        const request = index.openCursor(IDBKeyRange.only(roomId));
-
         return new Promise((resolve, reject) => {
+            const messages = [];
+            const request = index.openCursor(IDBKeyRange.only(roomId));
+
             request.onsuccess = (event) => {
                 const cursor = event.target.result;
                 if (cursor) {
                     messages.push(cursor.value);
-                    cursor.continue();
+                    if (limit && messages.length >= limit) {
+                        resolve(messages);
+                    } else {
+                        cursor.continue();
+                    }
                 } else {
                     messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-                    resolve(messages.slice(-limit));
+                    resolve(messages);
                 }
             };
-            request.onerror = () => reject(request.error);
+
+            request.onerror = (event) => {
+                reject(event.target.error);
+            };
         });
     }
 

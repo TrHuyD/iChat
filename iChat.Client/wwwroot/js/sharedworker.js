@@ -1,5 +1,4 @@
-﻿
-// sharedWorker.js
+﻿// sharedWorker.js
 console.warn("Worker starting");
 importScripts("https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js");
 importScripts("/js/messageStorage.js");
@@ -7,115 +6,86 @@ importScripts("/js/sharedworkerSrc/connectionManager.js");
 
 let hubConnection;
 const messageStorage = new MessageStorageService();
-let actionQueue = Promise.resolve(); // Initialize actionQueue
+let isStorageInitialized = false;
 
 self.onconnect = function (e) {
     const port = connectionManager.initializePort(e.ports[0]);
 
-    // Notify that the worker is ready
-    port.postMessage({ action: 'WORKER_READY' });
-
-    port.onmessage = function (event) {
-        const { action, data } = event.data;
-
-        actionQueue = actionQueue
-            .then(() => messageStorage.initialize()) // Wait for indexedDB to be ready
+    // Initialize storage when first connection is made
+    if (!isStorageInitialized) {
+        messageStorage.initialize()
             .then(() => {
-                console.log(`[Queue] Executing ${action}`);
-                switch (action) {
-                    case 'INIT_SIGNALR':
-                        return initSignalR(port);
-                    case 'JOIN_ROOM':
-                        return handleJoinRoom(port, data.roomId);
-                    case 'LEAVE_ROOM':
-                        return handleLeaveRoom(port, data.roomId);
-                    case 'SEND_MESSAGE':
-                        return handleSendMessage(data.roomId, data.message);
-                    case 'HEARTBEAT':
-                        return connectionManager.handleHeartbeat(port);
-                    case 'GET_MESSAGE_HISTORY':
-                        return handleGetMessageHistory(port, data.roomId, data.beforeMessageId);
-                }
+                isStorageInitialized = true;
+                port.postMessage({ action: 'WORKER_READY' });
             })
             .catch(err => {
-                console.error("Action failed:", err);
+                console.error("Failed to initialize storage:", err);
+                port.postMessage({ action: 'WORKER_ERROR', error: err.toString() });
             });
+    } else {
+        port.postMessage({ action: 'WORKER_READY' });
+    }
+
+    port.onmessage = async function (event) {
+        const { action, data } = event.data;
+
+        try {
+            // Ensure storage is ready before handling any messages
+            if (!isStorageInitialized) {
+                await messageStorage.initialize();
+                isStorageInitialized = true;
+            }
+
+            switch (action) {
+                case 'INIT_SIGNALR':
+                    initSignalR();
+                    break;
+                case 'SEND_MESSAGE':
+                    await handleSendMessage(data.roomId, data.message);
+                    break;
+                case 'GET_MESSAGE_HISTORY':
+                    await handleGetMessageHistory(port, data.roomId, data.beforeMessageId);
+                    break;
+            }
+        } catch (err) {
+            console.error("Error handling message:", action, err);
+            port.postMessage({
+                action: 'OPERATION_ERROR',
+                originalAction: action,
+                error: err.toString()
+            });
+        }
     };
 };
 
-
-
-async function handleJoinRoom(port, roomId) {
-    const roomIdToJoin = connectionManager.addRoomSubscription(port, roomId);
-
-    if (hubConnection?.state === signalR.HubConnectionState.Connected) {
-        try {
-            await hubConnection.invoke("JoinRoom", roomIdToJoin);
-            connectionManager.clearPendingRoomJoin(roomIdToJoin);
-            console.log(`Successfully joined room: ${roomIdToJoin}`);
-        } catch (err) {
-            console.error("JoinRoom failed:", err);
-        }
-    } else {
-        console.warn(`Deferred joining room ${roomIdToJoin} - connection not ready`);
-        if (!hubConnection || hubConnection.state === signalR.HubConnectionState.Disconnected) {
-            initSignalR();
-        }
-    }
-}
-
-function handleLeaveRoom(port, roomId) {
-    const roomIdToLeave = connectionManager.removeRoomSubscription(port, roomId);
-    if (roomIdToLeave && hubConnection?.state === signalR.HubConnectionState.Connected) {
-        hubConnection.invoke("LeaveRoom", roomIdToLeave)
-            .catch(err => console.error("LeaveRoom failed:", err));
-    }
-}
-
 async function handleSendMessage(roomId, message) {
     if (!hubConnection || hubConnection.state !== signalR.HubConnectionState.Connected) {
-        console.error("Cannot send message - connection not established");
-        return;
+        throw new Error("Cannot send message - connection not established");
     }
 
-    const roomSubs = connectionManager.roomSubscriptions.get(roomId);
-    if (!roomSubs || roomSubs.size === 0) {
-        console.error(`Cannot send to room ${roomId} - no active subscriptions`);
-        return;
-    }
-
-    try {
-        await hubConnection.invoke("SendMessage", roomId, message);
-    } catch (err) {
-        console.error("SendMessage failed:", err);
-        connectionManager.notifyPortsInRoom(roomId, {
-            action: 'MESSAGE_ERROR',
-            data: `Failed to send message: ${err.message}`
-        });
-    }
+    await hubConnection.invoke("SendMessage", roomId, message);
 }
 
 async function handleGetMessageHistory(port, roomId, beforeMessageId = null) {
+    let localMessages = [];
+
     try {
-        // Step 1: Get latest message from local IndexedDB if no ID is provided
-        if (!beforeMessageId) {
-            const localMessages = await messageStorage.getMessages(roomId, 1); // get latest 1 message
-            if (localMessages.length > 0) {
-                beforeMessageId = Number(localMessages[0].messageId);
-            }
+        localMessages = await messageStorage.getMessages(roomId, 1);
+        if (localMessages.length > 0 && !beforeMessageId) {
+            beforeMessageId = Number(localMessages[0].messageId);
         }
+    } catch (dbError) {
+        console.warn("Failed to get local messages:", dbError);
+    }
 
-        // Step 2: Wait for SignalR to connect
+    try {
         await waitForSignalRConnectionReady();
-
-        // Step 3: Fetch from server before that ID
         const serverMessages = await hubConnection.invoke(
             "GetMessageHistory",
             Number(roomId),
             beforeMessageId ? Number(beforeMessageId) : null
         );
 
-        // Step 4: Normalize messages
         const formattedMessages = serverMessages.map(msg => ({
             id: Number(msg.id),
             roomId: Number(msg.roomId),
@@ -126,45 +96,39 @@ async function handleGetMessageHistory(port, roomId, beforeMessageId = null) {
             senderId: Number(msg.senderId),
         }));
 
-        // Step 5: Store in IndexedDB
         if (formattedMessages.length > 0) {
-            await messageStorage.storeMessages(roomId, formattedMessages);
+            try {
+                await messageStorage.storeMessages(roomId, formattedMessages);
+            } catch (storeError) {
+                console.error("Failed to store messages:", storeError);
+            }
         }
 
-        // Step 6: Send messages back to client
         port.postMessage({
             action: 'MESSAGE_HISTORY',
-            data: formattedMessages
+            data: formattedMessages,
+            fromServer: true
         });
-    } catch (err) {
-        console.error("Error getting message history:", err);
+    } catch (serverError) {
+        console.error("Error getting server history:", serverError);
 
-        // Step 7: Fallback to existing local messages
-        try {
-            const localMessages = await messageStorage.getMessages(roomId);
+        if (localMessages.length > 0) {
             port.postMessage({
                 action: 'MESSAGE_HISTORY',
-                data: localMessages
+                data: localMessages,
+                fromServer: false
             });
-        } catch (dbError) {
-            console.error("Error getting local messages:", dbError);
+        } else {
             port.postMessage({
                 action: 'MESSAGE_HISTORY_ERROR',
-                data: err.toString()
+                data: serverError.toString()
             });
         }
     }
 }
 
-
-function initSignalR(initiatingPort = null) {
-    
-    if (hubConnection) {
-        if (initiatingPort) {
-            connectionManager.notifyPortAboutConnectionState(initiatingPort, hubConnection.state);
-        }
-        return;
-    }
+function initSignalR() {
+    if (hubConnection) return;
 
     hubConnection = new signalR.HubConnectionBuilder()
         .withUrl("https://localhost:6051/api/chathub", {
@@ -173,12 +137,10 @@ function initSignalR(initiatingPort = null) {
             withCredentials: true
         })
         .withAutomaticReconnect({
-            nextRetryDelayInMilliseconds: retryContext => {
-                if (retryContext.elapsedMilliseconds < 60000) {
-                    return Math.random() * 2000 + 2000;
-                }
-                return Math.random() * 5000 + 10000;
-            }
+            nextRetryDelayInMilliseconds: retryContext =>
+                retryContext.elapsedMilliseconds < 60000 ?
+                    Math.random() * 2000 + 2000 :
+                    Math.random() * 5000 + 10000
         })
         .configureLogging(signalR.LogLevel.Warning)
         .build();
@@ -186,19 +148,21 @@ function initSignalR(initiatingPort = null) {
     connectionManager.setupHeartbeat();
 
     hubConnection.on("ReceiveMessage", async (message) => {
-        const roomId = String(message.roomId);
-
         try {
-
-            await messageStorage.storeMessage(roomId, message);
+            await messageStorage.storeMessage(String(message.roomId), message);
+            connectionManager.notifyAllPorts({
+                action: 'MESSAGE_RECEIVED',
+                data: message
+            });
         } catch (e) {
             console.error("Failed to store message:", e);
+            // Still notify ports even if storage fails
+            connectionManager.notifyAllPorts({
+                action: 'MESSAGE_RECEIVED',
+                data: message,
+                storageError: e.toString()
+            });
         }
-
-        connectionManager.notifyPortsInRoom(roomId, {
-            action: 'MESSAGE_RECEIVED',
-            data: message,
-        });
     });
 
     hubConnection.onclose(() => {
@@ -211,23 +175,12 @@ function initSignalR(initiatingPort = null) {
 
     hubConnection.onreconnected(async (connectionId) => {
         console.log("Reconnected with ID:", connectionId);
-        const rejoinPromises = [];
-
-        connectionManager.roomSubscriptions.forEach((_, roomId) => {
-            rejoinPromises.push(
-                hubConnection.invoke("JoinRoom", roomId)
-                    .catch(err => console.error("Rejoin failed:", err))
-            );
-        });
-
-        await Promise.all(rejoinPromises);
         connectionManager.notifyAllPorts({ action: 'SIGNALR_RECONNECTED' });
     });
 
     hubConnection.start()
         .then(() => {
             console.log("SignalR connection established");
-            connectionManager.getPendingRoomJoins().forEach(roomId => handleJoinRoom(null, roomId));
             connectionManager.notifyAllPorts({ action: 'SIGNALR_CONNECTED' });
         })
         .catch(err => {
@@ -239,10 +192,10 @@ function initSignalR(initiatingPort = null) {
             setTimeout(() => initSignalR(), 5000);
         });
 }
+
 function waitForSignalRConnectionReady(timeout = 10000) {
     return new Promise((resolve, reject) => {
         const start = Date.now();
-
         function check() {
             if (hubConnection && hubConnection.state === signalR.HubConnectionState.Connected) {
                 resolve();
@@ -252,7 +205,6 @@ function waitForSignalRConnectionReady(timeout = 10000) {
                 setTimeout(check, 20);
             }
         }
-
         check();
     });
 }

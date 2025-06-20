@@ -1,4 +1,5 @@
-﻿window.signalRInterop = {
+﻿// signalRWorker.js
+window.signalRInterop = {
     initialize: async function (dotNetRef) {
         const worker = new SharedWorker('/js/sharedWorker.js');
         worker.port.start();
@@ -48,8 +49,6 @@
         sendToWorker('INIT_SIGNALR');
 
         return {
-            joinRoom: (roomId) => sendToWorker('JOIN_ROOM', { roomId }),
-            leaveRoom: (roomId) => sendToWorker('LEAVE_ROOM', { roomId }),
             sendMessage: (roomId, message) => sendToWorker('SEND_MESSAGE', { roomId, message }),
             getMessageHistory: (roomId, beforeMessageId) => {
                 return new Promise((resolve) => {

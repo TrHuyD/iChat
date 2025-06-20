@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.Neo4jService;
+using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,14 +16,11 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         {
             _service = service;
         }
-        //[HttpGet("Create")]
-        //public IActionResult Create()
-        //{
-        //    return View();
-        //}
+
         [HttpPost("Create")]
-        public async Task<IActionResult> CreateServer(string name)
+        public async Task<IActionResult> CreateServer([FromBody] ChatServerCreateRq rq)
         {
+            var name = rq.Name;
             if (string.IsNullOrWhiteSpace(name))
             {
                 ModelState.AddModelError("Name", "Server name is required.");

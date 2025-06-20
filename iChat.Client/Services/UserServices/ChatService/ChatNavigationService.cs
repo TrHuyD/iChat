@@ -1,7 +1,11 @@
-﻿using iChat.DTOs.Users.Messages;
+﻿using iChat.Client.Services.Auth;
+using iChat.DTOs.Users.Messages;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace iChat.Client.Services.UserServices
 {
@@ -10,9 +14,10 @@ namespace iChat.Client.Services.UserServices
         public List<ChatServerDto> ChatServers { get; private set; } = new();
 
         public event Action OnChatServersChanged;
-
-        public ChatNavigationService()
-        {
+        public JwtAuthHandler _http;
+        public ChatNavigationService(JwtAuthHandler jwtAuthHandler)
+        {   
+            _http = jwtAuthHandler ?? throw new ArgumentNullException(nameof(jwtAuthHandler));
         }
 
         /// <summary>
@@ -103,15 +108,30 @@ namespace iChat.Client.Services.UserServices
         }
         public async Task CreateServerAsync(string name)
         {
-            // Simulate server creation
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Server name must not be empty", nameof(name));
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/Chat/Create")
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new ChatServerCreateRq { Name = name }), Encoding.UTF8, "application/json")
+            };
+            var response = await _http.SendAuthAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException($"Failed to create server: {errorContent}");
+            }
+
+            var serverId = await response.Content.ReadAsStringAsync();
+
+           
             var newServer = new ChatServerDto
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = serverId,
                 Name = name,
                 AvatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png",
                 Position = ChatServers.Count + 1
             };
-            // Add the new server to the list
+
             AddServer(newServer);
         }
         /// <summary>

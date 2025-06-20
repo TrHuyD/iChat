@@ -41,15 +41,10 @@ namespace iChat.BackEnd.Controllers
             var userId = new UserClaimHelper(User).GetUserId();
             var userProfile = await _userService.GetUserProfileAsync(userId);
             var userServerList = await serverListService.GetServerList(userId);
-            List<ChatServerDto> chatServerDtos = new List<ChatServerDto>();
-            foreach( var i in userServerList)
-            {
-                chatServerDtos.Add(new ChatServerDto { Id = i,Name=i });
-            }
             var package = new UserCompleteDto
             {
                 UserProfile = userProfile,
-                ChatServers = chatServerDtos
+                ChatServers = userServerList
             };
             if (package == null)
                 return NotFound();

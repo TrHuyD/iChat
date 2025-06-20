@@ -22,7 +22,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             var userId = new UserClaimHelper(User).GetUserId();
 
 
-            var servers = await _userServerListService.get(userId);
+            var servers = await _userServerListService.GetServerList(userId);
             return Ok(servers);
             //  return View("~/Views/User/ChatServer/Listing.cshtml", servers); 
         }

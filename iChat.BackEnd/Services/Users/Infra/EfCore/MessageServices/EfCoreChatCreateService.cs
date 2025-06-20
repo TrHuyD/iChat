@@ -66,7 +66,8 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 Id = serverId,
                 Name = serverName,
                 CreatedAt = DateTimeOffset.UtcNow,
-                ChatChannels = new List<ChatChannel>()
+                ChatChannels = new List<ChatChannel>(),
+                AdminId = adminUserId
             };
 
             var generalChannel = new ChatChannel

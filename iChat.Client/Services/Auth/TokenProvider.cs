@@ -96,8 +96,9 @@ public TokenProvider(NavigationManager navigation)
 
                     
                 }
+                throw new HttpRequestException("Fail to connect to Server", null, System.Net.HttpStatusCode.InternalServerError);
             }
-            throw new HttpRequestException("Fail to connect to Server",null, System.Net.HttpStatusCode.InternalServerError);
+            
         }
         public async Task<string> GetToken()
         {

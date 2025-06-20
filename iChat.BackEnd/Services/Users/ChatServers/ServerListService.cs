@@ -21,11 +21,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         }
         public async Task<List<ChatServerDto>> GetServerList(long userId)
         {
-            return await _lock.GetOrAddAsync(
-                getLockKey: () => RedisVariableKey.GetUserServerKey_Lock(userId),
-                fetchFromCache: () => _redisUserSerivce.GetUserServersAsync(userId),
-                fetchFromDb: () => _chatListingService.GetUserChatServersAsync(userId),
-                saveToCache: servers => _redisUserSerivce.AddUserServersAsync(userId, servers));
+            return await _chatListingService.GetUserChatServersAsync(userId);
         }
         public async Task<List<string>> GetChannelList(long serverId)
         {
@@ -35,14 +31,14 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             fetchFromDb: () => _chatListingService.GetServerChannelListAsStringAsync(serverId),
             saveToCache: channels => _redisUserSerivce.AddServerChannelsAsync(serverId, channels));
         }
-        public async Task<bool> CheckIfUserInServer(long userId, long serverId)
-        {
-            return await _lock.CheckAndFetchAsync(
-                key: $"user:servers:{userId}",
-                member: serverId,
-                fetchFromCache: () => _redisUserSerivce.CheckIfUserInServer(userId, serverId),
-                fetchFromDb: () => _chatListingService.GetUserChatServersAsync(userId),
-                saveToCache: servers => _redisUserSerivce.AddUserServersAsync(userId, servers));
-        }
+        //public async Task<bool> CheckIfUserInServer(long userId, long serverId)
+        //{
+        //    return await _lock.CheckAndFetchAsync(
+        //        key: $"user:servers:{userId}",
+        //        member: serverId,
+        //        fetchFromCache: () => _redisUserSerivce.CheckIfUserInServer(userId, serverId),
+        //        fetchFromDb: () => _chatListingService.GetUserChatServersAsync(userId),
+        //        saveToCache: servers => _redisUserSerivce.AddUserServersAsync(userId, servers));
+        //}
     }
 }
