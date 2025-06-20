@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.Data.EF;
+using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
 using System;
 
@@ -31,7 +32,20 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 .Select(ucs => ucs.ChatServerId)
                 .ToListAsync();
         }
-
+        public async Task<List<ChatServerDto>> GetUserChatServersAsync(long userId)
+        {
+            return await _dbContext.UserChatServers
+                .Where(ucs => ucs.UserId == userId)
+              //  .OrderBy(ucs => ucs.Order) 
+                .Select(ucs => new ChatServerDto
+                {
+                    Id = ucs.ChatServer.Id.ToString(),
+                    Name = ucs.ChatServer.Name,
+                    AvatarUrl = ucs.ChatServer.Avatar ?? "https://cdn.discordapp.com/embed/avatars/0.png",
+                    Position = ucs.Order 
+                })
+                .ToListAsync();
+        }
         public async Task<List<long>> GetServerMembersAsync(long serverId)
         {
            

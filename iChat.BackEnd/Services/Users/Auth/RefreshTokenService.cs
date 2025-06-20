@@ -38,20 +38,20 @@ namespace iChat.BackEnd.Services.Users.Auth
         }
         public bool isUsable(RefreshToken? refreshToken)
         {
-            if(refreshToken == null || refreshToken.ExpiryDate < DateTime.UtcNow || refreshToken.Revoked is not null)
+            if(refreshToken == null || refreshToken.ExpiryDate < DateTimeOffset.UtcNow || refreshToken.Revoked is not null)
                 return false;
             return true;
         }
         public void RefreshIfNeeded(RefreshToken rf, HttpContext context)
         {
-            if(rf.Created.AddDays(options.LiveDays-options.RefreshDays) < DateTime.Now)
+            if(rf.Created.AddDays(options.LiveDays-options.RefreshDays) < DateTimeOffset.UtcNow)
             {
                 RenewRefreshToken(rf);
             }
         }
         private void RenewRefreshToken(RefreshToken rf)
         {
-            rf.Created = DateTime.Now;
+            rf.Created = DateTimeOffset.UtcNow;
             rf.Revoked = null;
         }
         public void Refresh(RefreshToken rf,HttpContext context)
@@ -64,7 +64,7 @@ namespace iChat.BackEnd.Services.Users.Auth
         }
         public void Revoke(RefreshToken rf)
         {
-            rf.Revoked = DateTime.MinValue;
+            rf.Revoked = DateTimeOffset.MinValue;
         }
         private RefreshTokenDto toDto(RefreshToken rf)
         {
@@ -95,7 +95,7 @@ namespace iChat.BackEnd.Services.Users.Auth
         public void NewLogin(AppUser user,HttpContext context)
         {
             var token = GenerateToken();
-            var Created = DateTime.Now;
+            var Created = DateTimeOffset.UtcNow;
             var rf = new RefreshToken()
             {
                 Created = Created,

@@ -10,10 +10,10 @@ namespace iChat.Data.Entities.Users.Auth
     {
         public int Id { get; set; }
         public string Token { get; set; }
-        public DateTime ExpiryDate { get; set; }
-        public DateTime Created { get; set; }
-        public DateTime? Revoked { get; set; }
-        public bool IsExpired => DateTime.UtcNow >= ExpiryDate;
+        public DateTimeOffset ExpiryDate { get; set; }
+        public DateTimeOffset Created { get; set; }
+        public DateTimeOffset? Revoked { get; set; }
+        public bool IsExpired => DateTimeOffset.UtcNow >= ExpiryDate;
         public bool IsActive => Revoked == null && !IsExpired;
         public long UserId { get; set; }
         public AppUser User { get; set; }

@@ -1,4 +1,5 @@
-﻿using iChat.BackEnd.Services.Users.Infra.Neo4jService;
+﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.Infra.Neo4jService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,8 +10,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
     [ApiController]
     public class ChannelServerCreateController : ControllerBase
     {
-        private readonly Neo4jCreateChatService _service;
-        public ChannelServerCreateController(Neo4jCreateChatService service)
+        private readonly IChatCreateService _service;
+        public ChannelServerCreateController(IChatCreateService service)
         {
             _service = service;
         }

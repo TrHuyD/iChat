@@ -19,7 +19,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         private readonly IChatSendMessageService _sendMessageService;
         private readonly IChatReadMessageService _readMessageService;
 
-        // Optional cache to store channel focus states (could be Redis-backed for scale)
+        
         private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
 
         public ChatHub(

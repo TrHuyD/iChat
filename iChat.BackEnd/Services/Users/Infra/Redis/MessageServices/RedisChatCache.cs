@@ -80,7 +80,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
                     Content = string.Empty,
                     ContentMedia = string.Empty,
                     MessageType = -1,
-                    CreatedAt = DateTimeOffset.Now,
+                    CreatedAt = DateTimeOffset.UtcNow,
                     SenderId = -1,
                 };
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using iChat.Data.EF;
@@ -11,9 +12,11 @@ using iChat.Data.EF;
 namespace iChat.Data.Migrations
 {
     [DbContext(typeof(iChatDbContext))]
-    partial class iChatDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250620074529_Update")]
+    partial class Update
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -272,17 +275,19 @@ namespace iChat.Data.Migrations
                     b.Property<long>("ChatServerId")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTimeOffset>("JoinedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<long?>("UserChatServerChatServerId")
+                        .HasColumnType("bigint");
 
-                    b.Property<short>("Order")
-                        .HasColumnType("smallint");
+                    b.Property<long?>("UserChatServerUserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("UserId", "ChatServerId");
 
                     b.HasIndex("ChatServerId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserChatServerUserId", "UserChatServerChatServerId");
 
                     b.ToTable("UserChatServers");
                 });
@@ -606,6 +611,10 @@ namespace iChat.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("iChat.Data.Entities.Servers.UserChatServer", null)
+                        .WithMany("UserChatServers")
+                        .HasForeignKey("UserChatServerUserId", "UserChatServerChatServerId");
+
                     b.Navigation("ChatServer");
 
                     b.Navigation("User");
@@ -651,6 +660,11 @@ namespace iChat.Data.Migrations
 
                     b.Navigation("ChatRoles");
 
+                    b.Navigation("UserChatServers");
+                });
+
+            modelBuilder.Entity("iChat.Data.Entities.Servers.UserChatServer", b =>
+                {
                     b.Navigation("UserChatServers");
                 });
 

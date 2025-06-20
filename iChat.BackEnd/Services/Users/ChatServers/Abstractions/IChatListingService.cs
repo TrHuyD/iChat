@@ -1,10 +1,13 @@
-﻿namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
+﻿using iChat.DTOs.Users.Messages;
+
+namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
 {
     public interface IChatListingService
     {
         Task<List<long>> GetServerChannelListAsync(long serverId);
         Task<List<long>> GetUserServersAsync(long userId);
         Task<List<long>> GetServerMembersAsync(long serverId);
+        Task<List<ChatServerDto>> GetUserChatServersAsync(long userId);
         async Task<List<string>> GetServerChannelListAsStringAsync(long serverId)
     => (await GetServerChannelListAsync(serverId)).Select(id => id.ToString()).ToList();
 

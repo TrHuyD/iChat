@@ -2,6 +2,8 @@
 
 
 using StackExchange.Redis;
+using System.Collections.Generic;
+using System.Text.Json;
 
 namespace iChat.BackEnd.Services.Users.Infra.Redis
 {
@@ -9,7 +11,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
     {
         private readonly IDatabase _db;
         public AppRedisService(IRedisConnectionService connection) { _db = connection.GetDataBase(); }
-
+        private readonly string _emptyListMarker = "EMPTY_LIST_MARKER";
         public async Task<string?> GetCacheValueAsync(string key) => await _db.StringGetAsync(key);
         public IDatabase GetDatabase() => _db;
         public async Task SetCacheValueAsync(string key, string value, TimeSpan expiry) =>
@@ -126,6 +128,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
 
             return ((RedisResult[])result).Select(r => (string)r!).ToList();
         }
+
         public async Task<bool> AddToList(string listKey, string member, TimeSpan expiry)
         {
             string luaScript = @"
@@ -180,6 +183,95 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
         {
             await _db.KeyDeleteAsync($"{setKey}:{member}:lock");
         }
+        public async Task CacheListAsync<T>(string cacheKey, List<T> list, TimeSpan expiry)
+        {
+            var batch = _db.CreateBatch();
+
+            Task pushTask;
+            if (list == null || list.Count == 0)
+            {
+               
+                pushTask = batch.ListLeftPushAsync(cacheKey, _emptyListMarker);
+            }
+            else
+            {
+                var values = list
+                    .Select(item => (RedisValue)JsonSerializer.Serialize(item))
+                    .ToArray();
+
+                pushTask = batch.ListLeftPushAsync(cacheKey, values);
+            }
+
+            var expireTask = batch.KeyExpireAsync(cacheKey, expiry);
+
+            batch.Execute();
+
+            await Task.WhenAll(pushTask, expireTask);
+        }
+        public async Task PushToListAsync<T>(string cacheKey, List<T> newItems, TimeSpan expiry)
+        {
+            if (newItems == null || newItems.Count == 0)
+                return;
+            var batch = _db.CreateBatch();
+            var removeMarkerTask = batch.ListRemoveAsync(cacheKey, _emptyListMarker);
+            var values = newItems
+                .Select(item => (RedisValue)JsonSerializer.Serialize(item))
+                .ToArray();
+            var pushTask = batch.ListRightPushAsync(cacheKey, values);
+            var expireTask = batch.KeyExpireAsync(cacheKey, expiry);
+            batch.Execute();
+            await Task.WhenAll(removeMarkerTask, pushTask, expireTask);
+        }
+
+        public async Task<List<T>> GetListAsync<T>(string cacheKey)
+        {
+            var redisValues = await _db.ListRangeAsync(cacheKey);
+
+            if (redisValues.Length == 0)
+            {
+                return null;
+            }
+            List<T> list;
+            if (redisValues.Length > 0 && redisValues[^1] == _emptyListMarker)
+            {
+               
+                list = redisValues
+                    .Take(redisValues.Length - 1) // Exclude last
+                    .Select(v => JsonSerializer.Deserialize<T>(v.ToString()))
+                    .ToList();
+            }
+            else
+            {
+               
+                list = redisValues
+                    .Select(v => JsonSerializer.Deserialize<T>(v.ToString()))
+                    .ToList();
+            }
+
+
+            return list;
+        }
+        public async Task PushToListAsync<T>(string cacheKey, T item, TimeSpan expiry)
+        {
+            if (item == null)
+                return;
+
+            var batch = _db.CreateBatch();
+
+            var serialized = (RedisValue)JsonSerializer.Serialize(item);
+
+            var removeMarkerTask = batch.ListRemoveAsync(cacheKey, _emptyListMarker);
+            var pushTask = batch.ListRightPushAsync(cacheKey, serialized);
+            var expireTask = batch.KeyExpireAsync(cacheKey, expiry);
+
+            batch.Execute();
+            await Task.WhenAll(removeMarkerTask, pushTask, expireTask);
+        }
+
+
+
     }
+
+
 }
 

@@ -1,4 +1,5 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.DTOs.Users.Messages;
 using Neo4j.Driver;
 
 namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
@@ -43,6 +44,26 @@ namespace iChat.BackEnd.Services.Users.Infra.Neo4jService
             var result = await _session.RunAsync(query, new { serverId });
             var record = await result.SingleAsync();
             return record["userIds"].As<List<long>>();
+        }
+
+        Task<List<long>> IChatListingService.GetServerChannelListAsync(long serverId)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<List<long>> IChatListingService.GetUserServersAsync(long userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<List<long>> IChatListingService.GetServerMembersAsync(long serverId)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<List<ChatServerDto>> IChatListingService.GetUserChatServersAsync(long userId)
+        {
+            throw new NotImplementedException();
         }
         //public async Task<bool>
     }
