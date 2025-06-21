@@ -79,6 +79,34 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
 
             return null;
         }
+        public async Task<List<ChatMessageDto>> TryGetSegmentBefore(long channelId, long messageId)
+        {
+            var db = _service.GetDatabase();
+            string indexKey = GetSegmentIndexKey(channelId);
+            var allRanges = await db.SortedSetRangeByScoreWithScoresAsync(indexKey);
+            var candidateSegments = new List<(long start, long end)>();
+            foreach (var entry in allRanges)
+            {
+                var range = entry.Element.ToString();
+                var parts = range.Split('~');
+                if (parts.Length != 2)
+                    continue;
+                if (long.TryParse(parts[0], out long start) && long.TryParse(parts[1], out long end))
+                {
+                    if (end < messageId)
+                    {
+                        candidateSegments.Add((start, end));
+                    }
+                }
+            }
+            if (!candidateSegments.Any())
+                return null;
+            var bestSegment = candidateSegments.OrderByDescending(seg => seg.end).First();
+            var segmentKey = GetSegmentKey(channelId, bestSegment.start, bestSegment.end);
+            var rawMessages = await db.SortedSetRangeByScoreAsync(segmentKey, bestSegment.start, bestSegment.end);
+
+            return rawMessages.Select(m => JsonConvert.DeserializeObject<ChatMessageDto>(m)).ToList();
+        }
 
         public async Task<List<(long startId, long endId)>> GetCachedSegments(long channelId)
         {

@@ -43,6 +43,36 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             );
 
         }
+        public async Task<List<ChatMessageDto>> GetMessagesBeforeAsync(long channelId, long messageId)
+        {
+            // 1. Try Redis first
+            var segment = await _redisSegmentCache.TryGetSegmentBefore(channelId, messageId);
+            if (segment != null && segment.Count > 0)
+                return segment;
+            // 2. Fallback to Cassandra
+            var cassandraMessages = await _chatReadService.GetMessagesAroundMessageIdAsync(
+                channelId, messageId, before: 42, after: 0);
+
+            if (cassandraMessages.Count == 0)
+                return new List<ChatMessageDto>();
+            // 3. Check if the requested message ID actually exists in result
+            if (!cassandraMessages.Any(m => m.Id < messageId))
+            {
+                Console.WriteLine($"[Warning] No messages found before ID {messageId} in channel {channelId}");
+                return new List<ChatMessageDto>();
+            }
+            // 4. Sort and cache segment
+            var sorted = cassandraMessages
+                .Where(m => m.Id < messageId)
+                .OrderBy(m => m.Id)
+                .ToList();
+
+           // if (sorted.Count >= 15)
+                await _redisSegmentCache.UploadSegmentAsync(channelId, sorted);
+
+            return sorted;
+        }
+
         public async Task<List<ChatMessageDto>> GetMessagesContainingAsync(long channelId, long messageId)
         {
             // 1. Try Redis first
@@ -64,7 +94,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
 
             // 4. Sort and cache segment
             var sorted = cassandraMessages.OrderBy(m => m.Id).ToList();
-            if (sorted.Count >= 15)
+          //  if (sorted.Count >= 15)
                 await _redisSegmentCache.UploadSegmentAsync(channelId, sorted);
 
             return sorted;

@@ -7,5 +7,6 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
     {
         Task<List<ChatMessageDto>> RetrieveRecentMessage(UserGetRecentMessageRequest request);
         Task<List<ChatMessageDto>> GetMessagesContainingAsync(long channelId, long messageId);
+        Task<List<ChatMessageDto>> GetMessagesBeforeAsync(long channelId, long messageId);
     }
 }

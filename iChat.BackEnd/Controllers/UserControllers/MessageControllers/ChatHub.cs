@@ -1,4 +1,5 @@
 ﻿
+using iChat.BackEnd.Models.Helpers;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
@@ -21,7 +22,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         private readonly IChatReadMessageService _readMessageService;
         private readonly MemCacheUserChatService _localCache; 
 
-        private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
+    //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
 
         public ChatHub(
             ILogger<ChatHub> logger,
@@ -67,15 +68,15 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             _logger.LogInformation($"Client {Context.ConnectionId} left room {roomId}");
         }
 
-        public async Task FocusRoom(string roomId)
-        {
-            UserFocusedChannel[Context.ConnectionId] = roomId;
-        }
+        //public async Task FocusRoom(string roomId)
+        //{
+        //    UserFocusedChannel[Context.ConnectionId] = roomId;
+        //}
 
-        public async Task UnfocusRoom()
-        {
-            UserFocusedChannel.TryRemove(Context.ConnectionId, out _);
-        }
+        //public async Task UnfocusRoom()
+        //{
+        //    UserFocusedChannel.TryRemove(Context.ConnectionId, out _);
+        //}
 
         public async Task SendMessage(string roomId, ChatMessageDtoSafe message)
         {
@@ -96,13 +97,23 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             await Clients.Group(roomId).SendAsync("ReceiveMessage", new ChatMessageDtoSafe(result.Value));
         }
 
-        public async Task<List<ChatMessageDtoSafe>> GetMessageHistory(long roomId, long? beforeMessageId = null)
+        public async Task<List<ChatMessageDtoSafe>> GetMessageHistory(string roomId, string? beforeMessageId = null)
         {
+            if(!ValueParser.TryLong(roomId, out var roomIdLong))
+            {
+                return new();
+            }
+            long? messageIdLong = null;
+            if(beforeMessageId!=null)
+            {
+                if (ValueParser.TryLong(beforeMessageId, out var beforeMessageIdLong))
+                messageIdLong = beforeMessageIdLong;
+            }    
             var request = new UserGetRecentMessageRequest
             {
                 UserId = new UserClaimHelper(Context.User).GetUserId(),
-                ChannelId = roomId,
-                LastMessageId = beforeMessageId
+                ChannelId = roomIdLong,
+                LastMessageId = messageIdLong
             };
 
             var messages = await _readMessageService.RetrieveRecentMessage(request);

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServersControllers
 {
-    [Route("Chat")]
+    [Route("api/Chat")]
     [ApiController]
     [Authorize]
     public class ChatReadMessageController : ControllerBase
@@ -51,6 +51,23 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
                 UserId = userId
             };
             var messages = await _chatReadMessageService.RetrieveRecentMessage(request);
+            return Ok(messages);
+        }
+        [HttpGet("{channelId}/history")]
+        public async Task<IActionResult> GetMessageHistory(string channelId,[FromQuery] string? beforeMessageId = null)
+        {
+            if (long.TryParse(channelId, out long channelIdLong) == false || (channelIdLong <= 1000000000000000l))
+            {
+                return BadRequest("Invalid channel ID format.");
+            }
+            
+            if (!string.IsNullOrEmpty(beforeMessageId) && long.TryParse(beforeMessageId, out var beforeMessageIdLong))
+            {
+                
+            }
+            else
+                return BadRequest("Invalid Message ID format.");
+            var messages = await _chatReadMessageService.GetMessagesBeforeAsync(channelIdLong, beforeMessageIdLong);
             return Ok(messages);
         }
     }

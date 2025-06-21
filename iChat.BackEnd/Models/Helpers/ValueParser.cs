@@ -2,7 +2,7 @@
 {
     static public class ValueParser
     {
-        private const long MinValidId = 1_000_000_000_000_000;
+        public const long MinValidId = 1_000_000_000_000_000;
 
         public static bool TryLong(string input, out long id)
         {

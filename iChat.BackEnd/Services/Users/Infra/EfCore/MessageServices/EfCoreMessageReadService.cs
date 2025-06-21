@@ -1,7 +1,9 @@
-﻿using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
+﻿using iChat.BackEnd.Models.Helpers;
+using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.Data.EF;
 using iChat.Data.Entities.Users.Messages;
 using iChat.DTOs.Users.Messages;
+using iChat.ViewModels.Users.Messages;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -25,16 +27,29 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
         {
             _context = context;
         }
-
-        public Task<List<ChatMessageDto>> GetMessagesByChannelAsync(long channelId, int limit = 40)
+        void AddEnd(List<ChatMessageDto> list,int limit)
         {
-            return _context.Messages
+            if(list.Count<limit)
+                list.Insert(0, new ChatMessageDto
+                {
+                    Id = ValueParser.MinValidId,
+                    SenderId = 0,
+                    MessageType = (int)MessageType.EndOfHistory,
+                    Content = "End of chat",
+                    CreatedAt = DateTime.MinValue,
+                });
+        }
+        public async Task<List<ChatMessageDto>> GetMessagesByChannelAsync(long channelId, int limit = 40)
+        {
+            var result= await  _context.Messages
                 .AsNoTracking()
                 .Where(m => m.ChannelId == channelId)
                 .OrderByDescending(m => m.Id)
                 .Take(limit)
                 .Select(_toDto)
                 .ToListAsync();
+            AddEnd(result,limit);
+            return result;
         }
 
         public async Task<List<ChatMessageDto>> GetMessagesAroundMessageIdAsync(long channelId, long messageId, int beforeIndex = 20, int AfterIndex = 22)
@@ -56,23 +71,26 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
                 .ToListAsync();
 
             await Task.WhenAll(beforeTask, afterTask);
-
             var before = beforeTask.Result;
+            if (before.Count == 0)
+                return new();
             var after = afterTask.Result;
             before.Reverse();
-
+            AddEnd(before, beforeIndex + 1);
             return before.Concat(after).ToList();
         }
 
-        public Task<List<ChatMessageDto>> GetMessagesInRangeAsync(long channelId, long startId, long endId, int limit = 50)
+        public async Task<List<ChatMessageDto>> GetMessagesInRangeAsync(long channelId, long startId, long endId, int limit = 50)
         {
-            return _context.Messages
+            var result = await _context.Messages
                 .AsNoTracking()
                 .Where(m => m.ChannelId == channelId && m.Id >= startId && m.Id <= endId)
                 .OrderBy(m => m.Id)
                 .Take(limit)
                 .Select(_toDto)
                 .ToListAsync();
+            return result;
+         //   AddEnd(result, limit);
         }
     }
 }

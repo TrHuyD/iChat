@@ -26,6 +26,8 @@
 
         @foreach (var message in _messages)
         {
+            if (message.MessageType == EndOfHistoryType)
+                continue;
             <div class="message @(message.SenderId == _currentUserId ? "sent" : "received")" @key="message.Id">
                 <div class="message-content">@message.Content</div>
                 <div class="message-time">@message.CreatedAt.LocalDateTime.ToString("g")</div>
@@ -72,7 +74,7 @@
     private bool _isNearTop = false;
     private Timer? _scrollTimer;
     private const int ScrollDebounceMs = 200;
-
+    private const int EndOfHistoryType = 4; 
     protected override async Task OnInitializedAsync()
     {
         _dotNetRef = DotNetObjectReference.Create(this);
@@ -172,9 +174,16 @@
         }
     }
 
+    private DateTime _lastHistoryRequest = DateTime.MinValue;
+    private const int HistoryRequestCooldownMs = 500;
+
     private async Task LoadMessages(bool loadOlder = false)
     {
-        if (_isLoadingHistory) return;
+        if (_isLoadingHistory || !_hasMoreHistory) return;
+
+        var now = DateTime.UtcNow;
+        if ((now - _lastHistoryRequest).TotalMilliseconds < HistoryRequestCooldownMs) return;
+        _lastHistoryRequest = now;
 
         _isLoadingHistory = true;
         StateHasChanged();
@@ -183,21 +192,23 @@
         {
             if (loadOlder && !string.IsNullOrEmpty(_oldestMessageId))
             {
-                var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>(
-                    "scrollHelpers.getScrollMetrics",
-                    _messagesContainer);
-
+                var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>("scrollHelpers.getScrollMetrics", _messagesContainer);
                 var prevScrollHeight = metrics.ScrollHeight;
                 var prevScrollTop = metrics.ScrollTop;
 
-                var olderMessages = await SignalRService.GetMessageHistoryAsync(
-                    RoomId,
-                    _oldestMessageId);
+                var olderMessages = await SignalRService.GetMessageHistoryAsync(RoomId, _oldestMessageId);
 
                 if (olderMessages.Count == 0)
                 {
                     _hasMoreHistory = false;
                     return;
+                }
+
+                // Check if EndOfHistory marker is present at the start (only place allowed)
+                if (olderMessages[0].MessageType == EndOfHistoryType)
+                {
+                    _hasMoreHistory = false;
+                    olderMessages.RemoveAt(0); // don't render the marker
                 }
 
                 foreach (var msg in olderMessages)
@@ -206,13 +217,18 @@
                 }
 
                 _oldestMessageId = _messages.FirstOrDefault()?.Id;
-
                 await InvokeAsync(StateHasChanged);
                 await RestoreScrollPosition(prevScrollHeight, prevScrollTop);
             }
             else if (!loadOlder)
             {
                 var initialMessages = await SignalRService.GetMessageHistoryAsync(RoomId);
+
+                if (initialMessages.Count > 0 && initialMessages[0].MessageType == 4)
+                {
+                    _hasMoreHistory = false;
+                    initialMessages.RemoveAt(0);
+                }
 
                 _messages = new SortedSet<ChatMessageDtoSafe>(
                     initialMessages, new ChatMessageDtoSafeComparer());
@@ -228,6 +244,7 @@
             StateHasChanged();
         }
     }
+
 
     private async Task ScrollToBottom()
     {

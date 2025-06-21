@@ -116,7 +116,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
                 RedisVariableKey.GetRecentChatMessageKey(channelId),
                 start:  (double)lastMessageId, 
                 stop: double.PositiveInfinity,
-                exclude: Exclude.Start, 
+                exclude: Exclude.None, 
                 order: Order.Ascending
             );
 

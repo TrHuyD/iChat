@@ -10,6 +10,9 @@ namespace iChat.ViewModels.Users.Messages
     public enum MessageType
     {
         Text,
-        Media
+        Media,
+        Mixed,
+        Special,
+        EndOfHistory,
     }
 }
