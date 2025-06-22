@@ -26,11 +26,11 @@
 
         @foreach (var message in _messages)
         {
-            if (message.MessageType == EndOfHistoryType)
+            if (message.Value.MessageType == EndOfHistoryType)
                 continue;
-            <div class="message @(message.SenderId == _currentUserId ? "sent" : "received")" @key="message.Id">
-                <div class="message-content">@message.Content</div>
-                <div class="message-time">@message.CreatedAt.LocalDateTime.ToString("g")</div>
+            <div class="message @(message.Value.SenderId == _currentUserId ? "sent" : "received")" @key="message.Value.Id">
+                <div class="message-content">@message.Value.Content</div>
+                <div class="message-time">@message.Value.CreatedAt.LocalDateTime.ToString("g")</div>
             </div>
         }
     </div>
@@ -56,7 +56,7 @@
             return _lRoomId.Value;
         }
     }
-    private SortedSet<ChatMessageDtoSafe> _messages = new(new ChatMessageDtoSafeComparer());
+    SortedList<long, ChatMessageDtoSafe> _messages = new();
     private string _newMessage = string.Empty;
     private ElementReference _messagesContainer;
     private string _connectionStatus = "Disconnected";
@@ -213,10 +213,10 @@
 
                 foreach (var msg in olderMessages)
                 {
-                    _messages.Add(msg);
+                    _messages.Add(long.Parse(msg.Id),msg);
                 }
 
-                _oldestMessageId = _messages.FirstOrDefault()?.Id;
+                _oldestMessageId = _messages.Values.FirstOrDefault()?.Id;
                 await InvokeAsync(StateHasChanged);
                 await RestoreScrollPosition(prevScrollHeight, prevScrollTop);
             }
@@ -230,10 +230,12 @@
                     initialMessages.RemoveAt(0);
                 }
 
-                _messages = new SortedSet<ChatMessageDtoSafe>(
-                    initialMessages, new ChatMessageDtoSafeComparer());
-
-                _oldestMessageId = _messages.FirstOrDefault()?.Id;
+                _messages = new SortedList<long, ChatMessageDtoSafe>();
+                foreach(var msg in initialMessages)
+                {
+                    _messages.Add(long.Parse(msg.Id), msg);
+                };
+                _oldestMessageId = _messages.Values.FirstOrDefault()?.Id;
                 _shouldScrollToBottom = _messages.Count > 0;
             }
         }
@@ -271,8 +273,9 @@
         var message = JsonSerializer.Deserialize<ChatMessageDtoSafe>(messageJson, options);
         if (message.RoomId == RoomId)
         {
-            _messages.RemoveWhere(m => m.Id == message.Id);
-            _messages.Add(message);
+            return;
+            // _messages.RemoveWhere(m => m.Id == message.Id);
+            // _messages.Add(message);
 
             if (!_isFirstLoad)
             {

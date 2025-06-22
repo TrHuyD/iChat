@@ -51,7 +51,7 @@ namespace iChat.DTOs.Users.Messages
         public int Compare(ChatMessageDtoSafe? x, ChatMessageDtoSafe? y)
         {
             if (x == null || y == null) return 0;
-            return x.Id.CompareTo(y.Id);
+            return x.CreatedAt.CompareTo(y.CreatedAt);
         }
     }
 }
