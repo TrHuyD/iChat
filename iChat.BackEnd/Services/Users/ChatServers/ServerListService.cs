@@ -1,7 +1,7 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.Helpers;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
-using iChat.BackEnd.Services.Users.Infra.Neo4jService;
+
 using iChat.BackEnd.Services.Users.Infra.Redis;
 using iChat.BackEnd.Services.Users.Infra.Redis.Enums;
 using iChat.DTOs.Users.Messages;

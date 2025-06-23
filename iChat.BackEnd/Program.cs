@@ -12,13 +12,13 @@ using System.Text;
 using Neo4j.Driver;
 using System;
 using iChat.Data.Entities.Users.Messages;
-using iChat.BackEnd.Services.Users.Infra.CassandraDB;
+
 using Microsoft.Extensions.DependencyInjection;
 
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Models.Infrastructures;
 using Microsoft.OpenApi.Models;
-using iChat.BackEnd.Services.Users.Infra.Neo4jService;
+
 using iChat.BackEnd.Services.Users.Infra.Redis;
 using iChat.BackEnd.Services.Users.Infra.Helpers;
 using iChat.BackEnd.Models.Helpers.CassandraOptionss;

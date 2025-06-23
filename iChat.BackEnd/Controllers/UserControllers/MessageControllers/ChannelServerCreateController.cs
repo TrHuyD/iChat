@@ -1,5 +1,5 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
-using iChat.BackEnd.Services.Users.Infra.Neo4jService;
+
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

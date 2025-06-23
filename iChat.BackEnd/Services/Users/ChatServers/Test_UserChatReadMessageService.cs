@@ -1,6 +1,6 @@
 ﻿using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
-using iChat.BackEnd.Services.Users.Infra.CassandraDB;
+//using iChat.BackEnd.Services.Users.Infra.CassandraDB;
 using iChat.BackEnd.Services.Users.Infra.Helpers;
 using iChat.BackEnd.Services.Users.Infra.Redis.Enums;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;

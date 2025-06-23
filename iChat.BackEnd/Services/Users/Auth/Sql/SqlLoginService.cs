@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
-using iChat.BackEnd.Services.Users.Infra.Neo4jService;
+
 using iChat.DTOs.Shared;
 using iChat.BackEnd.Models.User;
 using Microsoft.Extensions.Options;

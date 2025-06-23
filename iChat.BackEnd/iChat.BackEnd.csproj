@@ -123,6 +123,7 @@
   <ItemGroup>
     <Folder Include="Models\Infrastructures\w\" />
     <Folder Include="Services\NewFolder1\" />
+    <Folder Include="secrets\postgrefunc\" />
   </ItemGroup>
 
 </Project>

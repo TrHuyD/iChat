@@ -1,7 +1,9 @@
 ﻿using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Channels;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServersControllers
 {
@@ -24,7 +26,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             //{
             //    return BadRequest("User ID is required.");
             //}
-            if(long.TryParse(channelId, out long channelIdLong) == false|| (channelIdLong <= 1000000000000000l))
+            if (long.TryParse(channelId, out long channelIdLong) == false || (channelIdLong <= 1000000000000000l))
             {
                 return BadRequest("Invalid channel ID format.");
             }
@@ -54,21 +56,29 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             return Ok(messages);
         }
         [HttpGet("{channelId}/history")]
-        public async Task<IActionResult> GetMessageHistory(string channelId,[FromQuery] string? beforeMessageId = null)
+        public async Task<IActionResult> GetMessageHistory(string channelId, [FromQuery] string? beforeMessageId = null)
         {
             if (long.TryParse(channelId, out long channelIdLong) == false || (channelIdLong <= 1000000000000000l))
             {
                 return BadRequest("Invalid channel ID format.");
             }
-            
+
             if (!string.IsNullOrEmpty(beforeMessageId) && long.TryParse(beforeMessageId, out var beforeMessageIdLong))
             {
-                
+
             }
             else
                 return BadRequest("Invalid Message ID format.");
             var messages = await _chatReadMessageService.GetMessagesBeforeAsync(channelIdLong, beforeMessageIdLong);
             return Ok(messages);
+        }
+        [AllowAnonymous]
+        [HttpGet("{channelId}/history_test")]
+
+        public async Task<IActionResult> test([FromServices] IMessageReadService readservice, string channelId)
+        {
+
+            return Ok(await readservice.GetLatestBucketsByChannelAsync(long.Parse(channelId)));
         }
     }
 }

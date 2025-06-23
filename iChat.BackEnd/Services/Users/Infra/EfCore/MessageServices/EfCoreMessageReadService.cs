@@ -5,6 +5,8 @@ using iChat.Data.Entities.Users.Messages;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
@@ -12,6 +14,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
     public class EfCoreMessageReadService : IMessageReadService
     {
         private readonly iChatDbContext _context;
+        
 
         private static readonly Expression<Func<Message, ChatMessageDto>> _toDto = m => new ChatMessageDto
         {
@@ -92,5 +95,35 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
             return result;
          //   AddEnd(result, limit);
         }
+
+        public async Task<List<BucketDto>> GetLatestBucketsByChannelAsync(long channelId, int bucketCount = 3)
+        {
+            var results = await _context.Database
+                .SqlQueryRaw<RawBucketResult>(
+                    "SELECT * FROM get_latest_buckets_by_channel({0}, {1})",
+                    channelId,
+                    bucketCount)
+                .ToListAsync();
+
+            return results.Select(r=> new BucketDto(r)).ToList();
+        }
+
+        public async Task<List<BucketDto>> GetBucketsAroundMessageAsync(long channelId, long messageId, int bucketRange = 2)
+        {
+            var results = await _context.Database
+                .SqlQueryRaw<RawBucketResult>($"SELECT * FROM get_buckets_around_message({channelId}, {messageId}, {bucketRange})")
+                .ToListAsync();
+
+            return results.Select(r => new BucketDto(r)).ToList();
+        }
+        public async Task<List<BucketDto>> GetBucketsInRangeAsync(long channelId, long startId, long endId, int limit = 50)
+        {
+            var results = await _context.Database
+                .SqlQueryRaw<RawBucketResult>($"SELECT * FROM get_buckets_in_range({channelId}, {startId}, {endId}, {limit})")
+                .ToListAsync();
+
+            return results.Select(r => new BucketDto(r)).ToList();
+        }
+
     }
 }
