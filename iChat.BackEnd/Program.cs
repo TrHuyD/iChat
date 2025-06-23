@@ -116,6 +116,10 @@ builder.Services.AddTransient<IChatServerEditService,EfCoreChatServerEditService
 builder.Services.AddTransient<IChatListingService,EfCoreChatListingService>();
 builder.Services.AddTransient<IMessageReadService, EfCoreMessageReadService>();
 builder.Services.AddTransient<IMessageWriteService, EfCoreMessageWriteService>();
+builder.Services.AddSingleton<MessageTimeLogger>();
+builder.Services.AddSingleton<MessageWriteQueueService>();
+builder.Services.AddHostedService<BucketingPrediodicService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<MessageWriteQueueService>());
 builder.Services.AddTransient<RedisUserServerService>();
 builder.Services.AddTransient<RedisChatCache>();
 builder.Services.AddTransient<RedisSegmentCache>();
@@ -160,7 +164,6 @@ new SqlAuthBuilderHelper().AddService(builder);
 //        options.Domain = builder.Configuration["Auth0:Domain"];
 //        options.ClientId = builder.Configuration["Auth0:ClientId"];
 //    });
-
 
 builder.Services.AddTransient<IChatCreateService,EfCoreChatCreateService>();
 //builder.Services.AddTransient < Neo4jCreateUserService>();

@@ -6,8 +6,8 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
 {
     public interface IMessageWriteService
     {
-        Task<DbWriteResult> UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId);
-        Task<DbWriteResult> UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages);
+        Task UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId);
+        Task UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages);
 
     }
 }

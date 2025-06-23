@@ -16,7 +16,7 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
             _session = cassandraService.GetSession();
         }
 
-        public async Task<DbWriteResult> UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId)
+        public async Task UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId)
         {
             if (string.IsNullOrEmpty(request.SenderId))
                 throw new ArgumentException("SenderId is required.");
@@ -42,14 +42,10 @@ namespace iChat.BackEnd.Services.Users.Infra.CassandraDB
 
             await _session.ExecuteAsync(bound);
 
-            return new DbWriteResult
-            {
-                Success = true,
-                CreatedAt = offsetTimestamp
-            };
+
         }
 
-        public Task<DbWriteResult> UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages)
+        public Task UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages)
         {
             throw new NotImplementedException();
         }

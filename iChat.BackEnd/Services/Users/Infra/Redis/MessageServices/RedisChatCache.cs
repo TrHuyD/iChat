@@ -23,55 +23,45 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
             {
                 return false;
             }
-
             var db = _service.GetDatabase();
             var channelKey = (RedisKey)$"c:{message.RoomId}:m";
             var json = JsonConvert.SerializeObject(message);
             var ttlSeconds = 1200;
-
             var script = @"
-        local zset_key = KEYS[1]
-        local json = ARGV[1]
-        local score = tonumber(ARGV[2])
-        local expire = tonumber(ARGV[3])
-
-        if redis.call('EXISTS', zset_key) == 1 then
-            redis.call('ZADD', zset_key, score, json)
-            redis.call('ZREMRANGEBYRANK', zset_key, 0, -41)
-            redis.call('EXPIRE', zset_key, expire)
-            return 1
-        else
-            return 0
-        end";
-
+                local zset_key = KEYS[1]
+                local json = ARGV[1]
+                local score = tonumber(ARGV[2])
+                local expire = tonumber(ARGV[3])
+        
+                if redis.call('EXISTS', zset_key) == 1 then
+                    redis.call('ZADD', zset_key, score, json)
+                    redis.call('ZREMRANGEBYRANK', zset_key, 0, -41)
+                    redis.call('EXPIRE', zset_key, expire)
+                    return 1
+                else
+                    return 0
+                end";
             try
             {
-                var prepared = LuaScript.Prepare(script);
-                var result = (int)(long)(await db.ScriptEvaluateAsync(prepared, new
-                {
-                    KEYS = new RedisKey[] { channelKey },
-                    ARGV = new RedisValue[] { json, message.Id, ttlSeconds }  
-                }));
-
-                return result == 1;
+                var result = await db.ScriptEvaluateAsync(
+                    script,
+                    new RedisKey[] { channelKey },
+                    new RedisValue[] { json, message.Id.ToString(), ttlSeconds.ToString() }
+                );
+                return (int)result == 1;
             }
             catch (Exception ex)
             {
-                // Log the error appropriately
                 Console.WriteLine($"Error in UploadMessageAsync: {ex.Message}");
                 return false;
             }
         }
         public async Task<bool> UploadMessage_Bulk(long channelId, List<ChatMessageDto> messages)
         {
-
-
             var db = _service.GetDatabase();
             var zsetKey = RedisVariableKey.GetRecentChatMessageKey(channelId);
-
             var batch = db.CreateBatch();
             var tasks = new List<Task>();
-
             if (messages.Count == 0)
             {
                 var padding = new ChatMessageDto
@@ -83,7 +73,6 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
                     CreatedAt = DateTimeOffset.UtcNow,
                     SenderId = -1,
                 };
-
                 var json = JsonConvert.SerializeObject(padding);
                 tasks.Add(batch.SortedSetAddAsync(zsetKey, json, padding.Id));
             }
@@ -99,7 +88,6 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
             tasks.Add(batch.KeyExpireAsync(zsetKey, TimeSpan.FromMinutes(20)));
             batch.Execute();
             await Task.WhenAll(tasks);
-
             return true;
         }
 
@@ -123,7 +111,6 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
             var messages = rawMessages
                     .Select(m => JsonConvert.DeserializeObject<ChatMessageDto>(m))
                     .ToList();
-
             return messages;
         }
 
@@ -137,7 +124,6 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
                 exclude: Exclude.Start,
                 order: Order.Ascending
             );
-
             var messages = rawMessages
                 .Select(m => JsonConvert.DeserializeObject<ChatMessageDto>(m))
                 .ToList();

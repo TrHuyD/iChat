@@ -10,70 +10,31 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 {
     public class EfCoreMessageWriteService : IMessageWriteService
     {
-        private readonly iChatDbContext _dbContext;
+        private readonly MessageWriteQueueService _queueService;
 
-        public EfCoreMessageWriteService(iChatDbContext dbContext)
+        public EfCoreMessageWriteService(MessageWriteQueueService queueService)
         {
-            _dbContext = dbContext;
+            _queueService = queueService;
         }
 
-        public async Task<DbWriteResult> UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId)
+        public async Task UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId)
         {
             if (string.IsNullOrEmpty(request.SenderId))
                 throw new ArgumentException("SenderId is required.");
 
-            var message = new Message
-            {
-                Id = messageId.Id,
-                ChannelId = long.Parse(request.ReceiveChannelId),
-                SenderId = long.Parse(request.SenderId),
-                MessageType = (short)request.messageType,
-                TextContent = request.TextContent,
-                MediaContent = request.MediaContent,
-                Timestamp = messageId.CreatedAt
-            };
+            _queueService.Enqueue(request, messageId);
 
-            _dbContext.Messages.Add(message);
-            await _dbContext.SaveChangesAsync();
-
-            return new DbWriteResult
-            {
-                Success = true,
-                CreatedAt = messageId.CreatedAt
-            };
         }
 
-        public async Task<DbWriteResult> UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages)
+        public async Task UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages)
         {
-            var entityList = new List<Message>();
-
-            foreach (var (request, messageId) in messages)
+            foreach (var (req, id) in messages)
             {
-                if (string.IsNullOrEmpty(request.SenderId))
-                    throw new ArgumentException("SenderId is required in batch.");
-
-                var entity = new Message
-                {
-                    Id = messageId.Id,
-                    ChannelId = long.Parse(request.ReceiveChannelId),
-                    SenderId = long.Parse(request.SenderId),
-                    MessageType = (short)request.messageType,
-                    TextContent = request.TextContent,
-                    MediaContent = request.MediaContent,
-                    Timestamp = messageId.CreatedAt
-                };
-
-                entityList.Add(entity);
+                _queueService.Enqueue(req, id);
             }
 
-            _dbContext.Messages.AddRange(entityList);
-            await _dbContext.SaveChangesAsync();
 
-            return new DbWriteResult
-            {
-                Success = true,
-                CreatedAt = entityList.Max(m => m.Timestamp) 
-            };
         }
     }
+
 }
