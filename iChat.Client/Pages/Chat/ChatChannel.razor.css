@@ -4,79 +4,139 @@
     height: 100vh;
     max-width: 800px;
     margin: 0 auto;
-    border: 1px solid #ddd;
+    background: #36393f;
+    color: #dcddde;
+    font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    overflow: hidden;
 }
 
 .chat-header {
-    padding: 10px;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #ddd;
+    background: #2f3136;
+    padding: 1rem;
+    border-bottom: 1px solid #202225;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.connection-status .connected {
+    color: #3ba55c;
+    font-weight: bold;
+}
+
+.connection-status .disconnected {
+    color: #ed4245;
+    font-weight: bold;
+}
+
+.connection-status .reconnecting {
+    color: #faa61a;
+    font-weight: bold;
 }
 
 .messages-container {
     flex: 1;
+    padding: 1rem;
     overflow-y: auto;
-    padding: 10px;
+    scroll-behavior: smooth;
+    background: #36393f;
+}
+
+.loading-indicator {
+    text-align: center;
+    padding: 1rem;
+    color: #72767d;
+    font-style: italic;
 }
 
 .message {
-    margin: 5px 0;
-    padding: 8px 12px;
-    border-radius: 15px;
-    max-width: 70%;
+    margin-bottom: 1rem;
+    max-width: 80%;
+    word-wrap: break-word;
+    display: flex;
+    padding: 0.25rem 1rem;
 }
 
+    .message:hover {
+        background: rgba(32, 34, 37, 0.3);
+    }
+
     .message.sent {
-        background-color: #007bff;
-        color: white;
         margin-left: auto;
+        flex-direction: row-reverse;
     }
 
     .message.received {
-        background-color: #e9ecef;
         margin-right: auto;
     }
 
+.message-content {
+    background: #2f3136;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    display: inline-block;
+    line-height: 1.4;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.message.sent .message-content {
+    background: #0d6efd;
+    color: white;
+    border-radius: 15px 15px 0 15px;
+}
+
+.message.received .message-content {
+    border-radius: 0 15px 15px 15px;
+    color: #dcddde;
+}
+
 .message-time {
-    font-size: 0.8em;
-    opacity: 0.7;
-    text-align: right;
+    font-size: 0.75rem;
+    color: #72767d;
+    margin-top: 0.25rem;
+    margin-left: 0.5rem;
 }
 
 .message-input {
     display: flex;
-    padding: 10px;
-    border-top: 1px solid #ddd;
+    padding: 1rem;
+    border-top: 1px solid #202225;
+    background: #40444b;
 }
 
     .message-input input {
         flex: 1;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-right: 8px;
+        padding: 0.75rem 1rem;
+        background: #40444b;
+        border: 1px solid #202225;
+        border-radius: 8px;
+        margin-right: 0.5rem;
+        outline: none;
+        color: #dcddde;
+        font-size: 1rem;
     }
 
-.connection-status span {
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 0.9em;
-}
+        .message-input input:focus {
+            border-color: #0d6efd;
+        }
 
-.connected {
-    background-color: #d4edda;
-    color: #155724;
-}
+    .message-input button {
+        padding: 0.5rem 1.5rem;
+        background: #0d6efd;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
 
-.disconnected {
-    background-color: #f8d7da;
-    color: #721c24;
-}
+        .message-input button:disabled {
+            background: #40444b;
+            cursor: not-allowed;
+        }
 
-.reconnecting {
-    background-color: #fff3cd;
-    color: #856404;
-}
+        .message-input button:not(:disabled):hover {
+            background: #0b5ed7;
+        }

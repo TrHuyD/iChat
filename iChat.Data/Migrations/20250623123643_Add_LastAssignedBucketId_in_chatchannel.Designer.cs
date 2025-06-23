@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using iChat.Data.EF;
@@ -11,9 +12,11 @@ using iChat.Data.EF;
 namespace iChat.Data.Migrations
 {
     [DbContext(typeof(iChatDbContext))]
-    partial class iChatDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250623123643_Add_LastAssignedBucketId_in_chatchannel")]
+    partial class Add_LastAssignedBucketId_in_chatchannel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -137,9 +140,7 @@ namespace iChat.Data.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("LastAssignedBucketId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -424,9 +425,7 @@ namespace iChat.Data.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<int>("BucketId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(2147483647);
+                        .HasColumnType("integer");
 
                     b.Property<long>("ChannelId")
                         .HasColumnType("bigint");
@@ -454,9 +453,15 @@ namespace iChat.Data.Migrations
 
                     b.HasIndex("SenderId");
 
+                    b.HasIndex("ChannelId", "BucketId");
+
+                    b.HasIndex("ChannelId", "Id");
+
                     b.HasIndex("ChannelId", "Timestamp");
 
                     b.HasIndex("ChannelId", "BucketId", "Id");
+
+                    b.HasIndex("ChannelId", "BucketId", "Timestamp");
 
                     b.HasIndex("ChannelId", "SenderId", "Timestamp");
 

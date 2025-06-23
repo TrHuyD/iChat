@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using iChat.Data.EF;
@@ -11,9 +12,11 @@ using iChat.Data.EF;
 namespace iChat.Data.Migrations
 {
     [DbContext(typeof(iChatDbContext))]
-    partial class iChatDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250623133402_Add_defaultvalue_message_bucketid")]
+    partial class Add_defaultvalue_message_bucketid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -454,9 +457,15 @@ namespace iChat.Data.Migrations
 
                     b.HasIndex("SenderId");
 
+                    b.HasIndex("ChannelId", "BucketId");
+
+                    b.HasIndex("ChannelId", "Id");
+
                     b.HasIndex("ChannelId", "Timestamp");
 
                     b.HasIndex("ChannelId", "BucketId", "Id");
+
+                    b.HasIndex("ChannelId", "BucketId", "Timestamp");
 
                     b.HasIndex("ChannelId", "SenderId", "Timestamp");
 

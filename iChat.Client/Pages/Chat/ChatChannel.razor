@@ -1,11 +1,11 @@
 ﻿@page "/chat/{RoomId}"
 @using System.Text.Json
 @using System.Text.Json.Serialization
-@using iChat.Client.Services.UserServices.ChatService
+@using System.Threading.Channels
+@using iChat.Client.Services.UserServices.Chat
 @using iChat.DTOs.Users.Messages
-@inject SignalRWorkerService SignalRService
+@inject ChatClientService ChatService
 @inject UserStateService _userInfo
-@inject IJSRuntime JSRuntime
 @implements IDisposable
 @implements IAsyncDisposable
 
@@ -18,19 +18,24 @@
     </div>
 
     <div class="messages-container" @ref="_messagesContainer"
-         @onscroll="HandleScroll"
          style="overflow-y: scroll; height: calc(100vh - 150px);">
-        <div class="loading-indicator" style="display: @(_isLoadingHistory ? "block" : "none")">
-            Loading older messages...
-        </div>
 
-        @foreach (var message in _messages)
+        @foreach (var message in _messages.Values.Where(m => MessageRenderer.ShouldShowMessage(m)))
         {
-            if (message.Value.MessageType == EndOfHistoryType)
-                continue;
-            <div class="message @(message.Value.SenderId == _currentUserId ? "sent" : "received")" @key="message.Value.Id">
-                <div class="message-content">@message.Value.Content</div>
-                <div class="message-time">@message.Value.CreatedAt.LocalDateTime.ToString("g")</div>
+            var renderedMessage = MessageRenderer.RenderMessage(message, _currentUserId);
+
+            <div class="@renderedMessage.CssClass" @key="message.Id">
+                @if (!string.IsNullOrEmpty(renderedMessage.Icon))
+                {
+                    <span class="message-icon">@renderedMessage.Icon</span>
+                }
+
+                <div class="message-content">@renderedMessage.Content</div>
+
+                @if (renderedMessage.ShowTimestamp)
+                {
+                    <div class="message-time">@message.CreatedAt.LocalDateTime.ToString("g")</div>
+                }
             </div>
         }
     </div>
@@ -43,68 +48,64 @@
 </div>
 
 @code {
-    [Parameter] public string RoomId { get; set; }
-    private long? _lRoomId;
-    public long LRoomId
-    {
-        get
-        {
-            if (_lRoomId == null)
-            {
-                _lRoomId = long.TryParse(RoomId, out var parsed) ? parsed : 0;
-            }
-            return _lRoomId.Value;
-        }
-    }
-    SortedList<long, ChatMessageDtoSafe> _messages = new();
+    [Parameter] public string RoomId { get; set; } = string.Empty;
+
+    private string? _currentRoomId;
+    private SortedList<long, ChatMessageDtoSafe> _messages = new();
     private string _newMessage = string.Empty;
     private ElementReference _messagesContainer;
     private string _connectionStatus = "Disconnected";
     private string _connectionStatusClass = "disconnected";
     private string _currentUserId = "";
-    private bool _isLoadingHistory = false;
-    private bool _hasMoreHistory = true;
-    private string? _oldestMessageId = null;
-    private bool _isFirstLoad = true;
     private bool _shouldScrollToBottom = false;
-    private DotNetObjectReference<ChatChannel>? _dotNetRef;
-    private double _lastScrollTop = 0;
-    private double _lastScrollHeight = 0;
-    private double _lastClientHeight = 0;
-    private bool _isNearTop = false;
-    private Timer? _scrollTimer;
-    private const int ScrollDebounceMs = 200;
-    private const int EndOfHistoryType = 4; 
+
     protected override async Task OnInitializedAsync()
     {
-        _dotNetRef = DotNetObjectReference.Create(this);
+        _sendQueueTask = ProcessSendQueueAsync();
         _currentUserId = _userInfo.GetUserId().ToString();
-
-        SignalRService.OnMessageReceived += HandleNewMessage;
-        SignalRService.OnConnected += UpdateConnectedStatus;
-        SignalRService.OnDisconnected += UpdateDisconnectedStatus;
-        SignalRService.OnReconnecting += UpdateReconnectingStatus;
-        SignalRService.OnReconnected += UpdateReconnectedStatus;
+        ChatService.OnMessageReceived += HandleNewMessage;
 
         try
         {
-            await SignalRService.InitializeAsync();
-            await LoadMessages();
+            await ChatService.ConnectAsync();
+            _connectionStatus = "Connected";
+            _connectionStatusClass = "connected";
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error initializing SignalR: {ex.Message}");
+            Console.Error.WriteLine($"Error connecting to chat: {ex.Message}");
+            _connectionStatus = "Connection Failed";
+            _connectionStatusClass = "disconnected";
+        }
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Handle room changes
+        if (_currentRoomId != RoomId)
+        {
+            if (!string.IsNullOrEmpty(_currentRoomId))
+            {
+                await ChatService.LeaveRoomAsync(_currentRoomId);
+            }
+
+            _currentRoomId = RoomId;
+            _messages.Clear();
+            _shouldScrollToBottom = true;
+
+            if (!string.IsNullOrEmpty(RoomId))
+            {
+                await ChatService.JoinRoomAsync(RoomId);
+            }
+
+            StateHasChanged();
         }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            _scrollTimer = new Timer(ScrollTimerCallback, null, Timeout.Infinite, Timeout.Infinite);
-            await UpdateContainerMetrics();
-        }
-
         if (_shouldScrollToBottom)
         {
             await ScrollToBottom();
@@ -112,149 +113,12 @@
         }
     }
 
-    private async Task UpdateContainerMetrics()
-    {
-        try
-        {
-            var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>(
-                "scrollHelpers.getScrollMetrics",
-                _messagesContainer);
-
-            _lastScrollHeight = metrics.ScrollHeight;
-            _lastClientHeight = metrics.ClientHeight;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error getting scroll metrics: {ex.Message}");
-        }
-    }
-
-    private async void HandleScroll()
-    {
-        _scrollTimer?.Change(ScrollDebounceMs, Timeout.Infinite);
-    }
-
-    private async void ScrollTimerCallback(object? state)
-    {
-        try
-        {
-            await InvokeAsync(async () =>
-            {
-                var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>("scrollHelpers.getScrollMetrics", _messagesContainer);
-                _lastScrollTop = metrics.ScrollTop;
-                _lastScrollHeight = metrics.ScrollHeight;
-                _lastClientHeight = metrics.ClientHeight;
-                _isNearTop = _lastScrollTop < 100;
-
-                if (_isNearTop && !_isLoadingHistory && _hasMoreHistory)
-                {
-                    await LoadMessages(loadOlder: true);
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error in scroll timer callback: {ex.Message}");
-        }
-    }
-
-    private async Task RestoreScrollPosition(double prevScrollHeight, double prevScrollTop)
-    {
-        try
-        {
-            await JSRuntime.InvokeVoidAsync(
-                "scrollHelpers.restoreScrollPosition",
-                _messagesContainer,
-                prevScrollHeight,
-                prevScrollTop);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error restoring scroll position: {ex.Message}");
-        }
-    }
-
-    private DateTime _lastHistoryRequest = DateTime.MinValue;
-    private const int HistoryRequestCooldownMs = 500;
-
-    private async Task LoadMessages(bool loadOlder = false)
-    {
-        if (_isLoadingHistory || !_hasMoreHistory) return;
-
-        var now = DateTime.UtcNow;
-        if ((now - _lastHistoryRequest).TotalMilliseconds < HistoryRequestCooldownMs) return;
-        _lastHistoryRequest = now;
-
-        _isLoadingHistory = true;
-        StateHasChanged();
-
-        try
-        {
-            if (loadOlder && !string.IsNullOrEmpty(_oldestMessageId))
-            {
-                var metrics = await JSRuntime.InvokeAsync<ScrollMetrics>("scrollHelpers.getScrollMetrics", _messagesContainer);
-                var prevScrollHeight = metrics.ScrollHeight;
-                var prevScrollTop = metrics.ScrollTop;
-
-                var olderMessages = await SignalRService.GetMessageHistoryAsync(RoomId, _oldestMessageId);
-
-                if (olderMessages.Count == 0)
-                {
-                    _hasMoreHistory = false;
-                    return;
-                }
-
-                // Check if EndOfHistory marker is present at the start (only place allowed)
-                if (olderMessages[0].MessageType == EndOfHistoryType)
-                {
-                    _hasMoreHistory = false;
-                    olderMessages.RemoveAt(0); // don't render the marker
-                }
-
-                foreach (var msg in olderMessages)
-                {
-                    _messages.Add(long.Parse(msg.Id),msg);
-                }
-
-                _oldestMessageId = _messages.Values.FirstOrDefault()?.Id;
-                await InvokeAsync(StateHasChanged);
-                await RestoreScrollPosition(prevScrollHeight, prevScrollTop);
-            }
-            else if (!loadOlder)
-            {
-                var initialMessages = await SignalRService.GetMessageHistoryAsync(RoomId);
-
-                if (initialMessages.Count > 0 && initialMessages[0].MessageType == 4)
-                {
-                    _hasMoreHistory = false;
-                    initialMessages.RemoveAt(0);
-                }
-
-                _messages = new SortedList<long, ChatMessageDtoSafe>();
-                foreach(var msg in initialMessages)
-                {
-                    _messages.Add(long.Parse(msg.Id), msg);
-                };
-                _oldestMessageId = _messages.Values.FirstOrDefault()?.Id;
-                _shouldScrollToBottom = _messages.Count > 0;
-            }
-        }
-        finally
-        {
-            _isLoadingHistory = false;
-            _isFirstLoad = false;
-            StateHasChanged();
-        }
-    }
-
-
     private async Task ScrollToBottom()
     {
         try
         {
-            await JSRuntime.InvokeVoidAsync(
-                "scrollHelpers.scrollToBottom",
-                _messagesContainer);
+
+            await Task.Delay(1); 
         }
         catch (Exception ex)
         {
@@ -262,130 +126,109 @@
         }
     }
 
-    private void HandleNewMessage(string messageJson)
+    private async Task HandleNewMessage(ChatMessageDtoSafe message)
     {
-        var options = new JsonSerializerOptions
+        try
         {
-            PropertyNameCaseInsensitive = true,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString
-        };
-
-        var message = JsonSerializer.Deserialize<ChatMessageDtoSafe>(messageJson, options);
-        if (message.RoomId == RoomId)
-        {
-            return;
-            // _messages.RemoveWhere(m => m.Id == message.Id);
-            // _messages.Add(message);
-
-            if (!_isFirstLoad)
+            if (message.RoomId == RoomId)
             {
-                _shouldScrollToBottom = true;
+                var messageId = long.Parse(message.Id);
+
+                // Avoid duplicates
+                if (!_messages.ContainsKey(messageId))
+                {
+                    _messages.Add(messageId, message);
+                    _shouldScrollToBottom = true;
+                    await InvokeAsync(StateHasChanged);
+                }
             }
-
-            StateHasChanged();
         }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error handling new message: {ex.Message}");
+        }
+    }
 
+    private readonly Channel<ChatMessageDtoSafe> _sendQueue = Channel.CreateUnbounded<ChatMessageDtoSafe>();
+    private Task? _sendQueueTask;
+
+    private async Task ProcessSendQueueAsync()
+    {
+        await foreach (var message in _sendQueue.Reader.ReadAllAsync())
+        {
+            try
+            {
+                await ChatService.SendMessageAsync(RoomId, message);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to send message: {ex.Message}");
+            }
+        }
     }
 
     private async Task SendMessage()
     {
+        Console.WriteLine("sent new message");
         if (string.IsNullOrWhiteSpace(_newMessage)) return;
+
+        var messageContent = _newMessage.Trim();
+        _newMessage = string.Empty;
+        StateHasChanged();
 
         var message = new ChatMessageDtoSafe
         {
-            Content = _newMessage,
-            MessageType = 1,
+            Content = messageContent,
+            MessageType = 1, // Regular text message
             RoomId = RoomId,
-            SenderId = _currentUserId
+            SenderId = _currentUserId,
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
-        try
-        {
-            await SignalRService.SendMessageAsync(RoomId, message);
-            _newMessage = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Error sending message: {ex.Message}");
-        }
+        await _sendQueue.Writer.WriteAsync(message);
     }
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        if (e.Key == "Enter" && !e.ShiftKey)
         {
             await SendMessage();
         }
     }
 
-    private void UpdateConnectedStatus()
-    {
-        _connectionStatus = "Connected";
-        _connectionStatusClass = "connected";
-        StateHasChanged();
-    }
-
-    private void UpdateDisconnectedStatus()
-    {
-        _connectionStatus = "Disconnected";
-        _connectionStatusClass = "disconnected";
-        StateHasChanged();
-    }
-
-    private void UpdateReconnectingStatus()
-    {
-        _connectionStatus = "Reconnecting...";
-        _connectionStatusClass = "reconnecting";
-        StateHasChanged();
-    }
-
-    private void UpdateReconnectedStatus()
-    {
-        _connectionStatus = "Connected";
-        _connectionStatusClass = "connected";
-        StateHasChanged();
-    }
-
     public async ValueTask DisposeAsync()
     {
-        await Dispose(true);
+        await DisposeCore();
         GC.SuppressFinalize(this);
     }
 
     public void Dispose()
     {
-        Dispose(true);
+        DisposeCore().AsTask().Wait();
         GC.SuppressFinalize(this);
     }
 
-    protected virtual async ValueTask Dispose(bool disposing)
+    private async ValueTask DisposeCore()
     {
-        if (disposing)
-        {
-            SignalRService.OnMessageReceived -= HandleNewMessage;
-            SignalRService.OnConnected -= UpdateConnectedStatus;
-            SignalRService.OnDisconnected -= UpdateDisconnectedStatus;
-            SignalRService.OnReconnecting -= UpdateReconnectingStatus;
-            SignalRService.OnReconnected -= UpdateReconnectedStatus;
+        ChatService.OnMessageReceived -= HandleNewMessage;
 
-            _dotNetRef?.Dispose();
-            _scrollTimer?.Dispose();
-            _scrollTimer = null;
+        if (!string.IsNullOrEmpty(_currentRoomId))
+        {
+            try
+            {
+                await ChatService.LeaveRoomAsync(_currentRoomId);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error leaving room on dispose: {ex.Message}");
+            }
         }
-    }
 
-    private class ScrollMetrics
-    {
-        public double ScrollTop { get; set; }
-        public double ScrollHeight { get; set; }
-        public double ClientHeight { get; set; }
-    }
-
-    private class ChatMessageComparer : IComparer<ChatMessageDto>
-    {
-        public int Compare(ChatMessageDto x, ChatMessageDto y)
+        // Complete the send queue
+        _sendQueue.Writer.Complete();
+        if (_sendQueueTask != null)
         {
-            return x.Id.CompareTo(y.Id);
+            await _sendQueueTask;
         }
     }
 }

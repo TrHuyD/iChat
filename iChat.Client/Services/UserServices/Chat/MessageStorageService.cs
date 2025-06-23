@@ -32,7 +32,7 @@ namespace iChat.Client.Services.UserServices.ChatService
           // await _jsRuntime.InvokeVoidAsync("registerMessageStorageInterop", _dotNetRef);
         }
 
-        public async Task StoreMessageAsync(string roomId, ChatMessageDto message)
+        public async Task StoreMessageAsync(string roomId, ChatMessageDtoSafe message)
         {
             var record = new StoreRecord<IndexedMessage>
             {
@@ -53,7 +53,7 @@ namespace iChat.Client.Services.UserServices.ChatService
             await _dbManager.AddRecord(record);
         }
 
-        public async Task StoreMessagesAsync(string roomId, List<ChatMessageDto> messages)
+        public async Task StoreMessagesAsync(string roomId, List<ChatMessageDtoSafe> messages)
         {
             var tasks = messages.Select(message => StoreMessageAsync(roomId, message));
             await Task.WhenAll(tasks);
@@ -72,7 +72,7 @@ namespace iChat.Client.Services.UserServices.ChatService
             }
         }
 
-        public async Task<List<ChatMessageDto>> GetMessagesAsync(string roomId, int limit = 100)
+        public async Task<List<ChatMessageDtoSafe>> GetMessagesAsync(string roomId, int limit = 100)
         {
             try
             {
@@ -87,7 +87,7 @@ namespace iChat.Client.Services.UserServices.ChatService
                 return messages?
                     .OrderBy(m => m.CreatedAt)
                     .TakeLast(limit)
-                    .Select(m => new ChatMessageDto
+                    .Select(m => new ChatMessageDtoSafe
                     {
                         Id = m.MessageId,
                         Content = m.Content,
@@ -95,14 +95,14 @@ namespace iChat.Client.Services.UserServices.ChatService
                         MessageType = m.MessageType,
                         CreatedAt = m.CreatedAt.ToLocalTime(),
                         SenderId = m.SenderId,
-                        RoomId = long.Parse(roomId)
+                        RoomId = roomId
                     })
-                    .ToList() ?? new List<ChatMessageDto>();
+                    .ToList() ?? new List<ChatMessageDtoSafe>();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting messages: {ex.Message}");
-                return new List<ChatMessageDto>();
+                return new List<ChatMessageDtoSafe>();
             }
         }
 
@@ -152,31 +152,6 @@ namespace iChat.Client.Services.UserServices.ChatService
             }
         }
 
-        [JSInvokable]
-        public async Task StoreMessageAsyncFromJs(string roomId, JsonElement messageJson)
-        {
-            var message = JsonSerializer.Deserialize<ChatMessageDto>(messageJson.ToString()!);
-            if (message != null)
-            {
-                await StoreMessageAsync(roomId, message);
-            }
-        }
-
-        [JSInvokable]
-        public async Task StoreMessagesAsyncFromJs(string roomId, JsonElement messagesJson)
-        {
-            var messages = JsonSerializer.Deserialize<List<ChatMessageDto>>(messagesJson.ToString()!);
-            if (messages != null)
-            {
-                await StoreMessagesAsync(roomId, messages);
-            }
-        }
-
-        [JSInvokable]
-        public async Task DeleteMessagesInRoomAsyncFromJs(string roomId)
-        {
-            await ClearMessagesAsync(roomId);
-        }
 
         public async ValueTask DisposeAsync()
         {
@@ -192,7 +167,7 @@ namespace iChat.Client.Services.UserServices.ChatService
             public string RoomId { get; set; }
 
             [JsonPropertyName("messageId")]
-            public long MessageId { get; set; }
+            public string MessageId { get; set; }
 
             [JsonPropertyName("content")]
             public string Content { get; set; }
@@ -207,7 +182,7 @@ namespace iChat.Client.Services.UserServices.ChatService
             public DateTime CreatedAt { get; set; }
 
             [JsonPropertyName("senderId")]
-            public long SenderId { get; set; }
+            public string SenderId { get; set; }
         }
     }
 }

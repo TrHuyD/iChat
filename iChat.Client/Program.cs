@@ -12,6 +12,10 @@ using iChat.Client.Services.UserServices.ChatService;
 using iChat.Client.Services.UserServices;
 using Blazored.LocalStorage;
 using TG.Blazor.IndexedDB;
+using iChat.Client.Services.UserServices.Chat;
+using iChat.Client.Services.UserServices.Chat.Util;
+
+
 
 
 
@@ -30,8 +34,8 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped<FieldCssClassProvider, BootstrapFieldClassProvider>();
 builder.Services.AddSingleton<ToastService>();
 
-
 builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddScoped<LastVisitedChannelService>();
 builder.Services.AddScoped<LoginStateService>();
 builder.Services.AddScoped<TokenProvider>();
 
@@ -83,7 +87,9 @@ builder.Services.AddIndexedDB(dbStore =>
 builder.Services.AddScoped<MessageStorageService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<UserStateService>();
-builder.Services.AddScoped<SignalRWorkerService>();
+//builder.Services.AddScoped<SignalRWorkerService>();
+builder.Services.AddScoped<SignalRConnectionFactory>();
+builder.Services.AddScoped<ChatClientService>();
 builder.Services.AddScoped< ChatNavigationService>();
 
 await builder.Build().RunAsync();

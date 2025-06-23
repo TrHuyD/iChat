@@ -18,7 +18,8 @@ namespace iChat.Data.Configurations
             builder.Property(c => c.Name)
                 .IsRequired()
                 .HasMaxLength(100);
-
+            builder.Property(c => c.LastAssignedBucketId)
+                .HasDefaultValue(0);
             builder.Property(c => c.CreatedAt)
                 .IsRequired();
 

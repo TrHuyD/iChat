@@ -36,10 +36,19 @@ namespace iChat.Data.Configurations
 
             builder.HasIndex(m => m.ChannelId);
             builder.HasIndex(m => new { m.ChannelId, m.Timestamp });
-            builder.HasIndex(m => new { m.ChannelId, m.Id });
             builder.HasIndex(m => new { m.ChannelId, m.SenderId, m.Timestamp });
+            builder.HasIndex(m => new { m.ChannelId, m.BucketId,m.Id });
             builder.Property(m => m.MessageType)
                    .HasColumnType("smallint");
+            builder.HasOne(m => m.ChatChannel)
+                .WithMany()
+                .HasForeignKey(m => m.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.Property(m => m.BucketId)
+                .HasDefaultValue(int.MaxValue);
+            builder.HasOne(m => m.Bucket)
+                .WithMany(b => b.Messages)
+                .HasForeignKey(m => new { m.ChannelId, m.BucketId });
         }
     }
 }

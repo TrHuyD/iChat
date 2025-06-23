@@ -1,9 +1,12 @@
 ﻿@using iChat.Client.Modals.User
 @using iChat.Client.Services.UserServices
+@using iChat.Client.Services.UserServices.Chat.Util
 @using iChat.Client.Services.UserServices.ChatService
 @using iChat.DTOs.Users.Messages
 @inject ChatNavigationService ChatNavService
 @inject UserStateService LoadingService
+@inject NavigationManager Navigation
+@inject LastVisitedChannelService ChannelTracker
 @implements IDisposable
 
 <div class="discord-nav">
@@ -11,7 +14,7 @@
     <div class="server-sidebar">
         <!-- Home Button -->
         <div class="server-icon home-icon">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="ClearServerSelection">
                 <i class="fas fa-home"></i>
             </NavLink>
         </div>
@@ -20,9 +23,9 @@
         <div class="server-list">
             @foreach (var server in ChatNavService.ChatServers)
             {
-                <NavLink class="server-icon" href=@($"chat/{server.Id}")>
+                <div class="server-icon @(_selectedServer?.Id == server.Id ? "active" : "")" @onclick="() => ShowChannelList(server)">
                     <img src="@server.AvatarUrl" alt="@server.Name" />
-                </NavLink>
+                </div>
             }
         </div>
 
@@ -32,189 +35,41 @@
         </div>
     </div>
 
-    <!-- Channel List (Right Sidebar) -->
-    <div class="channel-sidebar @NavMenuCssClass">
-        <div class="sidebar-header">
-            <h3>iChat</h3>
-            <button class="sidebar-toggle" @onclick="ToggleNavMenu">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-
-        <div class="channel-category">
-            <div class="category-header">
-                <span>YOUR SERVERS</span>
+    <!-- Channel List Sidebar - Only show when a server is selected -->
+    @if (_selectedServer != null)
+    {
+        <div class="channel-sidebar">
+            <div class="sidebar-header">
+                <h3>@_selectedServer.Name</h3>
+                <button class="sidebar-toggle" @onclick="ClearServerSelection">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
-            <div class="channel-list">
-                @foreach (var server in ChatNavService.ChatServers)
-                {
-                    <NavLink class="channel-item" href=@($"chat/{server.Id}")>
-                        <span class="channel-prefix">#</span>
-                        <span class="channel-name">@server.Name</span>
-                    </NavLink>
-                }
+            <div class="channel-category">
+                <div class="category-header">
+                    <span>CHANNELS</span>
+                </div>
+
+                <div class="channel-list">
+                    @foreach (var channel in _selectedServer.Channels.OrderBy(c => c.Order))
+                    {
+                        <div class="channel-item" @onclick="() => NavigateToChannel(_selectedServer.Id, channel.Id)">
+                            <span class="channel-prefix">#</span>
+                            <span class="channel-name">@channel.Name</span>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
-    </div>
+    }
 </div>
 
 <CreateServerModal IsVisible="@showCreateServer" IsVisibleChanged="@((val) => showCreateServer = val)" />
 
-<style>
-    /* Base Styles */
-    .discord-nav {
-        display: flex;
-        height: 100vh;
-        background-color: #202225;
-        color: #dcddde;
-    }
-
-    /* Server Sidebar */
-    .server-sidebar {
-        width: 72px;
-        background-color: #202225;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 12px 0;
-        overflow-y: auto;
-    }
-
-    .server-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #36393f;
-        color: #dcddde;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-        .server-icon:hover {
-            border-radius: 16px;
-            background-color: #5865f2;
-        }
-
-        .server-icon img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-    .home-icon {
-        background-color: #5865f2;
-    }
-
-    .add-server {
-        background-color: #36393f;
-        color: #3ba55c;
-    }
-
-        .add-server:hover {
-            background-color: #3ba55c;
-            color: white;
-        }
-
-    /* Channel Sidebar */
-    .channel-sidebar {
-        width: 240px;
-        background-color: #2f3136;
-        display: flex;
-        flex-direction: column;
-        transition: transform 0.3s ease;
-    }
-
-        .channel-sidebar.collapse {
-            transform: translateX(-100%);
-            position: absolute;
-            left: 72px;
-            height: 100%;
-            z-index: 100;
-        }
-
-    .sidebar-header {
-        padding: 16px;
-        border-bottom: 1px solid #292b2f;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-        .sidebar-header h3 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-    .sidebar-toggle {
-        background: none;
-        border: none;
-        color: #b9bbbe;
-        cursor: pointer;
-    }
-
-    /* Channel Category */
-    .channel-category {
-        padding: 16px 8px;
-    }
-
-    .category-header {
-        padding: 0 8px 8px;
-        color: #96989d;
-        font-size: 12px;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-
-    /* Channel List */
-    .channel-list {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .channel-item {
-        padding: 8px;
-        margin: 2px 0;
-        border-radius: 4px;
-        color: #96989d;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-    }
-
-        .channel-item:hover {
-            background-color: #3a3d44;
-            color: #dcddde;
-        }
-
-        .channel-item.active {
-            background-color: #40444b;
-            color: white;
-        }
-
-    .channel-prefix {
-        margin-right: 8px;
-        font-weight: bold;
-    }
-
-    .channel-name {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-</style>
-
 @code {
-    private bool collapseNavMenu = true;
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
     private bool showCreateServer = false;
+    private ChatServerDto? _selectedServer;
 
     protected override void OnInitialized()
     {
@@ -222,9 +77,35 @@
         ChatNavService.OnChatServersChanged += StateHasChanged;
     }
 
-    private void ToggleNavMenu()
+    private void ClearServerSelection()
     {
-        collapseNavMenu = !collapseNavMenu;
+        _selectedServer = null;
+        StateHasChanged();
+    }
+
+    private async Task ShowChannelList(ChatServerDto server)
+    {
+        // Always select the server first
+        _selectedServer = server;
+
+        // Then navigate to the last visited channel or default channel
+        var last = await ChannelTracker.GetLastChannelAsync(server.Id);
+        var target = server.Channels.FirstOrDefault(c => c.Id == last) ??
+                     server.Channels.OrderBy(c => c.Order).FirstOrDefault();
+
+        if (target != null)
+        {
+            await ChannelTracker.SaveLastChannelAsync(server.Id, target.Id);
+            Navigation.NavigateTo($"/chat/{target.Id}");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task NavigateToChannel(string serverId, string channelId)
+    {
+        await ChannelTracker.SaveLastChannelAsync(serverId, channelId);
+        Navigation.NavigateTo($"/chat/{channelId}");
     }
 
     public void Dispose()

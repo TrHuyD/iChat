@@ -29,7 +29,7 @@ namespace iChat.Data.EF
             builder.ApplyConfiguration(new UserChatServerConfiguration());
             builder.ApplyConfiguration(new ChatChannelConfiguration());
             builder.ApplyConfiguration(new ChannelPermissionOverrideConfiguration());
-
+            builder.ApplyConfiguration(new BucketConfiguration());
             //builder.seed();
             base.OnModelCreating(builder);
         }
@@ -39,7 +39,7 @@ namespace iChat.Data.EF
         public DbSet<ChatChannel> ChatChannels { get; set; }
         public DbSet<ChatServer> ChatServers { get; set; }
         public DbSet<ChatRole> ChatRoles { get; set; }
-       
+       public DbSet<Bucket> Buckets { get; set; }
         public DbSet<ChannelPermissionOverride> ChannelPermissionOverrides { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }

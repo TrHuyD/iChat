@@ -36,16 +36,25 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
         {
             return await _dbContext.UserChatServers
                 .Where(ucs => ucs.UserId == userId)
-              //  .OrderBy(ucs => ucs.Order) 
                 .Select(ucs => new ChatServerDto
                 {
                     Id = ucs.ChatServer.Id.ToString(),
                     Name = ucs.ChatServer.Name,
                     AvatarUrl = ucs.ChatServer.Avatar ?? "https://cdn.discordapp.com/embed/avatars/0.png",
-                    Position = ucs.Order 
+                    Position = ucs.Order,
+                    Channels = ucs.ChatServer.ChatChannels
+                     //   .OrderBy(c => c.Order) // Optional: sort channels by order
+                        .Select(c => new ChatChannelDto
+                        {
+                            Id = c.Id.ToString(),
+                            Name = c.Name,
+                            Order = c.Order
+                        })
+                        .ToList()
                 })
                 .ToListAsync();
         }
+
         public async Task<List<long>> GetServerMembersAsync(long serverId)
         {
            

@@ -97,30 +97,30 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             await Clients.Group(roomId).SendAsync("ReceiveMessage", new ChatMessageDtoSafe(result.Value));
         }
 
-        public async Task<List<ChatMessageDtoSafe>> GetMessageHistory(string roomId, string? beforeMessageId = null)
-        {
-            if(!ValueParser.TryLong(roomId, out var roomIdLong))
-            {
-                return new();
-            }
-            long? messageIdLong = null;
-            if(beforeMessageId!=null)
-            {
-                if (ValueParser.TryLong(beforeMessageId, out var beforeMessageIdLong))
-                messageIdLong = beforeMessageIdLong;
-            }    
-            var request = new UserGetRecentMessageRequest
-            {
-                UserId = new UserClaimHelper(Context.User).GetUserId(),
-                ChannelId = roomIdLong,
-                LastMessageId = messageIdLong
-            };
+        //public async Task<List<ChatMessageDtoSafe>> GetMessageHistory(string roomId, string? beforeMessageId = null)
+        //{
+        //    if(!ValueParser.TryLong(roomId, out var roomIdLong))
+        //    {
+        //        return new();
+        //    }
+        //    long? messageIdLong = null;
+        //    if(beforeMessageId!=null)
+        //    {
+        //        if (ValueParser.TryLong(beforeMessageId, out var beforeMessageIdLong))
+        //        messageIdLong = beforeMessageIdLong;
+        //    }    
+        //    var request = new UserGetRecentMessageRequest
+        //    {
+        //        UserId = new UserClaimHelper(Context.User).GetUserId(),
+        //        ChannelId = roomIdLong,
+        //        LastMessageId = messageIdLong
+        //    };
 
-            var messages = await _readMessageService.RetrieveRecentMessage(request);
-            List<ChatMessageDtoSafe> safeMessages = messages
-                .Select(m => new ChatMessageDtoSafe(m))
-                .ToList();
-            return safeMessages;
-        }
+        //    var messages = await _readMessageService.RetrieveRecentMessage(request);
+        //    List<ChatMessageDtoSafe> safeMessages = messages
+        //        .Select(m => new ChatMessageDtoSafe(m))
+        //        .ToList();
+        //    return safeMessages;
+        //}
     }
 }
