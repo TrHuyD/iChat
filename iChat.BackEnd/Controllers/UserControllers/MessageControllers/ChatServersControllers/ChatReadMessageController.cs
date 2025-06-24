@@ -75,7 +75,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
         [AllowAnonymous]
         [HttpGet("{channelId}/history_test")]
 
-        public async Task<IActionResult> test([FromServices] IMessageReadService readservice, string channelId)
+        public async Task<IActionResult> test([FromServices] IMessageDbReadService readservice, string channelId)
         {
 
             return Ok(await readservice.GetLatestBucketsByChannelAsync(long.Parse(channelId)));

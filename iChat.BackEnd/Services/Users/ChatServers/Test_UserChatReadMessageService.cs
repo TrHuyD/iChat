@@ -12,12 +12,12 @@ namespace iChat.BackEnd.Services.Users.ChatServers
     public class Test_UserChatReadMessageService : IChatReadMessageService
     {
         private readonly RedisChatCache _redisService;
-        private readonly IMessageReadService _chatReadService;
+        private readonly IMessageDbReadService _chatReadService;
         private readonly ThreadSafeCacheService _lockService;
         private readonly RedisSegmentCache _redisSegmentCache;
         public Test_UserChatReadMessageService(
             RedisChatCache redisService,
-            IMessageReadService readservice,
+            IMessageDbReadService readservice,
             ThreadSafeCacheService lockService,
             RedisSegmentCache redisSegmentCache)
         {

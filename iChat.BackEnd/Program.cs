@@ -114,8 +114,8 @@ builder.Services.AddTransient<IChatServerEditService,EfCoreChatServerEditService
 //builder.Services.AddTransient(provider =>
 //    new Lazy<Neo4jChatListingService>(() => provider.GetRequiredService<Neo4jChatListingService>()));
 builder.Services.AddTransient<IChatListingService,EfCoreChatListingService>();
-builder.Services.AddTransient<IMessageReadService, EfCoreMessageReadService>();
-builder.Services.AddTransient<IMessageWriteService, EfCoreMessageWriteService>();
+builder.Services.AddTransient<IMessageDbReadService, EfCoreMessageReadService>();
+builder.Services.AddTransient<IMessageDbWriteService, EfCoreMessageWriteService>();
 builder.Services.AddSingleton<MessageTimeLogger>();
 builder.Services.AddSingleton<MessageWriteQueueService>();
 builder.Services.AddHostedService<BucketingPrediodicService>();

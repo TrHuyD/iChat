@@ -11,7 +11,7 @@ using System.Linq.Expressions;
 
 namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
 {
-    public class EfCoreMessageReadService : IMessageReadService
+    public class EfCoreMessageReadService : IMessageDbReadService
     {
         private readonly iChatDbContext _context;
         
@@ -85,6 +85,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
 
         public async Task<List<ChatMessageDto>> GetMessagesInRangeAsync(long channelId, long startId, long endId, int limit = 50)
         {
+            limit = Math.Min(limit, 250);
             var result = await _context.Messages
                 .AsNoTracking()
                 .Where(m => m.ChannelId == channelId && m.Id >= startId && m.Id <= endId)
@@ -98,6 +99,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
 
         public async Task<List<BucketDto>> GetLatestBucketsByChannelAsync(long channelId, int bucketCount = 3)
         {
+            bucketCount = Math.Min(bucketCount, 5); 
             var results = await _context.Database
                 .SqlQueryRaw<RawBucketResult>(
                     "SELECT * FROM get_latest_buckets_by_channel({0}, {1})",
@@ -110,6 +112,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
 
         public async Task<List<BucketDto>> GetBucketsAroundMessageAsync(long channelId, long messageId, int bucketRange = 2)
         {
+            bucketRange = Math.Min(bucketRange, 5); 
             var results = await _context.Database
                 .SqlQueryRaw<RawBucketResult>($"SELECT * FROM get_buckets_around_message({channelId}, {messageId}, {bucketRange})")
                 .ToListAsync();
@@ -118,8 +121,9 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
         }
         public async Task<List<BucketDto>> GetBucketsInRangeAsync(long channelId, long startId, long endId, int limit = 50)
         {
+            limit = Math.Min(limit, 250);
             var results = await _context.Database
-                .SqlQueryRaw<RawBucketResult>($"SELECT * FROM get_buckets_in_range({channelId}, {startId}, {endId}, {limit})")
+                .SqlQueryRaw<RawBucketResult>($"SELECT * FROM get_buckets_by_bucket_id_range({channelId}, {startId}, {endId}, {limit})")
                 .ToListAsync();
 
             return results.Select(r => new BucketDto(r)).ToList();

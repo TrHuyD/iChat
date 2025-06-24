@@ -130,7 +130,7 @@
     {
         try
         {
-            if (message.RoomId == RoomId)
+            if (message.ChannelId == RoomId)
             {
                 var messageId = long.Parse(message.Id);
 
@@ -180,7 +180,7 @@
         {
             Content = messageContent,
             MessageType = 1, // Regular text message
-            RoomId = RoomId,
+            ChannelId = RoomId,
             SenderId = _currentUserId,
             CreatedAt = DateTimeOffset.UtcNow
         };

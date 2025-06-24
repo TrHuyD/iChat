@@ -8,7 +8,7 @@ using System;
 
 namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 {
-    public class EfCoreMessageWriteService : IMessageWriteService
+    public class EfCoreMessageWriteService : IMessageDbWriteService
     {
         private readonly MessageWriteQueueService _queueService;
 

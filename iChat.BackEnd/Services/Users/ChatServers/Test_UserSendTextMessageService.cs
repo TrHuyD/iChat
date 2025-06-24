@@ -13,10 +13,10 @@ namespace iChat.BackEnd.Services.Users.ChatServers
     public class Test_UserSendTextMessageService  : IChatSendMessageService
 
     {
-        readonly IMessageWriteService _chatWriteService;
+        readonly IMessageDbWriteService _chatWriteService;
         readonly RedisChatCache _redis_dbservice;
         readonly SnowflakeService _idGen;
-        public Test_UserSendTextMessageService(IMessageWriteService dbservice
+        public Test_UserSendTextMessageService(IMessageDbWriteService dbservice
             ,RedisChatCache rWService
             ,SnowflakeService snowflakeService)
         {

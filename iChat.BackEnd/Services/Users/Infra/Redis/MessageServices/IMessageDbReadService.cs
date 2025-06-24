@@ -2,7 +2,7 @@
 
 namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
 {
-    public interface IMessageReadService
+    public interface IMessageDbReadService
     {
         Task<List<ChatMessageDto>> GetMessagesByChannelAsync(long channelId, int limit = 40);
         Task<List<ChatMessageDto>> GetMessagesAroundMessageIdAsync(long channelId, long messageId, int before = 20, int after = 22);

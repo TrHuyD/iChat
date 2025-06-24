@@ -15,7 +15,7 @@ namespace iChat.DTOs.Users.Messages
         //   [JsonConverter(typeof(DateTimeOffsetJsonConverter))]
         public DateTimeOffset CreatedAt { get; set; }
         public string SenderId { get; set; }
-        public string RoomId { get; set; }
+        public string ChannelId { get; set; }
         //     public string? SenderName { get; set; } = string.Empty;
         //   public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
        public ChatMessageDtoSafe(ChatMessageDto chatMessageDto)
@@ -26,7 +26,7 @@ namespace iChat.DTOs.Users.Messages
             MessageType = chatMessageDto.MessageType;
             CreatedAt = chatMessageDto.CreatedAt;
             SenderId = chatMessageDto.SenderId.ToString();
-            RoomId = chatMessageDto.RoomId.ToString();
+            ChannelId = chatMessageDto.RoomId.ToString();
         }
         public ChatMessageDtoSafe()
         {
@@ -42,7 +42,7 @@ namespace iChat.DTOs.Users.Messages
                 MessageType = MessageType,
                 CreatedAt = CreatedAt,
                 SenderId = long.Parse(SenderId),
-                RoomId = long.Parse(RoomId)
+                RoomId = long.Parse(ChannelId)
             };
         }
     }

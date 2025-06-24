@@ -95,7 +95,7 @@ namespace iChat.Client.Services.UserServices.ChatService
                         MessageType = m.MessageType,
                         CreatedAt = m.CreatedAt.ToLocalTime(),
                         SenderId = m.SenderId,
-                        RoomId = roomId
+                        ChannelId = roomId
                     })
                     .ToList() ?? new List<ChatMessageDtoSafe>();
             }

@@ -4,7 +4,7 @@ using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 
 namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
 {
-    public interface IMessageWriteService
+    public interface IMessageDbWriteService
     {
         Task UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId);
         Task UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages);

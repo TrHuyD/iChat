@@ -102,7 +102,7 @@ namespace iChat.Client.Services.UserServices.Chat
                 MessageType = firstMessage.MessageType,
                 CreatedAt = firstMessage.CreatedAt.AddMilliseconds(-1),
                 SenderId = firstMessage.SenderId,
-                RoomId = firstMessage.RoomId,
+                ChannelId = firstMessage.ChannelId,
                 LongId = firstMessage.LongId - 1,
                 IsGapMessage = true
             };
@@ -166,7 +166,7 @@ namespace iChat.Client.Services.UserServices.Chat
             MessageType = baseMessage.MessageType;
             CreatedAt = baseMessage.CreatedAt;
             SenderId = baseMessage.SenderId;
-            RoomId = baseMessage.RoomId;
+            ChannelId = baseMessage.ChannelId;
             LongId = ParseSnowflakeId(baseMessage.Id);
         }
 
