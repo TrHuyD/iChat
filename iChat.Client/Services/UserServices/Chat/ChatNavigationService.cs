@@ -2,6 +2,7 @@
 using iChat.DTOs.Users.Messages;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -121,18 +122,11 @@ namespace iChat.Client.Services.UserServices
                 throw new InvalidOperationException($"Failed to create server: {errorContent}");
             }
 
-            var serverId = await response.Content.ReadAsStringAsync();
+            var newserver = await response.Content.ReadFromJsonAsync<ChatServerDto>();
 
-           
-            var newServer = new ChatServerDto
-            {
-                Id = serverId,
-                Name = name,
-                AvatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png",
-                Position = ChatServers.Count + 1
-            };
 
-            AddServer(newServer);
+
+            AddServer(newserver);
         }
         /// <summary>
         /// Gets a specific server by ID

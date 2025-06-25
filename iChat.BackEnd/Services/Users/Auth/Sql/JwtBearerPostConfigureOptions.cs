@@ -43,7 +43,7 @@ public class JwtBearerPostConfigureOptions : IPostConfigureOptions<JwtBearerOpti
                 var path = context.HttpContext.Request.Path;
                 _logger.LogInformation($"Received SignalR access_token: {accessToken}/{path}" );
                 if (!string.IsNullOrEmpty(accessToken) &&
-                    path.StartsWithSegments("/api/chathub"))
+                    path.StartsWithSegments("/api"))
                 {
                   
                     context.Token = accessToken;

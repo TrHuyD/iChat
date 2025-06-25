@@ -6,13 +6,12 @@ using System.Threading.Tasks;
 
 namespace iChat.DTOs.Users.Messages
 {
-    public class ChatServerDto
+    public class ChatServerMetadata
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
-        public string AvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
-        public int Position { get; set; } = 0;
-
+        public string AvatarUrl { get; set; } = string.Empty;
+        public DateTimeOffset CreatedAt { get; set; }
         public List<ChatChannelMetadata> Channels { get; set; } = new List<ChatChannelMetadata>();
     }
 }

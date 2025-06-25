@@ -44,7 +44,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                     Position = ucs.Order,
                     Channels = ucs.ChatServer.ChatChannels
                      //   .OrderBy(c => c.Order) // Optional: sort channels by order
-                        .Select(c => new ChatChannelDto
+                        .Select(c => new ChatChannelMetadata
                         {
                             Id = c.Id.ToString(),
                             Name = c.Name,

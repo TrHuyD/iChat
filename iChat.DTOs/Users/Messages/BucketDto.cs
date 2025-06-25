@@ -10,7 +10,7 @@ namespace iChat.DTOs.Users.Messages
     public class BucketDto
     {
         public int BucketId { get; set; }
-        public string ChannelId { get; set; }
+        public string ChannelId { get; set; }   
         public int MessageCount { get; set; }
         public string FirstSequence { get; set; }
         public string LastSequence { get; set; }

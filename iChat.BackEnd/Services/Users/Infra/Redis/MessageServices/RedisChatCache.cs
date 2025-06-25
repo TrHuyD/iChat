@@ -13,9 +13,28 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
     public class RedisChatCache
     {
         private readonly AppRedisService _service;
+        //readonly TimeSpan latest_bucket_livetime = TimeSpan.FromMinutes(20);
         public RedisChatCache(AppRedisService redisService)
         {
             _service = redisService;
+        }
+        public async Task ProcessBucketingReportsAsync(List<BucketingReport> reports)
+        {
+            var db = _service.GetDatabase();
+            var batch = db.CreateBatch();
+
+            List<Task> tasks = new();
+            
+            foreach (var report in reports)
+            {
+                var zsetKey = (RedisKey)$"c:{report.channel_id}:m";
+                var latestBucketKey = (RedisKey)$"c:{report.channel_id}:latest_bucket";
+                tasks.Add(batch.SortedSetRemoveRangeByScoreAsync(zsetKey, double.NegativeInfinity, report.last_message_id - 1));
+                tasks.Add(batch.StringSetAsync(latestBucketKey, report.latest_bucket_id));
+            }
+
+            batch.Execute();
+            await Task.WhenAll(tasks);
         }
         public async Task<bool> UploadMessageAsync(ChatMessageDto message)
         {
@@ -35,7 +54,6 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
         
                 if redis.call('EXISTS', zset_key) == 1 then
                     redis.call('ZADD', zset_key, score, json)
-                    redis.call('ZREMRANGEBYRANK', zset_key, 0, -41)
                     redis.call('EXPIRE', zset_key, expire)
                     return 1
                 else
@@ -84,7 +102,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
                     tasks.Add(batch.SortedSetAddAsync(zsetKey, json, msg.Id));
                 }
             }
-            tasks.Add(batch.SortedSetRemoveRangeByRankAsync(zsetKey, 0, -41));
+           // tasks.Add(batch.SortedSetRemoveRangeByRankAsync(zsetKey, 0, -41));
             tasks.Add(batch.KeyExpireAsync(zsetKey, TimeSpan.FromMinutes(20)));
             batch.Execute();
             await Task.WhenAll(tasks);

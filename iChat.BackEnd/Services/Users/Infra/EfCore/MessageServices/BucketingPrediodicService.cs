@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.UtilServices;
 using iChat.Data.EF;
+using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
 
 namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
@@ -21,7 +22,8 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
         {
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<iChatDbContext>();
-            await dbContext.Database.ExecuteSqlRawAsync("SELECT bucket_flush();");
+            var report= await dbContext.Database.SqlQueryRaw<BucketingReport>("SELECT * FROM process_messages_bucketing();").ToListAsync();
+           // var dbRedis = scope.
         }
     }
 }

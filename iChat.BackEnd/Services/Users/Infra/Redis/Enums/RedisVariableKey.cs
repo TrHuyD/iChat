@@ -12,7 +12,10 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.Enums
         {
             return GetServerChannelKey(userId) + "_l";
         }
-
+        public static string GetServerMetadataKey(string serverId) => $"server:{serverId}:meta";
+        public static string GetServerChannelsKey(string serverId) => $"server:{serverId}:channels";
+        public static string GetChannelBucketKey(string serverId, string channelId) =>
+            $"server:{serverId}:channels";
         internal static string GetServerChannelKey(long serverId)
         {
             return $"{Key.ChatServer}:{serverId}:{Key.ChatChannel}";

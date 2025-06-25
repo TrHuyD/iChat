@@ -22,10 +22,10 @@ public class SUS_ServerChannelCacheLoader : IHostedService
         var redisChatServerService = scope.ServiceProvider.GetRequiredService<RedisChatServerService>();
 
         var serverLister = new SUS_EfCoreServerLister(db);
-        var allServers = await serverLister.GetAllServerChannelsAsync();
+        var allServers = await serverLister.GetAllServersWithChannelsAsync();
 
         Console.WriteLine($"[SUS] Amount of Server retrieved from EF Core: {allServers.Count}");
-        var result = await redisChatServerService.UploadServerAsync(allServers);
+        var result = await redisChatServerService.UploadServersAsync(allServers);
         Console.WriteLine($"[SUS] Server Channel Cache Loader completed. Result: {result}");
     }
 

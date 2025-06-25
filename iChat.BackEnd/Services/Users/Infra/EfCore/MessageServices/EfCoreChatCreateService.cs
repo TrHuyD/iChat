@@ -3,6 +3,7 @@ using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.Data.EF;
 using iChat.Data.Entities.Servers;
 using iChat.Data.Entities.Users.Messages;
+using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Threading.Channels;
@@ -72,25 +73,25 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             return channelId;
         }
 
-        public async Task<string> CreateServerAsync(string serverName, long adminUserId)
+        public async Task<ChatServerDto> CreateServerAsync(string serverName, long adminUserId)
         {
-            var serverId = _serverIdGen.GenerateId().Id;
-            var generalChannelId = _channelIdGen.GenerateId().Id;
+            var serverId = _serverIdGen.GenerateId();
+            var generalChannelId = _channelIdGen.GenerateId();
 
             var server = new ChatServer
             {
-                Id = serverId,
+                Id = serverId.Id,
                 Name = serverName,
-                CreatedAt = DateTimeOffset.UtcNow,
+                CreatedAt = serverId.CreatedAt,
                 ChatChannels = new List<ChatChannel>(),
                 AdminId = adminUserId
             };
 
             var generalChannel = new ChatChannel
             {
-                Id = generalChannelId,
+                Id = generalChannelId.Id,
                 Name = "general",
-                CreatedAt = DateTimeOffset.UtcNow,
+                CreatedAt = generalChannelId.CreatedAt,
                 Server = server
             };
             AssignBucket(generalChannel);
@@ -99,7 +100,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _db.UserChatServers.Add(new UserChatServer
             {
                 UserId = adminUserId,
-                ChatServerId = serverId
+                ChatServerId = serverId.Id
             });
 
 
@@ -107,7 +108,24 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _db.ChatServers.Add(server);
             await _db.SaveChangesAsync();
 
-            return serverId.ToString();
+            return new ChatServerDto
+            {
+                AvatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png",
+                Id = serverId.Id.ToString(),
+                Name = serverName,
+             //   CreatedAt = serverId.CreatedAt,
+                Channels = new List<ChatChannelMetadata>
+                {
+                    new ChatChannelMetadata
+                    {
+                        Id = generalChannelId.Id.ToString(),
+                        Name = "general",
+                        Order = 0,
+                        last_bucket_id = 0
+                    }
+                }
+
+            };
         }
     }
 }

@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace iChat.DTOs.Users.Messages
 {
-    public class ChatChannelDto
+    public class ChatChannelMetadata
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public int Order { get; set; } = 0;
+        public int last_bucket_id { get; set; }
     }
 }

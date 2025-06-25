@@ -16,14 +16,14 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         ThreadSafeCacheService _lock;
         IChatListingService _chatListingService;
         MemCacheUserChatService _localCache;
-        public ServerListService(IChatListingService neo4jService,
+        public ServerListService(IChatListingService _dbListingService,
             RedisUserServerService redisUserSerivce,
             ThreadSafeCacheService threadSafeCacheService,
             MemCacheUserChatService memoryCache)
         {
             _localCache = memoryCache;
             _lock =threadSafeCacheService;
-            _chatListingService = neo4jService;
+            _chatListingService = _dbListingService;
             _redisUserSerivce = redisUserSerivce;
         }
         public async Task<List<ChatServerDto>> GetServerList(long userId)
@@ -39,8 +39,6 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             fetchFromCache: () => _redisUserSerivce.GetServerChannelsAsync(serverId),
             fetchFromDb: () => _chatListingService.GetServerChannelListAsStringAsync(serverId),
             saveToCache: channels => _redisUserSerivce.AddServerChannelsAsync(serverId, channels));
-    
-           
             return result;
         }
         //public async Task<bool> CheckIfUserInServer(long userId, long serverId)
