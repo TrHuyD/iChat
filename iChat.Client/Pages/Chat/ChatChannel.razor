@@ -9,7 +9,20 @@
 @inject IJSRuntime JS
 @implements IDisposable
 @implements IAsyncDisposable
-
+<div class="special-action-panel">
+    <button class="special-action-button"
+            @onclick="TriggerSpecialRequest"
+            disabled="@(_isLoading || _isPermanentlyDisabled)">
+        @if (_isLoading)
+        {
+            <span class="spinner"></span> 
+        }
+        else
+        {
+            <span>Special</span>
+        }
+    </button>
+</div>
 <div class="chat-container" @onclick="HideContextMenu" @onkeydown="HandleEscapeKey">
     <div class="chat-header">
         <h3>Chat Room @RoomId</h3>
@@ -70,7 +83,6 @@
     private string _connectionStatusClass = "disconnected";
     private string _currentUserId = "";
     private bool _shouldScrollToBottom = false;
-
     private readonly Channel<ChatMessageDtoSafe> _sendQueue = Channel.CreateUnbounded<ChatMessageDtoSafe>();
     private Task? _sendQueueTask;
 
@@ -78,6 +90,39 @@
     private bool _showContextMenu = false;
     private string _contextMenuStyle = "";
     private string _contextMenuMessageId;
+
+    //loading button state
+    private bool _isLoading = false;
+    private bool _isPermanentlyDisabled = false;
+
+    private async Task TriggerSpecialRequest()
+    {
+        if (_isLoading || _isPermanentlyDisabled)
+            return;
+
+        _isLoading = true;
+        try
+        {
+            await Task.Delay(1500);
+            Console.WriteLine("Special request completed.");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Special request failed: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void DisableSpecialButtonPermanently()
+    {
+        _isPermanentlyDisabled = true;
+    }
+
+
 
     protected override async Task OnInitializedAsync()
     {
