@@ -6,10 +6,11 @@
 @using iChat.DTOs.Users.Messages
 @inject ChatClientService ChatService
 @inject UserStateService _userInfo
+@inject IJSRuntime JS
 @implements IDisposable
 @implements IAsyncDisposable
 
-<div class="chat-container">
+<div class="chat-container" @onclick="HideContextMenu" @onkeydown="HandleEscapeKey">
     <div class="chat-header">
         <h3>Chat Room @RoomId</h3>
         <div class="connection-status">
@@ -19,12 +20,15 @@
 
     <div class="messages-container" @ref="_messagesContainer"
          style="overflow-y: scroll; height: calc(100vh - 150px);">
-
         @foreach (var message in _messages.Values.Where(m => MessageRenderer.ShouldShowMessage(m)))
         {
             var renderedMessage = MessageRenderer.RenderMessage(message, _currentUserId);
 
-            <div class="@renderedMessage.CssClass" @key="message.Id">
+            <div class="@renderedMessage.CssClass"
+                 id="message-@message.Id"
+                 @oncontextmenu="(e => ShowContextMenu(e, message.Id))"
+                 @oncontextmenu:preventDefault
+                 @key="message.Id">
                 @if (!string.IsNullOrEmpty(renderedMessage.Icon))
                 {
                     <span class="message-icon">@renderedMessage.Icon</span>
@@ -39,6 +43,14 @@
             </div>
         }
     </div>
+
+    @if (_showContextMenu)
+    {
+        <div class="context-menu" style="@_contextMenuStyle" @onclick:stopPropagation="true">
+            <div class="context-item" @onclick="CopyMessageId">Copy Message ID</div>
+            <div class="context-item" @onclick="ScrollToContextMessage">Scroll to Message</div>
+        </div>
+    }
 
     <div class="message-input">
         <input type="text" @bind="_newMessage" @bind:event="oninput"
@@ -58,6 +70,14 @@
     private string _connectionStatusClass = "disconnected";
     private string _currentUserId = "";
     private bool _shouldScrollToBottom = false;
+
+    private readonly Channel<ChatMessageDtoSafe> _sendQueue = Channel.CreateUnbounded<ChatMessageDtoSafe>();
+    private Task? _sendQueueTask;
+
+    // Context menu state
+    private bool _showContextMenu = false;
+    private string _contextMenuStyle = "";
+    private string _contextMenuMessageId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -83,22 +103,17 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        // Handle room changes
         if (_currentRoomId != RoomId)
         {
             if (!string.IsNullOrEmpty(_currentRoomId))
-            {
                 await ChatService.LeaveRoomAsync(_currentRoomId);
-            }
 
             _currentRoomId = RoomId;
             _messages.Clear();
             _shouldScrollToBottom = true;
 
             if (!string.IsNullOrEmpty(RoomId))
-            {
                 await ChatService.JoinRoomAsync(RoomId);
-            }
 
             StateHasChanged();
         }
@@ -117,8 +132,8 @@
     {
         try
         {
-
-            await Task.Delay(1); 
+            await Task.Delay(1);
+            await JS.InvokeVoidAsync("scrollToBottom", _messagesContainer);
         }
         catch (Exception ex)
         {
@@ -134,7 +149,6 @@
             {
                 var messageId = long.Parse(message.Id);
 
-                // Avoid duplicates
                 if (!_messages.ContainsKey(messageId))
                 {
                     _messages.Add(messageId, message);
@@ -148,9 +162,6 @@
             Console.Error.WriteLine($"Error handling new message: {ex.Message}");
         }
     }
-
-    private readonly Channel<ChatMessageDtoSafe> _sendQueue = Channel.CreateUnbounded<ChatMessageDtoSafe>();
-    private Task? _sendQueueTask;
 
     private async Task ProcessSendQueueAsync()
     {
@@ -169,7 +180,6 @@
 
     private async Task SendMessage()
     {
-        Console.WriteLine("sent new message");
         if (string.IsNullOrWhiteSpace(_newMessage)) return;
 
         var messageContent = _newMessage.Trim();
@@ -179,7 +189,7 @@
         var message = new ChatMessageDtoSafe
         {
             Content = messageContent,
-            MessageType = 1, // Regular text message
+            MessageType = 1,
             ChannelId = RoomId,
             SenderId = _currentUserId,
             CreatedAt = DateTimeOffset.UtcNow
@@ -224,11 +234,40 @@
             }
         }
 
-        // Complete the send queue
         _sendQueue.Writer.Complete();
         if (_sendQueueTask != null)
         {
             await _sendQueueTask;
         }
+    }
+
+    private void ShowContextMenu(MouseEventArgs e, string messageId)
+    {
+        _contextMenuMessageId = messageId;
+        _contextMenuStyle = $"top: {e.ClientY}px; left: {e.ClientX}px;";
+        _showContextMenu = true;
+    }
+
+    private void HideContextMenu()
+    {
+        _showContextMenu = false;
+    }
+
+    private void HandleEscapeKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+            _showContextMenu = false;
+    }
+
+    private async Task CopyMessageId()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _contextMenuMessageId);
+        _showContextMenu = false;
+    }
+
+    private async Task ScrollToContextMessage()
+    {
+        await JS.InvokeVoidAsync("scrollToMessage", _contextMenuMessageId);
+        _showContextMenu = false;
     }
 }

@@ -1,4 +1,27 @@
-﻿.chat-container {
+﻿.context-menu {
+    position: fixed;
+    background-color: #2f3136;
+    color: white;
+    border: 1px solid #000;
+    z-index: 9999;
+    width: 180px;
+    border-radius: 4px;
+    padding: 4px 0;
+    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+}
+
+.context-item {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+    .context-item:hover {
+        background-color: #5865f2;
+    }
+
+
+
+.chat-container {
     display: flex;
     flex-direction: column;
     height: 100vh;

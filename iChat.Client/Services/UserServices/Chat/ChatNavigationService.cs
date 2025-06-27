@@ -1,5 +1,6 @@
 ﻿using iChat.Client.Services.Auth;
 using iChat.DTOs.Users.Messages;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Json;
@@ -16,6 +17,7 @@ namespace iChat.Client.Services.UserServices
 
         public event Action OnChatServersChanged;
         public JwtAuthHandler _http;
+        
         public ChatNavigationService(JwtAuthHandler jwtAuthHandler)
         {   
             _http = jwtAuthHandler ?? throw new ArgumentNullException(nameof(jwtAuthHandler));
@@ -44,17 +46,9 @@ namespace iChat.Client.Services.UserServices
         {
             if (server == null)
                 return;
-
-            // Remove if exists already (to avoid duplicates)
             ChatServers.RemoveAll(s => s.Id == server.Id);
-
-            // Add the new server
             ChatServers.Add(server);
-
-            // Re-sort
             ChatServers = ChatServers.OrderBy(x => x.Position).ToList();
-
-            // Notify subscribers
             OnChatServersChanged?.Invoke();
         }
 
@@ -123,8 +117,6 @@ namespace iChat.Client.Services.UserServices
             }
 
             var newserver = await response.Content.ReadFromJsonAsync<ChatServerDto>();
-
-
 
             AddServer(newserver);
         }

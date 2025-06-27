@@ -72,13 +72,29 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             var messages = await _chatReadMessageService.GetMessagesBeforeAsync(channelIdLong, beforeMessageIdLong);
             return Ok(messages);
         }
-        [AllowAnonymous]
-        [HttpGet("{channelId}/history_test")]
 
-        public async Task<IActionResult> test([FromServices] IMessageDbReadService readservice, string channelId)
+        [HttpGet("{channelId:long}/buckets")]
+        public async Task<IActionResult> GetBucketsInRange(
+            [FromServices] IMessageDbReadService readService,
+            long channelId,
+            [FromQuery(Name = "endid")] int endId,
+            [FromQuery(Name = "limit")] int limit)
         {
-
-            return Ok(await readservice.GetLatestBucketsByChannelAsync(long.Parse(channelId)));
+            if (channelId <= 1_000_000_000_000_000)
+                return BadRequest("Invalid channel ID.");
+            if (endId < 0 || limit<= 0 || limit>3)
+                return BadRequest("Invalid bucket ID range.");
+            var buckets = await readService.GetBucketsInRangeAsync(channelId, endId-limit+1, endId, 150);
+            return Ok(buckets);
+        }
+        [HttpGet("{channelId}/latest")]
+        public async Task<IActionResult> test([FromServices] IMessageDbReadService readService, string channelId)
+        {
+            if (long.TryParse(channelId, out long channelIdLong) == false || (channelIdLong <= 1000000000000000l))
+            {
+                return BadRequest("Invalid channel ID format.");
+            }
+            return Ok(await readService.GetLatestBucketsByChannelAsync(channelIdLong));
         }
     }
 }
