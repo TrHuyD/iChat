@@ -1,4 +1,4 @@
-﻿@page "/chat/{RoomId}"
+﻿@page "/chat/{ServerId}/{RoomId}"
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using System.Threading.Channels
@@ -7,6 +7,7 @@
 @inject ChatMessageService MessageManager
 @inject ChatClientService ChatService
 @inject UserStateService _userInfo
+@inject NavigationManager _navigation
 @inject IJSRuntime JS
 @implements IDisposable
 @implements IAsyncDisposable
@@ -83,9 +84,10 @@
 
 @code {
     [Parameter] public string RoomId { get; set; } = string.Empty;
-
+    [Parameter] public string ServerId { get; set; } = string.Empty;
     private string? _currentRoomId;
     private SortedList<long, ChatMessageDtoSafe> _messages = new();
+    private SortedList<long, ChatMessageDtoSafe> __messages = new();
     private string _newMessage = string.Empty;
     private ElementReference _messagesContainer;
     private string _connectionStatus = "Disconnected";
@@ -138,21 +140,28 @@
     {
         var (buckets, loc) = await MessageManager.GetLatestMessage(RoomId);
         _currentBucketIndex = buckets[0].BucketId;
+        __messages = new SortedList<long, ChatMessageDtoSafe>();
         foreach(var bucket in buckets)
         {
             foreach (var message in bucket.ChatMessageDtos)
             {
-                _messages.Add(long.Parse(message.Id), message);
+                __messages.Add(long.Parse(message.Id), message);
             }
         }
-        await ScrollToMessage(loc);
-      
+        //       await ScrollToMessage(loc);
+
     }
 
     protected override async Task OnInitializedAsync()
     {
 
         Console.WriteLine($"Initializing ChatChannel for RoomId: {RoomId}");
+
+        if(!_userInfo.ConfirmServerChannelId(ServerId, RoomId))
+        {
+            Console.Error.WriteLine($"ServerId {ServerId} does not match the expected server for RoomId {RoomId}.");
+            _navigation.NavigateTo("/");
+        }
         _sendQueueTask = ProcessSendQueueAsync();
         _currentUserId = _userInfo.GetUserId().ToString();
         ChatService.OnMessageReceived += HandleNewMessage;
@@ -169,7 +178,7 @@
             _connectionStatus = "Connection Failed";
             _connectionStatusClass = "disconnected";
         }
-
+        await LoadingLatestMessage();
         StateHasChanged();
     }
 
@@ -181,11 +190,10 @@
                 await ChatService.LeaveRoomAsync(_currentRoomId);
 
             _currentRoomId = RoomId;
-            _messages.Clear();
-            _shouldScrollToBottom = true;
-
-            if (!string.IsNullOrEmpty(RoomId))
-                await ChatService.JoinRoomAsync(RoomId);
+           
+            _messages = __messages;
+            //_shouldScrollToBottom = true;
+            await ChatService.JoinRoomAsync(ServerId);
 
             StateHasChanged();
         }
@@ -241,7 +249,7 @@
         {
             try
             {
-                await ChatService.SendMessageAsync(RoomId, message);
+                await ChatService.SendMessageAsync(ServerId, message);
             }
             catch (Exception ex)
             {
@@ -316,16 +324,13 @@
     {
         ChatService.OnMessageReceived -= HandleNewMessage;
 
-        if (!string.IsNullOrEmpty(_currentRoomId))
+        try
         {
-            try
-            {
-                await ChatService.LeaveRoomAsync(_currentRoomId);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error leaving room on dispose: {ex.Message}");
-            }
+            await ChatService.LeaveRoomAsync(ServerId);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error leaving room on dispose: {ex.Message}");
         }
 
         _sendQueue.Writer.Complete();

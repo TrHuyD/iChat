@@ -22,6 +22,15 @@ public class UserStateService
         _authHandler = authHandler;
         _chatNavigationService = chatNavigationService;
     }
+    public bool ConfirmServerChannelId(string ServerId, string ChannelId)
+    {
+        if (HasLoadedUserData == false)
+            return false;
+        var server = _chatNavigationService.GetServer(ServerId);
+        if (server == null)
+            return false;
+        return server.Channels.Any(c => c.Id == ChannelId);
+    }
     public static void Reload()
     {
         HasLoadedUserData = false;

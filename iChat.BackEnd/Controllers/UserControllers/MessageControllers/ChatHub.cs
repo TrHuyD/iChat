@@ -43,6 +43,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, list);
             }
+            _logger.LogInformation($"Client joining finished: {Context.ConnectionId}");
             await base.OnConnectedAsync();
         }
 
@@ -54,7 +55,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 
         public async Task JoinRoom(string roomId)
         {
-            //await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
+ //           await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
             _logger.LogInformation($"Client {Context.ConnectionId} joined room {roomId}");
         }
 
@@ -74,7 +75,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                 SenderId = userId,
                 TextContent = message.Content,
-                ReceiveChannelId = roomId,
+                ReceiveChannelId = message.ChannelId,
                 messageType = MessageType.Text
             };
 

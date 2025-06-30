@@ -27,6 +27,7 @@ namespace iChat.Client.Services.UserServices.Chat
             {
                 if (OnMessageReceived != null)
                 {
+                    Console.WriteLine($"Recieved message for {message.Id}");
                     _MessageCacheService.AddLatestMessage(message.ChannelId, message);
                     await OnMessageReceived.Invoke(message);
                 }

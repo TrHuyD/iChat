@@ -96,7 +96,7 @@
         if (target != null)
         {
             await ChannelTracker.SaveLastChannelAsync(server.Id, target.Id);
-            Navigation.NavigateTo($"/chat/{target.Id}");
+            Navigation.NavigateTo($"/chat/{server.Id}/{target.Id}");
         }
 
         StateHasChanged();
@@ -105,7 +105,7 @@
     private async Task NavigateToChannel(string serverId, string channelId)
     {
         await ChannelTracker.SaveLastChannelAsync(serverId, channelId);
-        Navigation.NavigateTo($"/chat/{channelId}");
+        Navigation.NavigateTo($"/chat/{serverId}/{channelId}");
     }
 
     public void Dispose()

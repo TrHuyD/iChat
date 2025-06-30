@@ -42,8 +42,10 @@ else
             _navigation.NavigateTo("/login");
             return;
         }
+        
+        isReady = await TryLoadUserDataWithRetries();    
+        if(isReady)
         await ChatClientService.ConnectAsync();
-        isReady = await TryLoadUserDataWithRetries();      
     }
     private async Task<bool> TryLoadUserDataWithRetries()
     {
