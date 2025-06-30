@@ -70,14 +70,52 @@
 
 .chat-header {
     background: #2f3136;
-    padding: 1rem;
+    padding: 8px 16px;
     border-bottom: 1px solid #202225;
     display: flex;
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    flex-wrap: wrap;
+}
+.chat-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+.chat-toolbar-button {
+    padding: 6px 12px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    min-width: 80px;
+    text-align: center;
 }
 
+    .chat-toolbar-button:disabled {
+        background-color: gray;
+        cursor: not-allowed;
+    }
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid white;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 .connection-status .connected {
     color: #3ba55c;
     font-weight: bold;

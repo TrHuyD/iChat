@@ -91,5 +91,5 @@ builder.Services.AddScoped<UserStateService>();
 builder.Services.AddScoped<SignalRConnectionFactory>();
 builder.Services.AddScoped<ChatClientService>();
 builder.Services.AddScoped< ChatNavigationService>();
-
+builder.Services.AddScoped<ChatMessageService>();
 await builder.Build().RunAsync();

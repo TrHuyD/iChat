@@ -106,8 +106,8 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
                     channelId,
                     bucketCount)
                 .ToListAsync();
-
-            return results.Select(r=> new BucketDto(r)).ToList();
+            var buckets= results.Select(r => new BucketDto(r)).ToList();
+            return buckets;
         }
 
         public async Task<List<BucketDto>> GetBucketsAroundMessageAsync(long channelId, long messageId, int bucketRange = 2)

@@ -7,7 +7,7 @@ using System.Threading.Channels;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServersControllers
 {
-    [Route("api/Chat")]
+    [Route("api/ChatChannel")]
     [ApiController]
     [Authorize]
     public class ChatReadMessageController : ControllerBase

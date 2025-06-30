@@ -15,6 +15,19 @@ namespace iChat.DTOs.Users.Messages
         public string FirstSequence { get; set; }
         public string LastSequence { get; set; }
         public List<ChatMessageDtoSafe> ChatMessageDtos { get; set; } = new List<ChatMessageDtoSafe>();
+        public BucketDto()
+        {
+
+        }
+        public BucketDto(int bucketId, string channelId, int messageCount, string firstSequence, string lastSequence, List<ChatMessageDtoSafe> chatMessageDtos)
+        {
+            BucketId = bucketId;
+            ChannelId = channelId;
+            MessageCount = messageCount;
+            FirstSequence = firstSequence;
+            LastSequence = lastSequence;
+            ChatMessageDtos = chatMessageDtos;
+        }
         public BucketDto(RawBucketResult r)
         {
             BucketId = r.bucket_id;

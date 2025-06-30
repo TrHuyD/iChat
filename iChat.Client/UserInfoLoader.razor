@@ -1,9 +1,11 @@
 ﻿
 @using iChat.Client.Services.Auth
 @using iChat.Client.Services.UserServices
+@using iChat.Client.Services.UserServices.Chat
 @inject LoginStateService LoginState
 @inject UserStateService UserState
 @inject NavigationManager _navigation
+@inject ChatClientService ChatClientService
 @if (!isReady)
 {
     <div class="user-info-loading">
@@ -40,6 +42,7 @@ else
             _navigation.NavigateTo("/login");
             return;
         }
+        await ChatClientService.ConnectAsync();
         isReady = await TryLoadUserDataWithRetries();      
     }
     private async Task<bool> TryLoadUserDataWithRetries()

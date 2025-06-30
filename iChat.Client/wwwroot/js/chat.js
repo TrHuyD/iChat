@@ -17,3 +17,24 @@ window.observeScrollTop = function (element, dotnetHelper) {
         }
     });
 };
+window.getTopVisibleMessageId = function (containerSelector, messageSelectorPrefix) {
+    const container = document.querySelector(containerSelector);
+    if (!container) return null;
+
+    const messages = container.querySelectorAll(`[id^="${messageSelectorPrefix}"]`);
+    const containerTop = container.getBoundingClientRect().top;
+
+    let closestMessageId = null;
+    let smallestDistance = Number.POSITIVE_INFINITY;
+
+    messages.forEach(msg => {
+        const rect = msg.getBoundingClientRect();
+        const distance = Math.abs(rect.top - containerTop);
+        if (distance < smallestDistance) {
+            smallestDistance = distance;
+            closestMessageId = msg.id.replace(messageSelectorPrefix, "");
+        }
+    });
+
+    return closestMessageId;
+}

@@ -4,34 +4,43 @@
 @using System.Threading.Channels
 @using iChat.Client.Services.UserServices.Chat
 @using iChat.DTOs.Users.Messages
+@inject ChatMessageService MessageManager
 @inject ChatClientService ChatService
 @inject UserStateService _userInfo
 @inject IJSRuntime JS
 @implements IDisposable
 @implements IAsyncDisposable
-<div class="special-action-panel">
-    <button class="special-action-button"
-            @onclick="TriggerSpecialRequest"
-            disabled="@(_isLoading || _isPermanentlyDisabled)">
-        @if (_isLoading)
-        {
-            <span class="spinner"></span> 
-        }
-        else
-        {
-            <span>Special</span>
-        }
-    </button>
-</div>
+
 <div class="chat-container" @onclick="HideContextMenu" @onkeydown="HandleEscapeKey">
     <div class="chat-header">
         <h3>Chat Room @RoomId</h3>
         <div class="connection-status">
             <span class="@_connectionStatusClass">@_connectionStatus</span>
         </div>
+
+        <div class="chat-toolbar">
+            <button class="chat-toolbar-button"
+                    @onclick="TriggerSpecialRequest"
+                    disabled="@(_isLoading || _isPermanentlyDisabled)">
+                @if (_isLoading)
+                {
+                    <span class="spinner"></span>
+                }
+                else
+                {
+                    <span>Special</span>
+                }
+            </button>
+
+            <button class="chat-toolbar-button" disabled>Action 2</button>
+            <button class="chat-toolbar-button" disabled>Action 3</button>
+            <button class="chat-toolbar-button" disabled>Action 4</button>
+        </div>
     </div>
 
+
     <div class="messages-container" @ref="_messagesContainer"
+         @onscroll="HandleScroll"
          style="overflow-y: scroll; height: calc(100vh - 150px);">
         @foreach (var message in _messages.Values.Where(m => MessageRenderer.ShouldShowMessage(m)))
         {
@@ -95,6 +104,9 @@
     private bool _isLoading = false;
     private bool _isPermanentlyDisabled = false;
 
+    //bucket stuff
+    private int _currentBucketIndex = 0;
+
     private async Task TriggerSpecialRequest()
     {
         if (_isLoading || _isPermanentlyDisabled)
@@ -122,10 +134,25 @@
         _isPermanentlyDisabled = true;
     }
 
-
+    private async Task LoadingLatestMessage()
+    {
+        var (buckets, loc) = await MessageManager.GetLatestMessage(RoomId);
+        _currentBucketIndex = buckets[0].BucketId;
+        foreach(var bucket in buckets)
+        {
+            foreach (var message in bucket.ChatMessageDtos)
+            {
+                _messages.Add(long.Parse(message.Id), message);
+            }
+        }
+        await ScrollToMessage(loc);
+      
+    }
 
     protected override async Task OnInitializedAsync()
     {
+
+        Console.WriteLine($"Initializing ChatChannel for RoomId: {RoomId}");
         _sendQueueTask = ProcessSendQueueAsync();
         _currentUserId = _userInfo.GetUserId().ToString();
         ChatService.OnMessageReceived += HandleNewMessage;
@@ -197,7 +224,7 @@
                 if (!_messages.ContainsKey(messageId))
                 {
                     _messages.Add(messageId, message);
-                    _shouldScrollToBottom = true;
+                    //   _shouldScrollToBottom = true;
                     await InvokeAsync(StateHasChanged);
                 }
             }
@@ -248,6 +275,28 @@
         if (e.Key == "Enter" && !e.ShiftKey)
         {
             await SendMessage();
+        }
+    }
+    private async Task HandleScroll()
+    {
+        var topMessageId = await GetTopVisibleMessageId();
+        Console.WriteLine($"User is currently viewing message ID: {topMessageId}");
+    }
+    private async Task<string?> GetTopVisibleMessageId()
+    {
+        try
+        {
+            var messageId = await JS.InvokeAsync<string?>(
+                "getTopVisibleMessageId",
+                ".messages-container",       
+                "message-"                  
+            );
+            return messageId;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"JS error: {ex.Message}");
+            return null;
         }
     }
 
@@ -309,10 +358,14 @@
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", _contextMenuMessageId);
         _showContextMenu = false;
     }
-
+    private async Task ScrollToMessage(string id)
+    {
+        await JS.InvokeVoidAsync("scrollToMessage", id);
+        _showContextMenu = false;
+    }
     private async Task ScrollToContextMessage()
     {
-        await JS.InvokeVoidAsync("scrollToMessage", _contextMenuMessageId);
-        _showContextMenu = false;
+        await ScrollToMessage(_contextMenuMessageId);
+       
     }
 }

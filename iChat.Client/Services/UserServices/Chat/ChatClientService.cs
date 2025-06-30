@@ -10,8 +10,10 @@ namespace iChat.Client.Services.UserServices.Chat
         private HubConnection? _hubConnection;
         public event Func<ChatMessageDtoSafe, Task>? OnMessageReceived;
         private const string ChatHubPath = "https://localhost:6051/api/chathub";
-        public ChatClientService(SignalRConnectionFactory connectionFactory)
+        private readonly ChatMessageService _MessageCacheService;
+        public ChatClientService(SignalRConnectionFactory connectionFactory,ChatMessageService MessageCacheService)
         {
+            _MessageCacheService = MessageCacheService;
             _connectionFactory = connectionFactory;
         }
         public async Task ConnectAsync()
@@ -25,6 +27,7 @@ namespace iChat.Client.Services.UserServices.Chat
             {
                 if (OnMessageReceived != null)
                 {
+                    _MessageCacheService.AddLatestMessage(message.ChannelId, message);
                     await OnMessageReceived.Invoke(message);
                 }
             });
@@ -32,7 +35,7 @@ namespace iChat.Client.Services.UserServices.Chat
             _hubConnection.Closed += async (error) =>
             {
                 Console.WriteLine("Disconnected from ChatHub");
-                await Task.Delay(500); 
+                await Task.Delay(50); 
                 await ConnectAsync();   
             };
 

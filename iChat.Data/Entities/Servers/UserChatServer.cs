@@ -10,6 +10,7 @@ namespace iChat.Data.Entities.Servers
     public class UserChatServer
     {
        public ChatServer ChatServer { get; set; }
+        public long last_seen { get; set; } // Last seen message ID or timestamp
         public long ChatServerId { get; set; }
         public AppUser User { get; set; }
         public long UserId { get; set; }

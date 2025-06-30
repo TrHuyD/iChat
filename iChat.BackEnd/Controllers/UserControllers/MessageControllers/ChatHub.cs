@@ -39,7 +39,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         public override async Task OnConnectedAsync()
         {
             _logger.LogInformation($"Client connected: {Context.ConnectionId}");
-            foreach(var list in _localCache.GetServerListAsync(new UserClaimHelper(Context.User).GetUserId()))
+            foreach (var list in _localCache.GetServerListAsync(new UserClaimHelper(Context.User).GetUserId()))
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, list);
             }
@@ -49,34 +49,22 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             _logger.LogInformation($"Client disconnected: {Context.ConnectionId}");
-
-
-          //  UserFocusedChannel.TryRemove(Context.ConnectionId, out _);
-
             await base.OnDisconnectedAsync(exception);
         }
 
         public async Task JoinRoom(string roomId)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
+            //await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
             _logger.LogInformation($"Client {Context.ConnectionId} joined room {roomId}");
         }
 
         public async Task LeaveRoom(string roomId)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
+            //await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
             _logger.LogInformation($"Client {Context.ConnectionId} left room {roomId}");
         }
 
-        //public async Task FocusRoom(string roomId)
-        //{
-        //    UserFocusedChannel[Context.ConnectionId] = roomId;
-        //}
 
-        //public async Task UnfocusRoom()
-        //{
-        //    UserFocusedChannel.TryRemove(Context.ConnectionId, out _);
-        //}
 
         public async Task SendMessage(string roomId, ChatMessageDtoSafe message)
         {
