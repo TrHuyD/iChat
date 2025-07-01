@@ -3,6 +3,7 @@ using iChat.DTOs.Users.Messages;
 using System.Collections.Concurrent;
 using System.Net.Http.Json;
 using System.Net.WebSockets;
+using System.Threading.Tasks;
 
 namespace iChat.Client.Services.UserServices.Chat
 {
@@ -12,13 +13,20 @@ namespace iChat.Client.Services.UserServices.Chat
         private readonly ConcurrentDictionary<long, string> last_seen = new();
         private readonly ConcurrentDictionary<long, int> _latestBucketMap = new();
         private readonly JwtAuthHandler _http;
-
+        public event Func<ChatMessageDtoSafe, Task>? OnMessageReceived;
         public ChatMessageService(JwtAuthHandler http)
         {
             _http = http;
         }
-        public void AddLatestMessage(string chatchannelId, ChatMessageDtoSafe message)
+        public void RegisterOnMessageReceived(Func<ChatMessageDtoSafe, Task> onMessageReceived)
         {
+            OnMessageReceived -= onMessageReceived;
+            OnMessageReceived += onMessageReceived;
+        }
+        public async Task AddLatestMessage(ChatMessageDtoSafe message )
+        {
+            await OnMessageReceived.Invoke(message);
+            string chatchannelId= message.ChannelId;
             var channelId = long.Parse(chatchannelId);
             if(_messageCache.TryGetValue(channelId,out var buckets))
             {

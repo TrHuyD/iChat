@@ -8,7 +8,6 @@ namespace iChat.Client.Services.UserServices.Chat
     {
         private readonly SignalRConnectionFactory _connectionFactory;
         private HubConnection? _hubConnection;
-        public event Func<ChatMessageDtoSafe, Task>? OnMessageReceived;
         private const string ChatHubPath = "https://localhost:6051/api/chathub";
         private readonly ChatMessageService _MessageCacheService;
         public ChatClientService(SignalRConnectionFactory connectionFactory,ChatMessageService MessageCacheService)
@@ -16,6 +15,7 @@ namespace iChat.Client.Services.UserServices.Chat
             _MessageCacheService = MessageCacheService;
             _connectionFactory = connectionFactory;
         }
+
         public async Task ConnectAsync()
         {
             if (_hubConnection != null && _hubConnection.State == HubConnectionState.Connected)
@@ -23,14 +23,12 @@ namespace iChat.Client.Services.UserServices.Chat
 
             _hubConnection = _connectionFactory.CreateHubConnection(ChatHubPath);
 
+            Console.WriteLine("Registering ReceiveMessage on Signalr Client");
             _hubConnection.On<ChatMessageDtoSafe>("ReceiveMessage", async message =>
             {
-                if (OnMessageReceived != null)
-                {
-                    Console.WriteLine($"Recieved message for {message.Id}");
-                    _MessageCacheService.AddLatestMessage(message.ChannelId, message);
-                    await OnMessageReceived.Invoke(message);
-                }
+                Console.WriteLine($"Recieved message for {message.Id}");
+                _MessageCacheService.AddLatestMessage(message);
+
             });
 
             _hubConnection.Closed += async (error) =>
