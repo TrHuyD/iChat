@@ -22,8 +22,8 @@
 
             <div class="chat-toolbar">
                 <button class="chat-toolbar-button"
-                        @onclick="TriggerSpecialRequest"
-                        disabled="@(_isLoading || _isPermanentlyDisabled)">
+                        @onclick="TriggerLoadOlderHistoryRequest"
+                        disabled="@(_isLoading || _isOldHistoryRequestButtonDisabled)">
                     @if (_isLoading)
                     {
                         <span class="spinner"></span>
@@ -44,29 +44,27 @@
         <div class="messages-container" @ref="_messagesContainer"
              @onscroll="HandleScroll"
              style="overflow-y: scroll; height: calc(100vh - 150px);">
-            @foreach (var item in _messages.Values)
-            {
-                var message = item.Message;
+        <Virtualize Items="@_messages.Values" Context="item" ItemSize="80">
+            <div class="@item.CssClass"
+                 id="message-@item.Message.Id"
+                 @oncontextmenu="(e => ShowContextMenu(e, item.Message.Id))"
+                 @oncontextmenu:preventDefault
+                 @key="item.Message.Id">
 
-                <div class="@item.CssClass"
-                     id="message-@message.Id"
-                     @oncontextmenu="(e => ShowContextMenu(e, message.Id))"
-                     @oncontextmenu:preventDefault
-                     @key="message.Id">
+                @if (!string.IsNullOrEmpty(item.Icon))
+                {
+                    <span class="message-icon">@item.Icon</span>
+                }
 
-                    @if (!string.IsNullOrEmpty(item.Icon))
-                    {
-                        <span class="message-icon">@item.Icon</span>
-                    }
+                <div class="message-content">@item.Content</div>
 
-                    <div class="message-content">@item.Content</div>
+                @if (item.ShowTimestamp)
+                {
+                    <div class="message-time">@item.Message.CreatedAt.LocalDateTime.ToString("g")</div>
+                }
+            </div>
+        </Virtualize>
 
-                    @if (item.ShowTimestamp)
-                    {
-                        <div class="message-time">@message.CreatedAt.LocalDateTime.ToString("g")</div>
-                    }
-                </div>
-            }
         </div>
 
         @if (_showContextMenu)
@@ -104,20 +102,26 @@
 
     //loading button state
     private bool _isLoading = false;
-    private bool _isPermanentlyDisabled = false;
+    private bool _isOldHistoryRequestButtonDisabled = false;
 
     //bucket stuff
     private int _currentBucketIndex = 0;
 
-    private async Task TriggerSpecialRequest()
+    private async Task TriggerLoadOlderHistoryRequest()
     {
-        if (_isLoading || _isPermanentlyDisabled)
+        if (_isLoading || _isOldHistoryRequestButtonDisabled)
             return;
 
         _isLoading = true;
         try
         {
-            await Task.Delay(1500);
+            var result =await MessageManager.GetPreviousBucket(RoomId, _currentBucketIndex);
+            AddMessages(result);
+            _currentBucketIndex = result.BucketId;
+            if(_currentBucketIndex==0)
+            {
+                DisableSpecialButtonPermanently();
+            }
             Console.WriteLine("Special request completed.");
         }
         catch (Exception ex)
@@ -133,7 +137,7 @@
 
     private void DisableSpecialButtonPermanently()
     {
-        _isPermanentlyDisabled = true;
+        _isOldHistoryRequestButtonDisabled = true;
     }
 
 
@@ -169,7 +173,13 @@
         StateHasChanged();
 
     }
-
+    private void AddMessages(BucketDto bucket)
+    {
+        foreach (var message in bucket.ChatMessageDtos)
+        {
+            _messages.TryAdd(long.Parse(message.Id), MessageRenderer.RenderMessage(message, _currentUserId));
+        }
+    }
     protected override async Task OnParametersSetAsync()
     {
         if (_currentRoomId != RoomId)
@@ -186,10 +196,7 @@
             MessageManager.RegisterOnMessageReceived(HandleNewMessage);
             Console.WriteLine("Registed message handler for ChatService.");
             foreach(var bucket in latest)
-                foreach(var message in bucket.ChatMessageDtos)
-                {
-                    _messages.Add(long.Parse(message.Id),MessageRenderer.RenderMessage(message, _currentUserId));
-                }
+                AddMessages(bucket);
             _currentBucketIndex = latest[0].BucketId;
 
             await ChatService.JoinRoomAsync(ServerId);
@@ -203,7 +210,7 @@
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (_shouldScrollToBottom)
-            {
+            {   
                 await ScrollToBottom();
                 _shouldScrollToBottom = false;
             }
@@ -323,7 +330,6 @@
 
         private async ValueTask DisposeCore()
         {
-           
             try
             {
                 await ChatService.LeaveRoomAsync(ServerId);

@@ -129,5 +129,12 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
             return results.Select(r => new BucketDto(r)).ToList();
         }
 
+        public async Task<BucketDto> GetBucketById(long channelId, int bucketId)
+        {
+            var result = await _context.Database.SqlQueryRaw<RawBucketResult>($"SELECT * FROM get_bucket_by_id({channelId},{bucketId})").FirstOrDefaultAsync();
+            if (result==null)
+            throw  new BadHttpRequestException($"Bucket with ID {bucketId} not found in channel {channelId}.");
+            return new BucketDto( result);
+        }
     }
 }

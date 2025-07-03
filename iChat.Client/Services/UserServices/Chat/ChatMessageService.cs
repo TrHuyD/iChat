@@ -46,8 +46,7 @@ namespace iChat.Client.Services.UserServices.Chat
             }
             else
             {
-                //message wont be save until the latest message is loaded
-                //   throw new Exception("AddLatestMessage misued, must load latest message first");
+
             }
         }
         public void UpdateLastSeen(string chatChannelId, string sequence)
@@ -118,8 +117,9 @@ namespace iChat.Client.Services.UserServices.Chat
             return null;
         }
 
-        public async Task<BucketDto?> GetPreviousBucket(long chatChannelId, int currentBucketId)
+        public async Task<BucketDto?> GetPreviousBucket(string ChannelId, int currentBucketId)
         {
+            var chatChannelId = long.Parse(ChannelId);
             var list = _messageCache.GetOrAdd(chatChannelId, _ => new SortedList<int, BucketDto>());
             int targetId = currentBucketId - 1;
             if (targetId < 0) return null;
@@ -218,7 +218,7 @@ namespace iChat.Client.Services.UserServices.Chat
 
         private async Task TryLoadBucket(long chatChannelId, int bucketId, SortedList<int, BucketDto> list)
         {
-            var response = await _http.SendAuthAsync(new HttpRequestMessage(HttpMethod.Get, $"/api/chat/{chatChannelId}/bucketsingle?id={bucketId}"));
+            var response = await _http.SendAuthAsync(new HttpRequestMessage(HttpMethod.Get, $"/api/ChatChannel/{chatChannelId}/bucketsingle?id={bucketId}"));
             if (response.IsSuccessStatusCode)
             {
                 var bucket = await response.Content.ReadFromJsonAsync<BucketDto>();
