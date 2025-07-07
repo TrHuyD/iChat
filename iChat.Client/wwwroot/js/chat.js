@@ -35,6 +35,11 @@ window.isScrollAtBottom = (element) => {
     const clientHeight = element.clientHeight;
     return (scrollTop + clientHeight) >= (scrollHeight - threshold);
 };
+window.isScrollAtTop = (element) => {
+    if (!element) return false;
+    const threshold = 500;
+    return element.scrollTop <= threshold;
+};
 window.getTopVisibleMessageId = function (containerSelector, messageSelectorPrefix) {
     const container = document.querySelector(containerSelector);
     if (!container) return null;
