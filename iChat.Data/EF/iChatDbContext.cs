@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,6 +20,7 @@ namespace iChat.Data.EF
     {
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            builder.HasPostgresExtension("pg_trgm");
             builder.ApplyConfiguration(new AppUserConfiguration());
             
             builder.ApplyConfiguration(new RefreshTokenConfiguration());

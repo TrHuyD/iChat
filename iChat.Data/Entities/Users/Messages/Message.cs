@@ -1,5 +1,6 @@
 ﻿using iChat.Data.Entities.Servers;
 using iChat.ViewModels.Users.Messages;
+using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -25,7 +26,6 @@ namespace iChat.Data.Entities.Users.Messages
         public DateTimeOffset Timestamp { get; set; }
         public int BucketId { get; set; }
        public Bucket Bucket { get; set; } = null!;
-
-
+        public NpgsqlTsVector SearchVector { get; set; } = null!;
     }
 }

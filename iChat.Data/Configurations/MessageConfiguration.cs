@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -49,6 +50,12 @@ namespace iChat.Data.Configurations
             builder.HasOne(m => m.Bucket)
                 .WithMany(b => b.Messages)
                 .HasForeignKey(m => new { m.ChannelId, m.BucketId });
+            builder.HasGeneratedTsVectorColumn(
+                    p => p.SearchVector,
+                    "english",                      
+                    p => new { p.TextContent })        
+                .HasIndex(p => p.SearchVector)
+                .HasMethod("GIN");
         }
     }
 }

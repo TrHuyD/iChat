@@ -38,39 +38,41 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 ChannelId = channel.Id
             });
         }
-        public async Task<long> CreateChannelAsync(long serverId, string channelName, long adminUserId)
+        public async Task<ChatChannelMetadata> CreateChannelAsync(long serverId, string channelName, long adminUserId)
         {
+            var result = await _db.ChatServers
+                .Where(s => s.Id == serverId)
+                .Select(s => new
+                {
+                    IsAdmin = s.AdminId == adminUserId,
+                    ChannelCount = s.ChatChannels.Count
+                })
+                .FirstOrDefaultAsync();
+            if (result == null)
+                throw new InvalidOperationException($"Server {serverId} not found");
+            if(result.IsAdmin== false)
+                throw new UnauthorizedAccessException($"Not {adminUserId} have enough perm to create chat channel in server {serverId}");
+
             var channelId = _channelIdGen.GenerateId().Id;
-
-            var server = await _db.ChatServers
-                .Include(s => s.ChatChannels)
-                .FirstOrDefaultAsync(s => s.Id == serverId);
-
-            if (server == null)
-                throw new InvalidOperationException("Server not found");
-
             var channel = new ChatChannel
             {
                 Id = channelId,
                 Name = channelName,
                 CreatedAt = DateTimeOffset.UtcNow,
-                ServerId = server.Id
+                ServerId = serverId,
+                Order= (short)result.ChannelCount, 
             };
             AssignBucket(channel);
             _db.ChatChannels.Add(channel);
-
-            var isMember = await _db.UserChatServers.AnyAsync(x => x.UserId == adminUserId && x.ChatServerId == serverId);
-            if (!isMember)
-            {
-                _db.UserChatServers.Add(new UserChatServer
-                {
-                    UserId = adminUserId,
-                    ChatServerId = serverId
-                });
-            }
-
             await _db.SaveChangesAsync();
-            return channelId;
+           
+            return new ChatChannelMetadata
+            {
+                Id = channelId.ToString(),
+                Name = channelName,
+                Order = channel.Order,
+                last_bucket_id = 0 
+            };
         }
 
         public async Task<ChatServerDto> CreateServerAsync(string serverName, long adminUserId)

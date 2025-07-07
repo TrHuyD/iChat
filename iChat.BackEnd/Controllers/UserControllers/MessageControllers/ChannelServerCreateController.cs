@@ -3,6 +3,8 @@
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using System.Threading.Channels;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 {
@@ -11,9 +13,11 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
     [ApiController]
     public class ChannelServerCreateController : ControllerBase
     {
+        private readonly IHubContext<ChatHub> _hubContext;
         private readonly IChatCreateService _service;
-        public ChannelServerCreateController(IChatCreateService service)
+        public ChannelServerCreateController(IChatCreateService service,IHubContext<ChatHub> hubContext)
         {
+            _hubContext = hubContext;
             _service = service;
         }
 
@@ -38,21 +42,22 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         //    return PartialView("_CreateChannel"); 
         //}
 
-        [HttpPost("{id}/CreateChannel")]
-        public async Task<IActionResult> CreateChannel(long id, string name)
+        [HttpPost("CreateChannel")]
+        public async Task<IActionResult> CreateChannel([FromBody]ChatChannelCreateRq rq)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return BadRequest("Channel name is required.");
-            }
 
             var userId = new UserClaimHelper(User).GetUserId();
-            var channelId = await _service.CreateChannelAsync(id, name, userId);
+            try
+            {
+                var channel = await _service.CreateChannelAsync(long.Parse(rq.ServerId), rq.Name, userId);
+                await _hubContext.Clients.Groups(rq.ServerId).SendAsync("ChannelCreated", channel);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
 
-            if (channelId == -1)
-                return BadRequest("Failed to create channel.");
-
-            return Ok();
         }
 
     }
