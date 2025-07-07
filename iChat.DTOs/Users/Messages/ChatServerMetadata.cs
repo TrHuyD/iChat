@@ -12,6 +12,6 @@ namespace iChat.DTOs.Users.Messages
         public string Name { get; set; } = string.Empty;
         public string AvatarUrl { get; set; } = string.Empty;
         public DateTimeOffset CreatedAt { get; set; }
-        public List<ChatChannelMetadata> Channels { get; set; } = new List<ChatChannelMetadata>();
+        public List<ChatChannelDtoLite> Channels { get; set; } = new List<ChatChannelDtoLite>();
     }
 }

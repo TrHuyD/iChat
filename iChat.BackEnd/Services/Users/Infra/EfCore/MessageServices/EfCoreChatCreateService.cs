@@ -38,7 +38,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 ChannelId = channel.Id
             });
         }
-        public async Task<ChatChannelMetadata> CreateChannelAsync(long serverId, string channelName, long adminUserId)
+        public async Task<ChatChannelDto> CreateChannelAsync(long serverId, string channelName, long adminUserId)
         {
             var result = await _db.ChatServers
                 .Where(s => s.Id == serverId)
@@ -66,12 +66,13 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _db.ChatChannels.Add(channel);
             await _db.SaveChangesAsync();
            
-            return new ChatChannelMetadata
+            return new ChatChannelDto
             {
                 Id = channelId.ToString(),
                 Name = channelName,
                 Order = channel.Order,
-                last_bucket_id = 0 
+                last_bucket_id = 0 ,
+                ServerId = serverId.ToString(),
             };
         }
 
@@ -116,9 +117,9 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 Id = serverId.Id.ToString(),
                 Name = serverName,
              //   CreatedAt = serverId.CreatedAt,
-                Channels = new List<ChatChannelMetadata>
+                Channels = new List<ChatChannelDtoLite>
                 {
-                    new ChatChannelMetadata
+                    new ChatChannelDtoLite
                     {
                         Id = generalChannelId.Id.ToString(),
                         Name = "general",

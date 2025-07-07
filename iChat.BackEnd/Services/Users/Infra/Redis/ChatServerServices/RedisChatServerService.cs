@@ -74,10 +74,10 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
                 var hashEntries = await db.HashGetAllAsync(channelKey);
                 if (hashEntries.Length == 0)
                 {
-                    serverMeta.Channels = new List<ChatChannelMetadata>();
+                    serverMeta.Channels = new List<ChatChannelDtoLite>();
                     return serverMeta;
                 }
-                var channelMap = new Dictionary<string, ChatChannelMetadata>();
+                var channelMap = new Dictionary<string, ChatChannelDtoLite>();
                 foreach (var entry in hashEntries)
                 {
                     var parts = entry.Name.ToString().Split(':');
@@ -87,7 +87,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
                     var field = parts[1];
                     if (!channelMap.TryGetValue(channelId, out var channel))
                     {
-                        channel = new ChatChannelMetadata { Id = channelId };
+                        channel = new ChatChannelDtoLite { Id = channelId };
                         channelMap[channelId] = channel;
                     }
                     var value = entry.Value.ToString();

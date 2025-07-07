@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace iChat.DTOs.Users.Messages
 {
-    public class ChatChannelMetadata
+    public class ChatChannelDtoLite
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;

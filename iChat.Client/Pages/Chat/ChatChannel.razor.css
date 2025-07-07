@@ -66,6 +66,7 @@
     color: #dcddde;
     font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     overflow: hidden;
+    scroll-behavior:auto;
 }
 
 .chat-header {
@@ -135,7 +136,7 @@
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     background: #36393f;
 }
 

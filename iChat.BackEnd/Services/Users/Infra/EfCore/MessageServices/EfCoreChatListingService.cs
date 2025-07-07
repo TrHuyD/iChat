@@ -42,9 +42,9 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                     Name = ucs.ChatServer.Name,
                     AvatarUrl = ucs.ChatServer.Avatar ?? "https://cdn.discordapp.com/embed/avatars/0.png",
                     Position = ucs.Order,
+                    isadmin = ucs.ChatServer.AdminId == userId,
                     Channels = ucs.ChatServer.ChatChannels
-                     //   .OrderBy(c => c.Order) // Optional: sort channels by order
-                        .Select(c => new ChatChannelMetadata
+                        .Select(c => new ChatChannelDtoLite
                         {
                             Id = c.Id.ToString(),
                             Name = c.Name,

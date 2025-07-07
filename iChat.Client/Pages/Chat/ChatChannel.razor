@@ -3,10 +3,11 @@
     @using System.Text.Json.Serialization
     @using System.Threading.Channels
 @using iChat.Client.DTOs.Chat
+@using iChat.Client.Data
     @using iChat.Client.Services.UserServices.Chat
     @using iChat.DTOs.Users.Messages
-    @inject ChatMessageService MessageManager
-    @inject ChatClientService ChatService
+    @inject ChatMessageCacheService MessageManager
+    @inject ChatSignalRClientService ChatService
     @inject UserStateService _userInfo
     @inject NavigationManager _navigation
     @inject IJSRuntime JS
@@ -116,8 +117,16 @@
         try
         {
             var result =await MessageManager.GetPreviousBucket(RoomId, _currentBucketIndex);
-            AddMessages(result);
+            try
+            {
+                await AddMessages(result);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
             _currentBucketIndex = result.BucketId;
+            Console.WriteLine($"Loaded previous bucket with ID: {_currentBucketIndex}");
             if(_currentBucketIndex==0)
             {
                 DisableSpecialButtonPermanently();
@@ -173,12 +182,16 @@
         StateHasChanged();
 
     }
-    private void AddMessages(BucketDto bucket)
+
+    private async Task AddMessages(BucketDto bucket)
     {
+        var previousScroll = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
         foreach (var message in bucket.ChatMessageDtos)
         {
             _messages.TryAdd(long.Parse(message.Id), MessageRenderer.RenderMessage(message, _currentUserId));
         }
+        await InvokeAsync(StateHasChanged);
+        await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, previousScroll);
     }
     protected override async Task OnParametersSetAsync()
     {
@@ -186,7 +199,7 @@
         {
             if (!string.IsNullOrEmpty(_currentRoomId))
                 await ChatService.LeaveRoomAsync(_currentRoomId);
-
+            checkScrollToBotoom = false;
             _currentRoomId = RoomId;
             var (latest,loc) = await MessageManager.GetLatestMessage(RoomId);
 
@@ -200,80 +213,77 @@
             _currentBucketIndex = latest[0].BucketId;
 
             await ChatService.JoinRoomAsync(ServerId);
+            StateHasChanged();
+            await Task.Delay(125);
             await ScrollToMessage(loc);
-            StateHasChanged();
-       
 
         }
-        }
+    }
 
-        protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldScrollToBottom)
+        {   
+            await ScrollToBottom();
+            _shouldScrollToBottom = false;
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        try
         {
-            if (_shouldScrollToBottom)
-            {   
-                await ScrollToBottom();
-                _shouldScrollToBottom = false;
+            await Task.Delay(1);
+            await JS.InvokeVoidAsync("scrollToBottom", _messagesContainer);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error scrolling to bottom: {ex.Message}");
+        }
+    }
+
+    private async Task HandleNewMessage(ChatMessageDtoSafe message)
+    {
+        try
+        {
+            if (message.ChannelId == RoomId)
+            {
+                var messageId = long.Parse(message.Id);
+                checkScrollToBotoom = false;
+                _messages.TryAdd(long.Parse(message.Id), MessageRenderer.RenderMessage(message, _currentUserId));
+                await InvokeAsync(StateHasChanged);
             }
         }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error handling new message: {ex.Message}");
+        }
+    }
 
-        private async Task ScrollToBottom()
+    private async Task ProcessSendQueueAsync()
+    {
+        await foreach (var message in _sendQueue.Reader.ReadAllAsync())
         {
             try
             {
-                await Task.Delay(1);
-                await JS.InvokeVoidAsync("scrollToBottom", _messagesContainer);
+                await ChatService.SendMessageAsync(ServerId, message);
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error scrolling to bottom: {ex.Message}");
+                Console.Error.WriteLine($"Failed to send message: {ex.Message}");
             }
         }
+    }
 
-        private async Task HandleNewMessage(ChatMessageDtoSafe message)
-        {
-            try
-            {
-                if (message.ChannelId == RoomId)
-                {
-                    var messageId = long.Parse(message.Id);
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_newMessage)) return;
 
-                    if (!_messages.ContainsKey(messageId))
-                    {
-                    _messages.Add(long.Parse(message.Id), MessageRenderer.RenderMessage(message, _currentUserId));
-                     await InvokeAsync(StateHasChanged);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error handling new message: {ex.Message}");
-            }
-        }
+        var messageContent = _newMessage.Trim();
+        _newMessage = string.Empty;
+        StateHasChanged();
 
-        private async Task ProcessSendQueueAsync()
-        {
-            await foreach (var message in _sendQueue.Reader.ReadAllAsync())
-            {
-                try
-                {
-                    await ChatService.SendMessageAsync(ServerId, message);
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine($"Failed to send message: {ex.Message}");
-                }
-            }
-        }
-
-        private async Task SendMessage()
-        {
-            if (string.IsNullOrWhiteSpace(_newMessage)) return;
-
-            var messageContent = _newMessage.Trim();
-            _newMessage = string.Empty;
-            StateHasChanged();
-
-            var message = new ChatMessageDtoSafe
+        var message = new ChatMessageDtoSafe
             {
                 Content = messageContent,
                 MessageType = 1,
@@ -282,22 +292,43 @@
                 CreatedAt = DateTimeOffset.UtcNow
             };
 
-            await _sendQueue.Writer.WriteAsync(message);
-        _shouldScrollToBottom = true; // Ensure we scroll to the bottom after sending a message
-        }
+        await _sendQueue.Writer.WriteAsync(message);
+        await Task.Delay(125);
+        _shouldScrollToBottom = true; 
+    }
 
-        private async Task HandleKeyPress(KeyboardEventArgs e)
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
         {
-            if (e.Key == "Enter" && !e.ShiftKey)
-            {
-                await SendMessage();
-            }
+            await SendMessage();
         }
-        private async Task HandleScroll()
+    }
+    bool checkScrollToBotoom = false;
+    bool isthrottled = false;
+    private async Task HandleScroll()
+    {
+        if(isthrottled)
+            return;
+        isthrottled = true;
+        await Task.Delay(150);
+
+        if (checkScrollToBotoom)
         {
-            // var topMessageId = await GetTopVisibleMessageId();
-            // Console.WriteLine($"User is currently viewing message ID: {topMessageId}");
+            isthrottled = false;
+            return;
         }
+        var isAtBottom = await JS.InvokeAsync<bool>("isScrollAtBottom", _messagesContainer);
+        if(isAtBottom)
+        {
+            Console.WriteLine("Scroll is at the bottom.");
+            checkScrollToBotoom = true;
+            MessageManager.UpdateLastSeen(_currentRoomId);
+        }
+        isthrottled = false;
+
+
+    }
         private async Task<string?> GetTopVisibleMessageId()
         {
             try

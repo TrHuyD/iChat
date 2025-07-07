@@ -1,4 +1,5 @@
 ﻿using iChat.Client.Services.Auth;
+using iChat.Client.Services.UI;
 using iChat.DTOs.Users.Messages;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,10 +18,12 @@ namespace iChat.Client.Services.UserServices
 
         public event Action OnChatServersChanged;
         public JwtAuthHandler _http;
-        
-        public ChatNavigationService(JwtAuthHandler jwtAuthHandler)
+        private readonly ToastService _toastService;
+
+        public ChatNavigationService(JwtAuthHandler jwtAuthHandler,ToastService toast)
         {   
             _http = jwtAuthHandler ?? throw new ArgumentNullException(nameof(jwtAuthHandler));
+            _toastService = toast ?? throw new ArgumentNullException(nameof(toast));
         }
 
         /// <summary>
@@ -38,7 +41,15 @@ namespace iChat.Client.Services.UserServices
             // Notify subscribers that the list has changed
             OnChatServersChanged?.Invoke();
         }
+        public void AddChannel(ChatChannelDto ccdto)
+        {
+           var server= ChatServers.Where(s => s.Id == ccdto.ServerId).FirstOrDefault();
+            if (server == null)
+                return;
+            server.Channels.RemoveAll(c => c.Id == ccdto.Id);
+            server.Channels.Add(ccdto);
 
+        }
         /// <summary>
         /// Adds a single server to the navigation
         /// </summary>
@@ -100,6 +111,25 @@ namespace iChat.Client.Services.UserServices
                 ChatServers.Clear();
                 OnChatServersChanged?.Invoke();
             }
+        }
+        public async Task CreateChannelAsync(string name,string serverId)
+        {
+            if(string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Channel name must not be empty", nameof(name));
+            if (string.IsNullOrWhiteSpace(serverId))
+                throw new ArgumentException("Server ID must not be empty", nameof(serverId));
+            var request= new HttpRequestMessage(HttpMethod.Post, "/api/Chat/CreateChannel")
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new ChatChannelCreateRq { Name = name, ServerId = serverId }), Encoding.UTF8, "application/json")
+            };
+            var response = await _http.SendAuthAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _toastService.ShowToast($"Failed to create channel: {errorContent}","danger");
+            }
+          
+
         }
         public async Task CreateServerAsync(string name)
         {

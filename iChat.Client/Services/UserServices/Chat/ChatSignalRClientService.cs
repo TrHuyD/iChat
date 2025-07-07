@@ -4,16 +4,18 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace iChat.Client.Services.UserServices.Chat
 {
-    public class ChatClientService : IAsyncDisposable
+    public class ChatSignalRClientService : IAsyncDisposable
     {
         private readonly SignalRConnectionFactory _connectionFactory;
         private HubConnection? _hubConnection;
         private const string ChatHubPath = "https://localhost:6051/api/chathub";
-        private readonly ChatMessageService _MessageCacheService;
-        public ChatClientService(SignalRConnectionFactory connectionFactory,ChatMessageService MessageCacheService)
+        private readonly ChatMessageCacheService _MessageCacheService;
+        private readonly ChatNavigationService _chatNavigationService;
+        public ChatSignalRClientService(SignalRConnectionFactory connectionFactory,ChatMessageCacheService MessageCacheService, ChatNavigationService chatNavigationService)
         {
             _MessageCacheService = MessageCacheService;
             _connectionFactory = connectionFactory;
+            _chatNavigationService = chatNavigationService;
         }
 
         public async Task ConnectAsync()
@@ -30,6 +32,7 @@ namespace iChat.Client.Services.UserServices.Chat
                 _MessageCacheService.AddLatestMessage(message);
 
             });
+            _hubConnection.On<ChatChannelDto>("ChannelCreate", HandleChannelCreate);
 
             _hubConnection.Closed += async (error) =>
             {
@@ -74,6 +77,11 @@ namespace iChat.Client.Services.UserServices.Chat
         public async ValueTask DisposeAsync()
         {
             await DisconnectAsync();
+        }
+
+        private void HandleChannelCreate(ChatChannelDto channel)
+        {
+            _chatNavigationService.AddChannel(channel);
         }
     }
 }

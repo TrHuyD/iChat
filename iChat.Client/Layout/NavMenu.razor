@@ -27,6 +27,7 @@
                     <img src="@server.AvatarUrl" alt="@server.Name" />
                 </div>
             }
+           
         </div>
 
         <!-- Add Server Button -->
@@ -59,6 +60,13 @@
                             <span class="channel-name">@channel.Name</span>
                         </div>
                     }
+                    @if (_selectedServer.isadmin)
+                    {
+                        <div class="channel-item add-channel" @onclick="() => showCreateChannel = true">
+                            <span class="channel-prefix">+</span>
+                            <span class="channel-name">Create Channel</span>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -66,11 +74,12 @@
 </div>
 
 <CreateServerModal IsVisible="@showCreateServer" IsVisibleChanged="@((val) => showCreateServer = val)" />
-
+<CreateChannelModal IsVisible="@showCreateChannel" IsVisibleChanged="@((val) => showCreateChannel = val)" ServerId="@SelectedServerId" />
 @code {
     private bool showCreateServer = false;
+    private bool showCreateChannel = false;
     private ChatServerDto? _selectedServer;
-
+    private string SelectedServerId => _selectedServer?.Id ?? string.Empty;
     protected override void OnInitialized()
     {
         LoadingService.OnAppReadyStateChanged += StateHasChanged;

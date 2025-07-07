@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace iChat.Client.Services.UserServices.Chat
 {
-    public class ChatMessageService
+    public class ChatMessageCacheService
     {
         private readonly ConcurrentDictionary<long, SortedList<int, BucketDto>> _messageCache = new();
         private readonly ConcurrentDictionary<long, string> last_seen = new();
         private readonly ConcurrentDictionary<long, int> _latestBucketMap = new();
         private readonly JwtAuthHandler _http;
         public event Func<ChatMessageDtoSafe, Task>? OnMessageReceived;
-        public ChatMessageService(JwtAuthHandler http)
+        public ChatMessageCacheService(JwtAuthHandler http)
         {
             _http = http;
         }
@@ -49,10 +49,18 @@ namespace iChat.Client.Services.UserServices.Chat
 
             }
         }
-        public void UpdateLastSeen(string chatChannelId, string sequence)
+        public void UpdateLastSeen(string chatChannelId)
         {
             var channelId = long.Parse(chatChannelId);
-            last_seen[channelId] = sequence;
+            var currentchannel = _messageCache[channelId];
+            var lastsequence= currentchannel[int.MaxValue].LastSequence;
+            if (lastsequence == "")
+            {
+                lastsequence = currentchannel[currentchannel.Keys[^2]].LastSequence;
+                if (lastsequence == "")
+                    return;
+            }
+            last_seen[channelId] = lastsequence;
         }
 
         public async Task<(List<BucketDto> buckets, string loc)> GetLatestMessage(string chatChannelId)

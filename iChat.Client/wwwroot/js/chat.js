@@ -7,7 +7,7 @@
 
 window.scrollToBottom = function (container) {
     if (container instanceof HTMLElement) {
-        container.scrollTop = container.scrollHeight;
+        container.scrollTop = container.scrollHeight - container.clientHeight;
     }
 };
 window.observeScrollTop = function (element, dotnetHelper) {
@@ -16,6 +16,24 @@ window.observeScrollTop = function (element, dotnetHelper) {
             dotnetHelper.invokeMethodAsync('OnNearTopScroll');
         }
     });
+};
+window.captureScrollAnchor = function (container) {
+    return {
+        scrollTop: container.scrollTop,
+        scrollHeight: container.scrollHeight
+    };
+};
+window.restoreScrollAfterPrepend = function (container, previous) {
+    const newScrollHeight = container.scrollHeight;
+    container.scrollTop = newScrollHeight - (previous.scrollHeight - previous.scrollTop);
+};
+window.isScrollAtBottom = (element) => {
+    if (!element) return false;
+    const threshold = 50; 
+    const scrollTop = element.scrollTop;
+    const scrollHeight = element.scrollHeight;
+    const clientHeight = element.clientHeight;
+    return (scrollTop + clientHeight) >= (scrollHeight - threshold);
 };
 window.getTopVisibleMessageId = function (containerSelector, messageSelectorPrefix) {
     const container = document.querySelector(containerSelector);

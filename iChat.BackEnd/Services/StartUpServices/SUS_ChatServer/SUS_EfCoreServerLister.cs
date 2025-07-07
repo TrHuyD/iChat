@@ -27,7 +27,7 @@ namespace iChat.BackEnd.Services.StartUpServices.SUS_ChatServer
                     ,
                     Channels = s.ChatChannels
                         .OrderBy(c => c.Order)
-                        .Select(c => new ChatChannelMetadata
+                        .Select(c => new ChatChannelDtoLite
                         {
                             Id = c.Id.ToString(),
                             Name = c.Name,

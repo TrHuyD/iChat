@@ -1,0 +1,49 @@
+﻿@using iChat.Client.Services.UserServices
+@using iChat.Client.Services.UserServices.ChatService
+@inject ChatNavigationService ChatNavService
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1" style="position: fixed; z-index: 1050; top: 0; left: 0; width: 100vw; height: 100vh;">
+        <div class="modal-dialog" style="margin-top: 10vh;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Channel</h5>
+                    <button type="button" class="btn-close" @onclick="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input @bind-value="ChannelName" @bind-value:event="oninput" class="form-control" placeholder="Channel name" />
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="Close">Cancel</button>
+                    <button class="btn btn-primary" @onclick="Create" disabled="@string.IsNullOrWhiteSpace(ChannelName)">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter] public string ServerId { get; set; } = string.Empty;
+
+    private string? ChannelName;
+
+    private void Close()
+    {
+        ChannelName = null;
+        IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task Create()
+    {
+        if (!string.IsNullOrWhiteSpace(ChannelName))
+        {
+            await ChatNavService.CreateChannelAsync(ChannelName, ServerId);
+            Close();
+        }
+    }
+}

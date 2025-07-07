@@ -4,7 +4,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
 {
     public interface IChatCreateService
     {
-        Task<ChatChannelMetadata> CreateChannelAsync(long serverId, string channelName, long adminUserId);
+        Task<ChatChannelDto> CreateChannelAsync(long serverId, string channelName, long adminUserId);
         Task<ChatServerDto> CreateServerAsync(string serverName, long adminUserId);
     }
 }

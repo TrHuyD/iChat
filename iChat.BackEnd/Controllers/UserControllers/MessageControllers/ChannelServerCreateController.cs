@@ -50,7 +50,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             try
             {
                 var channel = await _service.CreateChannelAsync(long.Parse(rq.ServerId), rq.Name, userId);
-                await _hubContext.Clients.Groups(rq.ServerId).SendAsync("ChannelCreated", channel);
+                await _hubContext.Clients.Groups(rq.ServerId).SendAsync("ChannelCreate", channel);
                 return Ok();
             }
             catch (Exception ex)
