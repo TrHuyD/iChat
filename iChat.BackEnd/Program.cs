@@ -171,7 +171,7 @@ builder.Services.AddTransient<CreateUserService>();
 builder.Services.AddTransient<IUserService, UserService>();
 //builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPublicUserService, PublicUserService>();
-
+builder.Services.AddTransient<IMessageLastSeenService, RedisMessageLastSeenService>();
 builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();
 builder.Services.AddEndpointsApiExplorer();
 

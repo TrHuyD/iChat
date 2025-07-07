@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using iChat.Client.Data.Chat;
+using StackExchange.Redis;
 using Key = iChat.BackEnd.Services.Users.Infra.Redis.RedisKeyTable;
 namespace iChat.BackEnd.Services.Users.Infra.Redis.Enums
 {
@@ -43,6 +44,10 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.Enums
         {
             
             return $"{Key.ChatServer}:{serverId}:c:{channelId}:p";
+        }
+        public static string GetLastSeenKey(string userId,string serverId)
+        {
+            return  $"user:{userId}:server:{serverId}:last_seen";
         }
 
     }
