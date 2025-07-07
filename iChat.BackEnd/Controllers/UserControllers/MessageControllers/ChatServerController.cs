@@ -11,11 +11,11 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
     [Route("api/Chat")]
     [Authorize]
     [ApiController]
-    public class ChannelServerCreateController : ControllerBase
+    public class ChatServerController : ControllerBase
     {
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IChatCreateService _service;
-        public ChannelServerCreateController(IChatCreateService service,IHubContext<ChatHub> hubContext)
+        public ChatServerController(IChatCreateService service, IHubContext<ChatHub> hubContext)
         {
             _hubContext = hubContext;
             _service = service;
@@ -32,7 +32,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             }
 
             var userId = new UserClaimHelper(User).GetUserId();
-            var serverid= await _service.CreateServerAsync(name, userId);
+            var serverid = await _service.CreateServerAsync(name, userId);
             return Ok(serverid);
         }
         //[HttpGet("{id}/CreateChannel")]
@@ -43,7 +43,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         //}
 
         [HttpPost("CreateChannel")]
-        public async Task<IActionResult> CreateChannel([FromBody]ChatChannelCreateRq rq)
+        public async Task<IActionResult> CreateChannel([FromBody] ChatChannelCreateRq rq)
         {
 
             var userId = new UserClaimHelper(User).GetUserId();
@@ -59,6 +59,13 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             }
 
         }
+        [HttpGet("{serverId:long}/GetLastSeenlist")]
+        public async Task<IActionResult> GetLastSeenList(string serverId, [FromServices] IMessageLastSeenService _service)
+        {
 
+            var userId = new UserClaimHelper(User).GetUserIdStr();
+            var lastSeenList = await _service.GetLastSeenMessageAsync(serverId, userId);
+            return Ok(lastSeenList);
+        }
     }
 }

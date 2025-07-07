@@ -88,5 +88,6 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             var bucket = await readService.GetBucketById(channelId, bucketId);
             return Ok(bucket);
         }
+        
     }
 }
