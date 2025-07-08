@@ -15,13 +15,17 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         {
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             await seenService.UpdateLastSeenAsync(request.ChatChannelId, request.ServerId, request.MessageId, userId);
-            await Clients.Group(PrivateGroupName(userId)).SendAsync("LastSeenUpdate_Client", new LastSeenUpdateResponse
+            await Clients.GroupExcept(PrivateGroupName(userId), new[] { Context.ConnectionId }).SendAsync("LastSeenUpdate_Client", new LastSeenUpdateResponse
             {
                 ChatChannelId = request.ChatChannelId,
                 ServerId = request.ServerId,
                 MessageId = request.MessageId,
                 timestamp = DateTimeOffset.UtcNow
             });
+        }
+        public async Task HeartBeat()
+        {
+
         }
     }
 }

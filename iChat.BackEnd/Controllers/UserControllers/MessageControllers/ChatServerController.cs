@@ -62,7 +62,6 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         [HttpGet("{serverId:long}/GetLastSeenlist")]
         public async Task<IActionResult> GetLastSeenList(string serverId, [FromServices] IMessageLastSeenService _service)
         {
-
             var userId = new UserClaimHelper(User).GetUserIdStr();
             var lastSeenList = await _service.GetLastSeenMessageAsync(serverId, userId);
             return Ok(lastSeenList);

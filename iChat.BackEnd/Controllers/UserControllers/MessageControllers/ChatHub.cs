@@ -23,45 +23,70 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         private readonly MemCacheUserChatService _localCache; 
 
     //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
-
+         static string FocusKey(string roomId)=> $"{roomId}_focus";
+        private readonly IUserPresenceCacheService _presenceService;
         public ChatHub(
             ILogger<ChatHub> logger,
             IChatSendMessageService sendMessageService,
             IChatReadMessageService readMessageService,
-            MemCacheUserChatService memCacheUserChatService)
+            MemCacheUserChatService memCacheUserChatService,
+             IUserPresenceCacheService presenceService
+            )
         {
             _logger = logger;
             _sendMessageService = sendMessageService;
             _readMessageService = readMessageService;
             _localCache = memCacheUserChatService;
+            _presenceService = presenceService;
         }
 
         public override async Task OnConnectedAsync()
         {
             _logger.LogInformation($"Client connected: {Context.ConnectionId}");
-            foreach (var list in _localCache.GetServerListAsync(new UserClaimHelper(Context.User).GetUserId()))
+            var userId = new UserClaimHelper(Context.User).GetUserIdStr();
+            var serverList = _localCache.GetServerListAsync(userId, true);
+            foreach (var list in serverList)
             {
-                await Groups.AddToGroupAsync(Context.ConnectionId, list);
+                await Groups.AddToGroupAsync(Context.ConnectionId, list.ToString());
             }
+            _presenceService.SetUserOnline(userId,serverList);
             _logger.LogInformation($"Client joining finished: {Context.ConnectionId}");
             await base.OnConnectedAsync();
         }
-
+        public async Task HeartBeat()
+        {
+            var userId = new UserClaimHelper(Context.User).GetUserIdStr();
+            var serverList = _localCache.GetServerListAsync(userId, true);
+            _presenceService.SetUserOnline(userId, serverList);
+        }
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             _logger.LogInformation($"Client disconnected: {Context.ConnectionId}");
+            var userId = new UserClaimHelper(Context.User).GetUserIdStr();
+            var serverList = _localCache.GetServerListAsync(userId, true);
+            _presenceService.SetUserOffline(userId, serverList);
             await base.OnDisconnectedAsync(exception);
         }
 
         public async Task JoinRoom(string roomId)
         {
- //           await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
+            var userId = new UserClaimHelper(Context.User).GetUserIdStr();
+            if(!ValueParser.TryLong(roomId, out var roomIdLong)&&roomIdLong<1_000_000_000l)
+            {
+                _logger.LogWarning($"Invalid roomId: {roomId} for user {userId}");
+                return;
+            }
+            if (!_localCache.IsUserInServer(userId, roomIdLong))
+            {
+                return;
+            }
+            await Groups.AddToGroupAsync(Context.ConnectionId, FocusKey(roomId));
             _logger.LogInformation($"Client {Context.ConnectionId} joined room {roomId}");
         }
 
         public async Task LeaveRoom(string roomId)
         {
-            //await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusKey(roomId));
             _logger.LogInformation($"Client {Context.ConnectionId} left room {roomId}");
         }
 
