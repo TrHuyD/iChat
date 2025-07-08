@@ -1,11 +1,7 @@
 ﻿@page "/chat/{ServerId}/{RoomId}"
-@using System.Text.Json
-@using System.Text.Json.Serialization
 @using System.Threading.Channels
 @using iChat.Client.DTOs.Chat
-@using iChat.Client.Data
 @using iChat.Client.Services.UserServices.Chat
-@using iChat.DTOs.Users.Messages
 @inject ChatMessageCacheService MessageManager
 @inject ChatSignalRClientService ChatService
 @inject UserStateService _userInfo
@@ -14,11 +10,14 @@
 @implements IDisposable
 @implements IAsyncDisposable
 
-<div class="chat-container" @onclick="HideContextMenu" @onkeydown="HandleEscapeKey">
-    <div class="chat-header">
-        <h3>Chat Room @RoomId</h3>
-        <div class="connection-status">
-            <span class="@_connectionStatusClass">@_connectionStatus</span>
+<div class="chat-layout" @onclick="HideContextMenu" @onkeydown="HandleEscapeKey">
+    <!-- Left Chat Panel -->
+    <div class="chat-container">
+        <div class="chat-header">
+            <h3>Room: @RoomId</h3>
+            <div class="connection-status">
+                <span class="@_connectionStatusClass">@_connectionStatus</span>
+            </div>
         </div>
 
         <div class="chat-toolbar">
@@ -31,55 +30,71 @@
                 }
                 else
                 {
-                    <span>Special</span>
+                    <span>Load Older</span>
                 }
             </button>
 
-            <button class="chat-toolbar-button" disabled>Action 2</button>
-            <button class="chat-toolbar-button" disabled>Action 3</button>
-            <button class="chat-toolbar-button" disabled>Action 4</button>
+            <button class="chat-toolbar-button" @onclick="ToggleSearchSidebar">Special</button>
         </div>
-    </div>
 
+        <div class="messages-container" @ref="_messagesContainer" @onscroll="HandleScroll">
+            <Virtualize Items="@_messages.Values" Context="item" ItemSize="80">
+                <div class="message @item.CssClass"
+                     id="message-@item.Message.Id"
+                     @oncontextmenu="(e => ShowContextMenu(e, item.Message.Id))"
+                     @oncontextmenu:preventDefault
+                     @key="item.Message.Id">
 
-    <div class="messages-container" @ref="_messagesContainer"
-         @onscroll="HandleScroll"
-         style="overflow-y: scroll; height: calc(100vh - 150px);">
-        <Virtualize Items="@_messages.Values" Context="item" ItemSize="80">
-            <div class="@item.CssClass"
-                 id="message-@item.Message.Id"
-                 @oncontextmenu="(e => ShowContextMenu(e, item.Message.Id))"
-                 @oncontextmenu:preventDefault
-                 @key="item.Message.Id">
+                    <div class="message-content">@item.Content</div>
 
-                @if (!string.IsNullOrEmpty(item.Icon))
-                {
-                    <span class="message-icon">@item.Icon</span>
-                }
+                    @if (item.ShowTimestamp)
+                    {
+                        <div class="message-time">@item.Message.CreatedAt.LocalDateTime.ToString("g")</div>
+                    }
+                </div>
+            </Virtualize>
+        </div>
 
-                <div class="message-content">@item.Content</div>
-
-                @if (item.ShowTimestamp)
-                {
-                    <div class="message-time">@item.Message.CreatedAt.LocalDateTime.ToString("g")</div>
-                }
+        @if (_showContextMenu)
+        {
+            <div class="context-menu" style="@_contextMenuStyle" @onclick:stopPropagation="true">
+                <div class="context-item" @onclick="CopyMessageId">Copy Message ID</div>
+                <div class="context-item" @onclick="ScrollToContextMessage">Scroll to Message</div>
             </div>
-        </Virtualize>
+        }
 
+        <div class="message-input">
+            <input type="text" @bind="_newMessage" @bind:event="oninput"
+                   placeholder="Type your message..." @onkeypress="HandleKeyPress" />
+            <button @onclick="SendMessage">Send</button>
+        </div>
     </div>
 
-    @if (_showContextMenu)
-    {
-        <div class="context-menu" style="@_contextMenuStyle" @onclick:stopPropagation="true">
-            <div class="context-item" @onclick="CopyMessageId">Copy Message ID</div>
-            <div class="context-item" @onclick="ScrollToContextMessage">Scroll to Message</div>
-        </div>
-    }
-
-    <div class="message-input">
-        <input type="text" @bind="_newMessage" @bind:event="oninput"
-               placeholder="Type your message..." @onkeypress="HandleKeyPress" />
-        <button @onclick="SendMessage">Send</button>
+    <!-- Right Sidebar: Online Users or Search -->
+    <div class="sidebar">
+        @if (_showSearchSidebar)
+        {
+            <div class="search-sidebar">
+                <input type="text" @bind="_searchQuery" placeholder="Search..." />
+                <ul>
+                    @foreach (var result in _searchResults)
+                    {
+                        <li>@result</li>
+                    }
+                </ul>
+            </div>
+        }
+        else
+        {
+            <div class="online-list">
+                <h4>Online Users</h4>
+                <ul>
+                    @foreach (var user in _onlineUsers)
+                    {
+                        <li>@user</li>
+                    }
+                </ul>
+            </div>
+        }
     </div>
 </div>
-

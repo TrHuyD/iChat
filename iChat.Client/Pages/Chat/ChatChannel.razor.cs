@@ -23,64 +23,8 @@ namespace iChat.Client.Pages.Chat
         private readonly Channel<ChatMessageDtoSafe> _sendQueue = Channel.CreateUnbounded<ChatMessageDtoSafe>();
         private Task? _sendQueueTask;
         private SortedList<long, RenderedMessage> _messages = new();
-        // Context menu state
-        private bool _showContextMenu = false;
-        private string _contextMenuStyle = "";
-        private string _contextMenuMessageId;
-
-        //loading button state
-        private bool _isLoading = false;
-        private bool _isOldHistoryRequestButtonDisabled = false;
-
-        //bucket stuff
-        private int _currentBucketIndex = 0;
-
-        private async Task TriggerLoadOlderHistoryRequest()
-        {
-            if (_isLoading || _isOldHistoryRequestButtonDisabled)
-                return;
-
-            _isLoading = true;
-            try
-            {
-                var result = await MessageManager.GetPreviousBucket(RoomId, _currentBucketIndex);
-                try
-                {
-                    await AddMessages(result);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-                _currentBucketIndex = result.BucketId;
-                Console.WriteLine($"Loaded previous bucket with ID: {_currentBucketIndex}");
-                if (_currentBucketIndex == 0)
-                {
-                    DisableSpecialButtonPermanently();
-                }
-                Console.WriteLine("Special request completed.");
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Special request failed: {ex.Message}");
-            }
-            finally
-            {
-                _isLoading = false;
-                StateHasChanged();
-            }
-        }
-
-        private void DisableSpecialButtonPermanently()
-        {
-            _isOldHistoryRequestButtonDisabled = true;
-        }
-
-
-
         protected override async Task OnInitializedAsync()
         {
-
             Console.WriteLine($"Initializing ChatChannel for RoomId: {RoomId}");
 
             if (!_userInfo.ConfirmServerChannelId(ServerId, RoomId))
@@ -90,11 +34,9 @@ namespace iChat.Client.Pages.Chat
             }
             _sendQueueTask = ProcessSendQueueAsync();
             _currentUserId = _userInfo.GetUserId().ToString();
-
-
             try
             {
-                Console.WriteLine("Registed message handler for ChatService.");
+                Console.WriteLine("Registered message handler for ChatService.");
                 await ChatService.ConnectAsync();
                 _connectionStatus = "Connected";
                 _connectionStatusClass = "connected";
@@ -105,20 +47,7 @@ namespace iChat.Client.Pages.Chat
                 _connectionStatus = "Connection Failed";
                 _connectionStatusClass = "disconnected";
             }
-
             StateHasChanged();
-
-        }
-
-        private async Task AddMessages(BucketDto bucket)
-        {
-            var previousScroll = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
-            foreach (var message in bucket.ChatMessageDtos)
-            {
-                _messages.TryAdd(long.Parse(message.Id), MessageRenderer.RenderMessage(message, _currentUserId));
-            }
-            await InvokeAsync(StateHasChanged);
-            await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, previousScroll);
         }
         protected override async Task OnParametersSetAsync()
         {
@@ -126,19 +55,17 @@ namespace iChat.Client.Pages.Chat
             {
                 if (!string.IsNullOrEmpty(_currentRoomId))
                     await ChatService.LeaveRoomAsync(_currentRoomId);
+
                 checkScrollToBotoom = false;
                 _currentRoomId = RoomId;
                 var (latest, loc) = await MessageManager.GetLatestMessage(RoomId);
 
-
-
                 _messages.Clear();
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
-                Console.WriteLine("Registed message handler for ChatService.");
+                Console.WriteLine("Registered message handler for ChatService.");
                 foreach (var bucket in latest)
-                    AddMessages(bucket);
+                    await AddMessages(bucket);
                 _currentBucketIndex = latest[0].BucketId;
-
                 await ChatService.JoinRoomAsync(ServerId);
                 StateHasChanged();
                 await Task.Delay(125);
@@ -153,19 +80,6 @@ namespace iChat.Client.Pages.Chat
             {
                 await ScrollToBottom();
                 _shouldScrollToBottom = false;
-            }
-        }
-
-        private async Task ScrollToBottom()
-        {
-            try
-            {
-                await Task.Delay(1);
-                await JS.InvokeVoidAsync("scrollToBottom", _messagesContainer);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error scrolling to bottom: {ex.Message}");
             }
         }
 
@@ -184,108 +98,6 @@ namespace iChat.Client.Pages.Chat
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error handling new message: {ex.Message}");
-            }
-        }
-
-        private async Task ProcessSendQueueAsync()
-        {
-            await foreach (var message in _sendQueue.Reader.ReadAllAsync())
-            {
-                try
-                {
-                    await ChatService.SendMessageAsync(ServerId, message);
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine($"Failed to send message: {ex.Message}");
-                }
-            }
-        }
-
-        private async Task SendMessage()
-        {
-            if (string.IsNullOrWhiteSpace(_newMessage)) return;
-
-            var messageContent = _newMessage.Trim();
-            _newMessage = string.Empty;
-            StateHasChanged();
-
-            var message = new ChatMessageDtoSafe
-            {
-                Content = messageContent,
-                MessageType = 1,
-                ChannelId = RoomId,
-                SenderId = _currentUserId,
-                CreatedAt = DateTimeOffset.UtcNow
-            };
-
-            await _sendQueue.Writer.WriteAsync(message);
-            await Task.Delay(125);
-            _shouldScrollToBottom = true;
-        }
-
-        private async Task HandleKeyPress(KeyboardEventArgs e)
-        {
-            if (e.Key == "Enter" && !e.ShiftKey)
-            {
-                await SendMessage();
-            }
-        }
-        bool checkScrollToBotoom = false;
-        bool isthrottled = false;
-        bool checkScrollToTop = false;
-        private async Task HandleScroll()
-        {
-            if (isthrottled)
-                return;
-            isthrottled = true;
-            await Task.Delay(150);
-
-            if (!checkScrollToBotoom)
-            {
-                var isAtBottom = await JS.InvokeAsync<bool>("isScrollAtBottom", _messagesContainer);
-                if (isAtBottom)
-                {
-                    Console.WriteLine("Scroll is at the bottom.");
-                    checkScrollToBotoom = true;
-                    MessageManager.UpdateLastSeen(_currentRoomId);
-                }
-                isthrottled = false;
-                return;
-            }
-            if (!checkScrollToTop)
-            {
-                var isAtTop = await JS.InvokeAsync<bool>("isScrollAtTop", _messagesContainer);
-                if (isAtTop)
-                {
-                    Console.WriteLine("Scroll is at the top.");
-                    checkScrollToTop = true;
-                    await TriggerLoadOlderHistoryRequest();
-                    if (_currentBucketIndex != 0)
-                        checkScrollToTop = false;
-
-                }
-
-            }
-            isthrottled = false;
-            return;
-
-        }
-        private async Task<string?> GetTopVisibleMessageId()
-        {
-            try
-            {
-                var messageId = await JS.InvokeAsync<string?>(
-                    "getTopVisibleMessageId",
-                    ".messages-container",
-                    "message-"
-                );
-                return messageId;
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"JS error: {ex.Message}");
-                return null;
             }
         }
 
@@ -317,40 +129,6 @@ namespace iChat.Client.Pages.Chat
             {
                 await _sendQueueTask;
             }
-        }
-
-        private void ShowContextMenu(MouseEventArgs e, string messageId)
-        {
-            _contextMenuMessageId = messageId;
-            _contextMenuStyle = $"top: {e.ClientY}px; left: {e.ClientX}px;";
-            _showContextMenu = true;
-        }
-
-        private void HideContextMenu()
-        {
-            _showContextMenu = false;
-        }
-
-        private void HandleEscapeKey(KeyboardEventArgs e)
-        {
-            if (e.Key == "Escape")
-                _showContextMenu = false;
-        }
-
-        private async Task CopyMessageId()
-        {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _contextMenuMessageId);
-            _showContextMenu = false;
-        }
-        private async Task ScrollToMessage(string id)
-        {
-            await JS.InvokeVoidAsync("scrollToMessage", id);
-            _showContextMenu = false;
-        }
-        private async Task ScrollToContextMessage()
-        {
-            await ScrollToMessage(_contextMenuMessageId);
-
         }
     }
 }
