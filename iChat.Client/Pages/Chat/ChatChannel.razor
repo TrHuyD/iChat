@@ -6,6 +6,7 @@
 @inject ChatSignalRClientService ChatService
 @inject UserStateService _userInfo
 @inject NavigationManager _navigation
+@inject UserMetadataService _userMetadataService
 @inject IJSRuntime JS
 @implements IDisposable
 @implements IAsyncDisposable
@@ -38,21 +39,35 @@
         </div>
 
         <div class="messages-container" @ref="_messagesContainer" @onscroll="HandleScroll">
-            <Virtualize Items="@_messages.Values" Context="item" ItemSize="80">
-                <div class="message @item.CssClass"
-                     id="message-@item.Message.Id"
-                     @oncontextmenu="(e => ShowContextMenu(e, item.Message.Id))"
-                     @oncontextmenu:preventDefault
-                     @key="item.Message.Id">
+            <Virtualize Items="@_groupedMessages" Context="group" ItemSize="100">
+                <div class="message-group" @key="group.Messages[0].Message.Id">
+                    <div class="message-group-header">
+                        <img class="avatar" src="@group.User.AvatarUrl" />
+                        <span class="username">@group.User.DisplayName</span>
+                        <span class="timestamp">@group.Timestamp.ToString("g")</span>
+                    </div>
 
-                    <div class="message-content">@item.Content</div>
+                    <div class="message-group-body">
+                        @foreach (var item in group.Messages)
+                        {
+                            <div class="message @item.CssClass"
+                                 id="message-@item.Message.Id"
+                                 @oncontextmenu="(e => ShowContextMenu(e, item.Message.Id))"
+                                 @oncontextmenu:preventDefault
+                                 @key="item.Message.Id">
 
-                    @if (item.ShowTimestamp)
-                    {
-                        <div class="message-time">@item.Message.CreatedAt.LocalDateTime.ToString("g")</div>
-                    }
+                                <div class="message-content">@item.Content</div>
+@* 
+                                @if (item.ShowTimestamp)
+                                {
+                                    <div class="message-time">@item.Message.CreatedAt.LocalDateTime.ToString("g")</div>
+                                } *@
+                            </div>
+                        }
+                    </div>
                 </div>
             </Virtualize>
+
         </div>
 
         @if (_showContextMenu)

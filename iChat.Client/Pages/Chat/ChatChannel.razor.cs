@@ -3,6 +3,7 @@ using iChat.Client.DTOs.Chat;
 using iChat.Client.Services.UserServices.Chat;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using System.Threading.Channels;
@@ -23,6 +24,7 @@ namespace iChat.Client.Pages.Chat
         private readonly Channel<ChatMessageDtoSafe> _sendQueue = Channel.CreateUnbounded<ChatMessageDtoSafe>();
         private Task? _sendQueueTask;
         private SortedList<long, RenderedMessage> _messages = new();
+        private List<MessageGroup> _groupedMessages = new();
         protected override async Task OnInitializedAsync()
         {
             Console.WriteLine($"Initializing ChatChannel for RoomId: {RoomId}");
@@ -91,7 +93,9 @@ namespace iChat.Client.Pages.Chat
                 {
                     var messageId = long.Parse(message.Id);
                     checkScrollToBotoom = false;
-                    _messages.TryAdd(long.Parse(message.Id), MessageRenderer.RenderMessage(message, _currentUserId));
+                    var rendered = MessageRenderer.RenderMessage(message, _currentUserId);
+                    _messages.TryAdd(messageId, rendered);
+                    TryAddNewMessageToGroup(rendered);
                     await InvokeAsync(StateHasChanged);
                 }
             }

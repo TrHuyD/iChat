@@ -1,4 +1,5 @@
 ﻿using iChat.Client.Data;
+using iChat.Client.DTOs.Chat;
 using iChat.Client.Services.UserServices.Chat;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Components.Web;
@@ -59,9 +60,70 @@ namespace iChat.Client.Pages.Chat
             {
                 _messages.TryAdd(long.Parse(message.Id), MessageRenderer.RenderMessage(message, _currentUserId));
             }
-
+            _groupedMessages = GroupMessages(_messages);
             await InvokeAsync(StateHasChanged);
             await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, previousScroll);
         }
+        private List<MessageGroup> GroupMessages(SortedList<long, RenderedMessage> messages)
+        {
+            var groups = new List<MessageGroup>();
+            MessageGroup? current = null;
+
+            foreach (var msg in messages.Values.OrderBy(m => long.Parse(m.Message.Id)))
+            {
+                if (current == null ||
+                    current.UserId != msg.Message.SenderId ||
+                    current.Messages.Count >= 5)
+                {
+                    current = new MessageGroup
+                    {
+                        UserId = msg.Message.SenderId,
+                        User = new UserMetadata(msg.Message.SenderId, $"User {msg.Message.SenderId}", "default-avatar.png"),
+                        Timestamp = msg.Message.CreatedAt.LocalDateTime,
+                        Messages = new List<RenderedMessage>()
+                    };
+                    groups.Add(current);
+                }
+
+                current.Messages.Add(msg);
+            }
+
+            return groups;
+        }
+        private void TryAddNewMessageToGroup(RenderedMessage newMsg)
+        {
+            if (_groupedMessages.Count == 0)
+            {
+                _groupedMessages.Add(new MessageGroup
+                {
+                    UserId = newMsg.Message.SenderId,
+                    User = new UserMetadata(newMsg.Message.SenderId, $"User {newMsg.Message.SenderId}", "default-avatar.png"),
+                    Timestamp = newMsg.Message.CreatedAt.LocalDateTime,
+                    Messages = new List<RenderedMessage> { newMsg }
+                });
+                return;
+            }
+            var lastGroup = _groupedMessages[^1]; 
+            bool sameUser = lastGroup.UserId == newMsg.Message.SenderId;
+            bool underLimit = lastGroup.Messages.Count < 5;
+
+            if (sameUser && underLimit)
+            {
+                lastGroup.Messages.Add(newMsg);
+            }
+            else
+            {
+                _groupedMessages.Add(new MessageGroup
+                {
+                    UserId = newMsg.Message.SenderId,
+                    User = new UserMetadata(newMsg.Message.SenderId, $"User {newMsg.Message.SenderId}", "default-avatar.png"),
+                    Timestamp = newMsg.Message.CreatedAt.LocalDateTime,
+                    Messages = new List<RenderedMessage> { newMsg }
+                });
+            }
+        }
+
+
+
     }
 }

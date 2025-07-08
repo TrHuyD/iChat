@@ -18,7 +18,7 @@
     flex: 1;
     padding: 16px;
     overflow-y: auto;
-    background-color: #2b2d31;
+    background-color: #313338;
     scrollbar-width: thin;
     scrollbar-color: #202225 #2b2d31;
 }
@@ -203,4 +203,46 @@ background-color: #3a3c43;
 
     .context-item:hover {
         background-color: #5865f2;
+    }
+
+.message-group {
+    margin-bottom: 16px;
+    padding-left: 12px;
+}
+
+.message-group-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.message-group .avatar {
+    width: 36px;
+    height: 36px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.message-group .username {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.message-group .timestamp {
+    font-size: 12px;
+    color: #72767d;
+    margin-left: 8px;
+}
+
+.message-group-body {
+    margin-left: 46px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+    .message-group-body .message {
+        display: block;
+        padding: 4px 0;
     }
