@@ -1,36 +1,32 @@
-/* Base Styles */
 .discord-nav {
     display: flex;
     height: 100vh;
-    background-color: #202225;
-    color: #dcddde;
+    background-color: #1e1f22;
+    color: white;
 }
 
-/* Server Sidebar */
 .server-sidebar {
     width: 72px;
-    background-color: #202225;
+    background-color: #1e1f22;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px 0;
+    padding-top: 12px;
     overflow-y: auto;
-    flex-shrink: 0;
+    height: 100%;
 }
 
 .server-icon {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    margin-bottom: 8px;
+    background-color: #313338;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #36393f;
-    color: #dcddde;
+    margin-bottom: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
+    transition: border-radius 0.2s ease, background-color 0.2s ease;
 }
 
     .server-icon:hover {
@@ -38,56 +34,30 @@
         background-color: #5865f2;
     }
 
+    .server-icon img {
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        object-fit: cover;
+    }
+
     .server-icon.active {
         border-radius: 16px;
         background-color: #5865f2;
     }
 
-        .server-icon.active::before {
-            content: '';
-            position: absolute;
-            left: -16px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 4px;
-            height: 40px;
-            background-color: #ffffff;
-            border-radius: 0 2px 2px 0;
-        }
-
-    .server-icon img {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        object-fit: cover;
-    }
-
-.home-icon {
-    background-color: #5865f2;
-}
-
-.add-server {
-    background-color: #36393f;
-    color: #3ba55c;
-}
-
-    .add-server:hover {
-        background-color: #3ba55c;
-        color: white;
-    }
-
-/* Channel Sidebar */
 .channel-sidebar {
     width: 240px;
-    background-color: #2f3136;
+    background-color: #2b2d31;
+    color: #b9bbbe;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
 }
 
 .sidebar-header {
-    padding: 16px 8px;
-    border-bottom: 1px solid #292b2f;
+    padding: 16px;
+    border-bottom: 1px solid #1e1f22;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -96,14 +66,7 @@
     .sidebar-header h3 {
         margin: 0;
         font-size: 16px;
-        font-weight: bold;
-        color: #ffffff;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        flex: 1;
-        margin-right: 8px;
-        padding-left: 8px;
+        color: white;
     }
 
 .sidebar-toggle {
@@ -111,63 +74,61 @@
     border: none;
     color: #b9bbbe;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: color 0.2s ease;
 }
 
-    .sidebar-toggle:hover {
-        color: #dcddde;
-    }
-
-/* Channel Category */
 .channel-category {
-    padding: 16px 8px;
+    padding: 16px 0;
 }
 
 .category-header {
-    padding: 0 8px 8px;
-    color: #96989d;
+    padding: 0 16px 8px;
     font-size: 12px;
-    font-weight: bold;
     text-transform: uppercase;
+    color: #8e9297;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* Channel List */
 .channel-list {
-    display: flex;
-    flex-direction: column;
+    padding: 0;
 }
 
 .channel-item {
-    padding: 8px;
-    margin: 2px 0;
-    border-radius: 4px;
-    color: #96989d;
-    text-decoration: none;
+    padding: 8px 16px;
     display: flex;
     align-items: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    border-radius: 4px;
+    margin: 0 8px;
 }
 
     .channel-item:hover {
-        background-color: #3a3d44;
-        color: #dcddde;
-    }
-
-    .channel-item.active {
-        background-color: #40444b;
+        background-color: #3a3c43;
         color: white;
     }
 
 .channel-prefix {
     margin-right: 8px;
-    font-weight: bold;
+    color: #8e9297;
 }
 
 .channel-name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 14px;
+}
+
+.add-channel {
+    color: #8e9297;
+}
+
+    .add-channel:hover {
+        background-color: transparent;
+        color: #dcddde;
+    }
+
+.server-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
 }
