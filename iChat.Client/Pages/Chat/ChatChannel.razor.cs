@@ -17,8 +17,8 @@ namespace iChat.Client.Pages.Chat
         [Parameter] public string ServerId { get; set; } = string.Empty;
         private string? _currentRoomId;
         private string?_currentServerId;
-        private ChatServerDto? _currentServer;
-        private ChatChannelDtoLite? _currentChannel;
+        private ChatServerDto? _currentServer=new ChatServerDto();
+        private ChatChannelDtoLite? _currentChannel= new ChatChannelDtoLite();
         private string _newMessage = string.Empty;
         private ElementReference _messagesContainer;
         private string _connectionStatus = "Disconnected";
@@ -30,15 +30,18 @@ namespace iChat.Client.Pages.Chat
         private Task? _sendQueueTask;
         private SortedList<long, RenderedMessage> _messages = new();
         private List<MessageGroup> _groupedMessages = new();
+        bool Init_failed = false;
         protected override async Task OnInitializedAsync()
         {
-            Console.WriteLine($"Initializing ChatChannel for RoomId: {RoomId}");
-           _userMetadataService._onMetadataUpdated += HandleUserMetadataUpdate;
             if (!_userInfo.ConfirmServerChannelId(ServerId, RoomId))
             {
-                Console.Error.WriteLine($"ServerId {ServerId} does not match the expected server for RoomId {RoomId}.");
+                Console.WriteLine($"ServerId {ServerId} does not match the expected server for RoomId {RoomId}.");
+                Init_failed = true;
                 _navigation.NavigateTo("/");
+                return;
             }
+            Console.WriteLine($"Initializing ChatChannel for RoomId: {RoomId}");
+           _userMetadataService._onMetadataUpdated += HandleUserMetadataUpdate;
             _sendQueueTask = ProcessSendQueueAsync();
             _currentUserId = _userInfo.GetUserId().ToString();
             try
@@ -63,6 +66,8 @@ namespace iChat.Client.Pages.Chat
 
         protected override async Task OnParametersSetAsync()
         {
+            if (Init_failed)
+                return;
             if (_currentRoomId != RoomId)
             {
                 if (!string.IsNullOrEmpty(_currentRoomId))
