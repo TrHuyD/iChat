@@ -14,7 +14,7 @@ namespace iChat.Data.Entities.Users
     {
         public string Name { get; set; }
         public DateTime Dob { get; set; }
-        
+        public string AvatarUrl { get; set; }
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public DateTimeOffset LastSeen { get; set; }
         public ICollection<UserChatServer> UserChatServers { get; set; } = new List<UserChatServer>();

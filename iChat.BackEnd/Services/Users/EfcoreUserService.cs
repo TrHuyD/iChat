@@ -32,7 +32,7 @@ public class EfcoreUserService : IUserService
         {
             Name = user.Name,
             Id = user.Id,
-            AvatarUrl = $"https://cdn.discordapp.com/embed/avatars/index.png"
+            AvatarUrl= user.AvatarUrl ?? $"https://cdn.discordapp.com/embed/avatars/0.png"
         };
     }
     public async Task<UserMetadata> GetUserMetadataAsync(string userId)
@@ -44,7 +44,7 @@ public class EfcoreUserService : IUserService
          (
             userId,
             user.Name,
-            $"https://cdn.discordapp.com/embed/avatars/index.png"
+            user.AvatarUrl ?? $"https://cdn.discordapp.com/embed/avatars/0.png"
         );
     }
     public async Task<List<UserMetadata>> GetUserMetadataBatchAsync(List<string> userIds)
@@ -57,7 +57,7 @@ public class EfcoreUserService : IUserService
             .Select(u => new UserMetadata(
                 u.Id.ToString(),
                 u.Name,
-                $"https://cdn.discordapp.com/embed/avatars/index.png"
+               u.AvatarUrl?? $"https://cdn.discordapp.com/embed/avatars/0.png"
             ))
             .ToListAsync();
 
