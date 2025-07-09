@@ -60,17 +60,19 @@ namespace iChat.Client.Pages.Chat
             {
                 _messages.TryAdd(long.Parse(message.Id), MessageRenderer.RenderMessage(message, _currentUserId));
             }
-            _groupedMessages = GroupMessages(_messages);
+            _groupedMessages = await GroupMessagesAsync(_messages);
             await InvokeAsync(StateHasChanged);
             await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, previousScroll);
         }
-        private List<MessageGroup> GroupMessages(SortedList<long, RenderedMessage> messages)
+
+        private async Task<List<MessageGroup>> GroupMessagesAsync(SortedList<long, RenderedMessage> messages)
         {
             var groups = new List<MessageGroup>();
             MessageGroup? current = null;
 
             foreach (var msg in messages.Values.OrderBy(m => long.Parse(m.Message.Id)))
             {
+                var user = await _userMetadataService.GetUserByIdAsync(msg.Message.SenderId);
                 if (current == null ||
                     current.UserId != msg.Message.SenderId ||
                     current.Messages.Count >= 5)
@@ -78,7 +80,7 @@ namespace iChat.Client.Pages.Chat
                     current = new MessageGroup
                     {
                         UserId = msg.Message.SenderId,
-                        User = new UserMetadata(msg.Message.SenderId, $"User {msg.Message.SenderId}", "default-avatar.png"),
+                        User = user,
                         Timestamp = msg.Message.CreatedAt.LocalDateTime,
                         Messages = new List<RenderedMessage>()
                     };
@@ -87,26 +89,26 @@ namespace iChat.Client.Pages.Chat
 
                 current.Messages.Add(msg);
             }
-
             return groups;
         }
-        private void TryAddNewMessageToGroup(RenderedMessage newMsg)
+
+        private async Task TryAddNewMessageToGroupAsync(RenderedMessage newMsg)
         {
+            var user = await _userMetadataService.GetUserByIdAsync(newMsg.Message.SenderId);
             if (_groupedMessages.Count == 0)
             {
                 _groupedMessages.Add(new MessageGroup
                 {
                     UserId = newMsg.Message.SenderId,
-                    User = new UserMetadata(newMsg.Message.SenderId, $"User {newMsg.Message.SenderId}", "default-avatar.png"),
+                    User = user,
                     Timestamp = newMsg.Message.CreatedAt.LocalDateTime,
                     Messages = new List<RenderedMessage> { newMsg }
                 });
                 return;
             }
-            var lastGroup = _groupedMessages[^1]; 
+            var lastGroup = _groupedMessages[^1];
             bool sameUser = lastGroup.UserId == newMsg.Message.SenderId;
             bool underLimit = lastGroup.Messages.Count < 5;
-
             if (sameUser && underLimit)
             {
                 lastGroup.Messages.Add(newMsg);
@@ -116,12 +118,13 @@ namespace iChat.Client.Pages.Chat
                 _groupedMessages.Add(new MessageGroup
                 {
                     UserId = newMsg.Message.SenderId,
-                    User = new UserMetadata(newMsg.Message.SenderId, $"User {newMsg.Message.SenderId}", "default-avatar.png"),
+                    User = user,
                     Timestamp = newMsg.Message.CreatedAt.LocalDateTime,
                     Messages = new List<RenderedMessage> { newMsg }
                 });
             }
         }
+
 
 
 

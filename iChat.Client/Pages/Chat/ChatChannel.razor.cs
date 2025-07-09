@@ -28,7 +28,7 @@ namespace iChat.Client.Pages.Chat
         protected override async Task OnInitializedAsync()
         {
             Console.WriteLine($"Initializing ChatChannel for RoomId: {RoomId}");
-
+            _userMetadataService._onMetadataUpdated += HandleUserMetadataUpdate;
             if (!_userInfo.ConfirmServerChannelId(ServerId, RoomId))
             {
                 Console.Error.WriteLine($"ServerId {ServerId} does not match the expected server for RoomId {RoomId}.");
@@ -51,6 +51,21 @@ namespace iChat.Client.Pages.Chat
             }
             StateHasChanged();
         }
+        private void HandleUserMetadataUpdate(List<UserMetadata> updatedUsers)
+        {
+            var updatedSet = updatedUsers.Select(u => u.UserId).ToHashSet();
+
+            foreach (var group in _groupedMessages)
+            {
+                if (updatedSet.Contains(group.UserId))
+                {
+                    group.User = updatedUsers.First(u => u.UserId == group.UserId);
+                }
+            }
+
+            InvokeAsync(StateHasChanged);
+        }
+
         protected override async Task OnParametersSetAsync()
         {
             if (_currentRoomId != RoomId)
@@ -87,24 +102,23 @@ namespace iChat.Client.Pages.Chat
 
         private async Task HandleNewMessage(ChatMessageDtoSafe message)
         {
+            if (message.ChannelId != RoomId) return;
             try
             {
-                if (message.ChannelId == RoomId)
-                {
-                    var messageId = long.Parse(message.Id);
-                    checkScrollToBotoom = false;
-                    var rendered = MessageRenderer.RenderMessage(message, _currentUserId);
-                    _messages.TryAdd(messageId, rendered);
-                    TryAddNewMessageToGroup(rendered);
-                    await InvokeAsync(StateHasChanged);
-                }
+                var messageId = long.Parse(message.Id);
+                var rendered = MessageRenderer.RenderMessage(message, _currentUserId);
+                _messages.TryAdd(messageId, rendered);
+
+                await TryAddNewMessageToGroupAsync(rendered);
+                _shouldScrollToBottom = true;
+
+                await InvokeAsync(StateHasChanged);
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error handling new message: {ex.Message}");
             }
         }
-
         public async ValueTask DisposeAsync()
         {
             await DisposeCore();
@@ -113,6 +127,7 @@ namespace iChat.Client.Pages.Chat
 
         public void Dispose()
         {
+            _userMetadataService._onMetadataUpdated -= HandleUserMetadataUpdate;
             DisposeCore().AsTask().Wait();
             GC.SuppressFinalize(this);
         }
