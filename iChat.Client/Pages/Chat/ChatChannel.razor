@@ -2,6 +2,7 @@
 @using System.Threading.Channels
 @using iChat.Client.DTOs.Chat
 @using iChat.Client.Services.UserServices.Chat
+@using iChat.DTOs.Users.Messages
 @inject ChatMessageCacheService MessageManager
 @inject ChatSignalRClientService ChatService
 @inject UserStateService _userInfo
@@ -36,7 +37,7 @@
                 }
             </button>
 
-            <button class="chat-toolbar-button" @onclick="ToggleSearchSidebar">Special</button>
+            <button class="chat-toolbar-button" @onclick="ToggleSearchSidebar">Search</button>
         </div>
 
         <div class="messages-container" @ref="_messagesContainer" @onscroll="HandleScroll">
@@ -58,17 +59,11 @@
                                  @key="item.Message.Id">
 
                                 <div class="message-content">@item.Content</div>
-@* 
-                                @if (item.ShowTimestamp)
-                                {
-                                    <div class="message-time">@item.Message.CreatedAt.LocalDateTime.ToString("g")</div>
-                                } *@
                             </div>
                         }
                     </div>
                 </div>
             </Virtualize>
-
         </div>
 
         @if (_showContextMenu)
@@ -91,14 +86,27 @@
         @if (_showSearchSidebar)
         {
             <div class="search-sidebar">
-                <input type="text" @bind="_searchQuery" placeholder="Search..." />
+                <input type="text"
+                       @bind="_searchQuery"
+                       @bind:event="oninput"
+                       @onkeypress="HandleSearchKeyPress"
+                       placeholder="Search..." />
+
                 <ul>
-                    @foreach (var result in _searchResults)
+                    @if (_searchResults.Count == 0 && !string.IsNullOrWhiteSpace(_searchQuery))
                     {
-                        <li>@result</li>
+                        <li><em>No results</em></li>
+                    }
+                    else
+                    {
+                        @foreach (var result in _searchResults)
+                        {
+                            <li>@result.Content</li>
+                        }
                     }
                 </ul>
             </div>
+
         }
         else
         {

@@ -122,6 +122,7 @@
 
   <ItemGroup>
     <Folder Include="Models\Infrastructures\w\" />
+    <Folder Include="Models\MessageSearch\" />
     <Folder Include="Services\NewFolder1\" />
   </ItemGroup>
 
