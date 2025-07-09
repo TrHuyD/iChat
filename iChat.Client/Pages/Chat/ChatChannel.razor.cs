@@ -29,7 +29,7 @@ namespace iChat.Client.Pages.Chat
         protected override async Task OnInitializedAsync()
         {
             Console.WriteLine($"Initializing ChatChannel for RoomId: {RoomId}");
-            _userMetadataService._onMetadataUpdated += HandleUserMetadataUpdate;
+           _userMetadataService._onMetadataUpdated += HandleUserMetadataUpdate;
             if (!_userInfo.ConfirmServerChannelId(ServerId, RoomId))
             {
                 Console.Error.WriteLine($"ServerId {ServerId} does not match the expected server for RoomId {RoomId}.");
@@ -52,18 +52,8 @@ namespace iChat.Client.Pages.Chat
             }
             StateHasChanged();
         }
-        private void HandleUserMetadataUpdate(List<UserMetadata> updatedUsers)
+        private void HandleUserMetadataUpdate(List<UserMetadataReact> updatedUsers)
         {
-            var updatedSet = updatedUsers.Select(u => u.UserId).ToHashSet();
-
-            foreach (var group in _groupedMessages)
-            {
-                if (updatedSet.Contains(group.UserId))
-                {
-                    group.User = updatedUsers.First(u => u.UserId == group.UserId);
-                }
-            }
-
             InvokeAsync(StateHasChanged);
         }
 
@@ -73,11 +63,9 @@ namespace iChat.Client.Pages.Chat
             {
                 if (!string.IsNullOrEmpty(_currentRoomId))
                     await ChatService.LeaveRoomAsync(_currentRoomId);
-
                 checkScrollToBotoom = false;
                 _currentRoomId = RoomId;
                 var (latest, loc) = await MessageManager.GetLatestMessage(RoomId);
-
                 _messages.Clear();
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
                 Console.WriteLine("Registered message handler for ChatService.");

@@ -1,21 +1,23 @@
-﻿using iChat.Client.Services.Auth;
+﻿using iChat.Client.DTOs.Chat;
+using iChat.Client.Services.Auth;
 using iChat.DTOs.Users;
 using System.Collections.Concurrent;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Timers;
-using static System.Net.WebRequestMethods;
+
 namespace iChat.Client.Services.UserServices.Chat
 {
     public class UserMetadataService
     {
-        private readonly ConcurrentDictionary<string, UserMetadata> _cache = new();
+        private readonly ConcurrentDictionary<string, UserMetadataReact> _cache = new();
         private readonly ConcurrentQueue<string> _pendingIds = new();
         private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
         private readonly System.Timers.Timer _timer;
-        public event Action<List<UserMetadata>>? _onMetadataUpdated;
+        public event Action<List<UserMetadataReact>>? _onMetadataUpdated;
         JwtAuthHandler _https;
+
         public UserMetadataService(JwtAuthHandler jwtAuthHandler)
         {
             _https = jwtAuthHandler;
@@ -24,16 +26,20 @@ namespace iChat.Client.Services.UserServices.Chat
             _timer.Start();
         }
 
-        public Task<UserMetadata> GetUserByIdAsync(string userId)
+        public Task<UserMetadataReact> GetUserByIdAsync(string userId)
         {
             if (_cache.TryGetValue(userId, out var cached))
                 return Task.FromResult(cached);
+            var placeholder = new UserMetadataReact(userId, userId, "https://cdn.discordapp.com/embed/avatars/1.png");
+            _cache[userId] = placeholder;
+
             lock (_inFlight)
             {
                 if (_inFlight.Add(userId))
                     _pendingIds.Enqueue(userId);
             }
-            return Task.FromResult(new UserMetadata(userId, $"User {userId}", "https://cdn.discordapp.com/embed/avatars/1.png"));
+
+            return Task.FromResult(placeholder);
         }
         private async Task ProcessQueueAsync()
         {
@@ -42,37 +48,42 @@ namespace iChat.Client.Services.UserServices.Chat
                 batch.Add(uid);
             if (batch.Count == 0) return;
             var results = await FetchMetadataBatchAsync(batch);
-            foreach (var u in results)
-            {
-   
-                _cache[u.UserId] = u;
-            }
+            var updatedList = new List<UserMetadataReact>();
             lock (_inFlight)
             {
-               
                 foreach (var uid in batch)
-                {
-
                     _inFlight.Remove(uid);
-               
-                }
-               
             }
-            _onMetadataUpdated?.Invoke(results);
+            foreach (var fetched in results)
+            {
+                if (string.IsNullOrEmpty(fetched.AvatarUrl))
+                    fetched.AvatarUrl = $"https://cdn.discordapp.com/embed/avatars/0.png";
+                if (_cache.TryGetValue(fetched.UserId, out var existing))
+                {
+                    existing.DisplayName = fetched.DisplayName;
+                    existing.AvatarUrl = fetched.AvatarUrl;
+                    updatedList.Add(existing);
+                }
+                else
+                {
+                    _cache[fetched.UserId] = fetched;
+                    updatedList.Add(fetched);
+                }
+            }
+            _onMetadataUpdated?.Invoke(updatedList);
         }
-
-        private async Task<List<UserMetadata>> FetchMetadataBatchAsync(List<string> ids)
+        private async Task<List<UserMetadataReact>> FetchMetadataBatchAsync(List<string> ids)
         {
-            if (ids.Count < 5) 
+            if (ids.Count < 5)
             {
                 var tasks = ids.Select(async id =>
                 {
                     try
                     {
-                        using var response = await _https.SendAuthAsync( new HttpRequestMessage(HttpMethod.Get, $"/api/users/GetUserById?userId={Uri.EscapeDataString(id)}") );
+                        using var response = await _https.SendAuthAsync(new HttpRequestMessage(HttpMethod.Get, $"/api/users/GetUserById?userId={Uri.EscapeDataString(id)}"));
                         if (!response.IsSuccessStatusCode)
                             return null;
-                        var json = await response.Content.ReadFromJsonAsync<UserMetadata>();
+                        var json = await response.Content.ReadFromJsonAsync<UserMetadataReact>();
                         return json;
                     }
                     catch (Exception ex)
@@ -93,22 +104,17 @@ namespace iChat.Client.Services.UserServices.Chat
                 var response = await _https.SendAuthAsync(request);
                 if (response.IsSuccessStatusCode)
                 {
-                    var content = await response.Content.ReadFromJsonAsync<List<UserMetadata>>();
-                    return content;
+                    var content = await response.Content.ReadFromJsonAsync<List<UserMetadataReact>>();
+                    return content ?? new List<UserMetadataReact>();
                 }
                 else
-                {//do nothing for now
-                    return new List<UserMetadata>();
+                {
+                    return new List<UserMetadataReact>();
                 }
             }
-
         }
+
         public void Dispose() => _timer.Dispose();
         public ValueTask DisposeAsync() { _timer.Dispose(); return ValueTask.CompletedTask; }
-
-       
     }
-
-    
-
 }

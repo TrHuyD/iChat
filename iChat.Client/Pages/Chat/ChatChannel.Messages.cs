@@ -72,7 +72,7 @@ namespace iChat.Client.Pages.Chat
 
             foreach (var msg in messages.Values.OrderBy(m => long.Parse(m.Message.Id)))
             {
-                var user = await _userMetadataService.GetUserByIdAsync(msg.Message.SenderId);
+                UserMetadataReact user = await _userMetadataService.GetUserByIdAsync(msg.Message.SenderId);
                 if (current == null ||
                     current.UserId != msg.Message.SenderId ||
                     current.Messages.Count >= 5)
@@ -92,38 +92,26 @@ namespace iChat.Client.Pages.Chat
             return groups;
         }
 
-        private async Task TryAddNewMessageToGroupAsync(RenderedMessage newMsg)
+        private async Task TryAddNewMessageToGroupAsync(RenderedMessage message)
         {
-            var user = await _userMetadataService.GetUserByIdAsync(newMsg.Message.SenderId);
-            if (_groupedMessages.Count == 0)
+            var userId = message.Message.SenderId;
+            var user = await _userMetadataService.GetUserByIdAsync(userId);
+            var group = _groupedMessages.LastOrDefault(g => g.UserId == userId);
+            if (group != null && group.CanAppend(message.Message))
             {
-                _groupedMessages.Add(new MessageGroup
-                {
-                    UserId = newMsg.Message.SenderId,
-                    User = user,
-                    Timestamp = newMsg.Message.CreatedAt.LocalDateTime,
-                    Messages = new List<RenderedMessage> { newMsg }
-                });
-                return;
-            }
-            var lastGroup = _groupedMessages[^1];
-            bool sameUser = lastGroup.UserId == newMsg.Message.SenderId;
-            bool underLimit = lastGroup.Messages.Count < 5;
-            if (sameUser && underLimit)
-            {
-                lastGroup.Messages.Add(newMsg);
+                group.Messages.Add(message);
             }
             else
             {
                 _groupedMessages.Add(new MessageGroup
                 {
-                    UserId = newMsg.Message.SenderId,
+                    UserId = userId,
                     User = user,
-                    Timestamp = newMsg.Message.CreatedAt.LocalDateTime,
-                    Messages = new List<RenderedMessage> { newMsg }
+                    Messages = new List<RenderedMessage> { message }
                 });
             }
         }
+
 
 
 
