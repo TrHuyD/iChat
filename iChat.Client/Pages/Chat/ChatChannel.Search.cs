@@ -15,11 +15,49 @@ namespace iChat.Client.Pages.Chat
 
         private string _searchSenderId = string.Empty;
         private string _searchChannelId = string.Empty;
-        private DateTime? _searchBefore;
-        private DateTime? _searchAfter;
+        private DateTime? _searchBefore=null;
+        private DateTime? _searchAfter=null;
         private string _sortBy = "timestamp";
         private bool _sortDescending = true;
+        private partial class SavedState
+        {
+            public bool _showSearchSidebar=false;
+            public string _searchQuery = string.Empty;
+            public string _searchSenderId = string.Empty;
+            public string _searchChannelId = string.Empty;
+            public DateTime? _searchBefore = null;
+            public DateTime? _searchAfter = null;
+            public string _sortBy = "timestamp";
+            public bool _sortDescending = true;
+            public IList<ChatMessageDtoSafeSearchExtended> _searchResults = new List<ChatMessageDtoSafeSearchExtended>();
 
+        }
+        private void SaveSearchState(SavedState state)
+        {
+            state._showSearchSidebar = _showSearchSidebar;
+            state._searchQuery = _searchQuery;
+            state._searchSenderId = _searchSenderId;
+            state._searchChannelId = _searchChannelId;
+            state._searchBefore = _searchBefore;
+            state._searchAfter = _searchAfter;
+            state._sortBy = _sortBy;
+            state._sortDescending = _sortDescending;
+            state._searchResults = _searchResults;
+        }
+        private void LoadSearchState(SavedState state)
+        {
+            _showSearchSidebar = state._showSearchSidebar;
+            _searchQuery = state._searchQuery;
+            _searchSenderId = state._searchSenderId;
+            _searchChannelId = state._searchChannelId;
+            _searchBefore = state._searchBefore;
+            _searchAfter = state._searchAfter;
+            _sortBy = state._sortBy;
+            _sortDescending = state._sortDescending;
+            _searchResults = state._searchResults;
+
+
+        }
         private void ToggleSearchSidebar()
         {
             _showSearchSidebar = !_showSearchSidebar;

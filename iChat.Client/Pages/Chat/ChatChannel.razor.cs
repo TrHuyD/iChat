@@ -70,6 +70,7 @@ namespace iChat.Client.Pages.Chat
                 return;
             if (_currentRoomId != RoomId)
             {
+                SaveState();
                 if (!string.IsNullOrEmpty(_currentRoomId))
                     await ChatService.LeaveRoomAsync(_currentRoomId);
                 if(!string.IsNullOrEmpty(_currentServerId)|| _currentServerId != ServerId)
@@ -78,10 +79,10 @@ namespace iChat.Client.Pages.Chat
                     _currentServer = _ServerCacheManager.GetServer(_currentServerId);
                 }
                 _currentChannel=_currentServer.Channels.FirstOrDefault(c => c.Id == RoomId);
-                checkScrollToBotoom = false;
                 _currentRoomId = RoomId;
+                LoadState();
+                checkScrollToBotoom = false;
                 var (latest, loc) = await MessageManager.GetLatestMessage(RoomId);
-
                 _messages.Clear();
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
                 Console.WriteLine("Registered message handler for ChatService.");
@@ -93,7 +94,6 @@ namespace iChat.Client.Pages.Chat
                 checkScrollToBotoom = checkScrollToTop = _isOldHistoryRequestButtonDisabled = checkScrollToTop = _currentBucketIndex == 0;
                 await Task.Delay(125);
                 await ScrollToMessage(loc);
-               
             }
         }
 
