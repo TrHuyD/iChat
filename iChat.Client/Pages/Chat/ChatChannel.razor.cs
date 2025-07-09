@@ -1,6 +1,7 @@
 ﻿using iChat.Client.Data;
 using iChat.Client.DTOs.Chat;
 using iChat.Client.Services.UserServices.Chat;
+using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.RenderTree;

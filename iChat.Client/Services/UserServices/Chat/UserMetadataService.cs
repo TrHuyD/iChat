@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using iChat.DTOs.Users;
+using System.Collections.Concurrent;
 using System.Timers;
 namespace iChat.Client.Services.UserServices.Chat
 {
@@ -30,11 +31,9 @@ namespace iChat.Client.Services.UserServices.Chat
         private async Task ProcessQueueAsync()
         {
             var batch = new List<string>();
-            while (_pendingIds.TryDequeue(out var uid))
+            while (batch.Count < 6 && _pendingIds.TryDequeue(out var uid))
                 batch.Add(uid);
-
             if (batch.Count == 0) return;
-
             var results = await FetchMetadataBatchAsync(batch);
             foreach (var u in results)
                 _cache[u.UserId] = u;
@@ -45,6 +44,7 @@ namespace iChat.Client.Services.UserServices.Chat
             }
             _onMetadataUpdated?.Invoke(results);
         }
+
         private Task<List<UserMetadata>> FetchMetadataBatchAsync(IEnumerable<string> ids)
         {
 
@@ -56,6 +56,6 @@ namespace iChat.Client.Services.UserServices.Chat
        
     }
 
-    public record UserMetadata(string UserId, string DisplayName, string AvatarUrl);
+    
 
 }

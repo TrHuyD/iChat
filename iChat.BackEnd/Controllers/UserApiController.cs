@@ -7,6 +7,8 @@ using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
+using StackExchange.Redis;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -55,6 +57,9 @@ namespace iChat.BackEnd.Controllers
             }
             return package is null ? NotFound() : Ok(package);
         }
+   //     [AllowAnonymous]
+
+
     }
 
 }
