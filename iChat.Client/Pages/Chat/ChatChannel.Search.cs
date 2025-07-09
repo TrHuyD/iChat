@@ -12,9 +12,18 @@ namespace iChat.Client.Pages.Chat
         private string _searchQuery = string.Empty;
         private IList<ChatMessageDtoSafeSearchExtended> _searchResults = new List<ChatMessageDtoSafeSearchExtended>();
         private CancellationTokenSource _searchCts = new();
+
+        private string _searchSenderId = string.Empty;
+        private string _searchChannelId = string.Empty;
+        private DateTime? _searchBefore;
+        private DateTime? _searchAfter;
+        private string _sortBy = "timestamp";
+        private bool _sortDescending = true;
+
         private void ToggleSearchSidebar()
         {
             _showSearchSidebar = !_showSearchSidebar;
+            _searchChannelId = _currentRoomId;
             _searchQuery = string.Empty;
             _searchResults.Clear();
         }
@@ -31,7 +40,16 @@ namespace iChat.Client.Pages.Chat
             }
             try
             {
-                var uri = $"/api/search/messages?serverId={ServerId}&queryText={Uri.EscapeDataString(query)}&page=1&pageSize=10";
+                var uri = $"/api/search/messages?" +
+                          $"serverId={ServerId}" +
+                          $"&channelId={_searchChannelId}" +
+                          $"&queryText={Uri.EscapeDataString(query)}" +
+                          $"&page=1&pageSize=20" +
+                          $"&senderId={Uri.EscapeDataString(_searchSenderId ?? "")}" +
+                          $"&sortBy={_sortBy}" +
+                          $"&sortDescending={_sortDescending}" +
+                          (_searchBefore.HasValue ? $"&toDate={_searchBefore:O}" : "") +
+                          (_searchAfter.HasValue ? $"&fromDate={_searchAfter:O}" : "");
                 using var request = new HttpRequestMessage(HttpMethod.Get, uri);
                 using var response = await _https.SendAuthAsync(request);
 
@@ -48,6 +66,7 @@ namespace iChat.Client.Pages.Chat
                 Console.Error.WriteLine($"Search error: {ex.Message}");
             }
         }
+
 
         private async Task HandleSearchKeyPress(KeyboardEventArgs e)
         {

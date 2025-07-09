@@ -73,24 +73,19 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             }
             if (!options.ChannelId.HasValue)
                 throw new NotImplementedException("Havent implemented search for all channels yet, please specify a channelId.");
-
             var baseQuery = _db.Messages
                 .Where(m => m.ChannelId == options.ChannelId)
                 .Where(m => m.SearchVector.Matches(EF.Functions.ToTsQuery("english", tsQueryText)));
-
             if (!string.IsNullOrEmpty(options.SenderId) &&
                 long.TryParse(options.SenderId, out long senderId))
             {
                 baseQuery = baseQuery.Where(m => m.SenderId == senderId);
             }
-
             if (options.FromDate.HasValue)
                 baseQuery = baseQuery.Where(m => m.Timestamp >= options.FromDate.Value);
             if (options.ToDate.HasValue)
                 baseQuery = baseQuery.Where(m => m.Timestamp <= options.ToDate.Value);
-
             baseQuery = ApplySorting(baseQuery, options, tsQueryText);
-
             if (!string.IsNullOrEmpty(options.CursorToken) && TryDecodeCursor(options.CursorToken, out var cursorTimestamp))
             {
                 baseQuery = options.SortDescending
@@ -101,20 +96,16 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             {
                 baseQuery = baseQuery.Skip((options.Page - 1) * options.PageSize);
             }
-
             var items = await baseQuery
                 .Take(options.PageSize + 1)
                 .ToListAsync();
-
             var hasNextPage = items.Count > options.PageSize;
             if (hasNextPage)
                 items.RemoveAt(items.Count - 1);
-
             string nextPageToken = hasNextPage ? EncodeCursor(items.Last().Timestamp) : null;
             string previousPageToken = (options.Page > 1 && items.Count > 0)
                 ? EncodeCursor(items.First().Timestamp)
                 : null;
-
             return new PaginatedResult<ChatMessageDtoSafeSearchExtended>
             {
                 Items = items.Select(i => new ChatMessageDtoSafeSearchExtended
@@ -134,8 +125,6 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 PreviousPageToken = previousPageToken
             };
         }
-
-
         private IQueryable<Message> ApplySorting(IQueryable<Message> query, SearchOptions options, string tsQueryText)
         {
             return options.SortBy?.ToLower() switch
@@ -150,8 +139,6 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 _ => query.OrderByDescending(m => m.Timestamp)
             };
         }
-
-
         public async Task<int> GetSearchResultCountAsync(string queryText, long channelId, SearchOptions options = null)
         {
             var countCacheKey = $"search_count:{channelId}:{queryText.GetHashCode()}";
@@ -168,10 +155,8 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                         throw new ArgumentException("Invalid User ID format", nameof(options.SenderId));
                     if (!string.IsNullOrEmpty(options.SenderId))
                         query = query.Where(m => m.SenderId == SenderId);
-
                     if (options.FromDate.HasValue)
                         query = query.Where(m => m.Timestamp >= options.FromDate.Value);
-
                     if (options.ToDate.HasValue)
                         query = query.Where(m => m.Timestamp <= options.ToDate.Value);
                 }

@@ -9,7 +9,7 @@
         public int PageSize { get; set; } = 20;
         public DateTimeOffset? FromDate { get; set; }
         public DateTimeOffset? ToDate { get; set; }
-        public string SenderId { get; set; } = "";
+        public string? SenderId { get; set; } = "";
         //public bool IncludeDeleted { get; set; } = false;
         public string SortBy { get; set; } = "timestamp";
         public bool SortDescending { get; set; } = true;

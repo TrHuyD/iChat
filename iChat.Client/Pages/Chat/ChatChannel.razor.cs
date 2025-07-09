@@ -16,6 +16,9 @@ namespace iChat.Client.Pages.Chat
         [Parameter] public string RoomId { get; set; } = string.Empty;
         [Parameter] public string ServerId { get; set; } = string.Empty;
         private string? _currentRoomId;
+        private string?_currentServerId;
+        private ChatServerDto? _currentServer;
+        private ChatChannelDtoLite? _currentChannel;
         private string _newMessage = string.Empty;
         private ElementReference _messagesContainer;
         private string _connectionStatus = "Disconnected";
@@ -23,6 +26,7 @@ namespace iChat.Client.Pages.Chat
         private string _currentUserId = "";
         private bool _shouldScrollToBottom = false;
         private readonly Channel<ChatMessageDtoSafe> _sendQueue = Channel.CreateUnbounded<ChatMessageDtoSafe>();
+        
         private Task? _sendQueueTask;
         private SortedList<long, RenderedMessage> _messages = new();
         private List<MessageGroup> _groupedMessages = new();
@@ -63,9 +67,16 @@ namespace iChat.Client.Pages.Chat
             {
                 if (!string.IsNullOrEmpty(_currentRoomId))
                     await ChatService.LeaveRoomAsync(_currentRoomId);
+                if(!string.IsNullOrEmpty(_currentServerId)|| _currentServerId != ServerId)
+                {
+                    _currentServerId = ServerId;
+                    _currentServer = _ServerCacheManager.GetServer(_currentServerId);
+                }
+                _currentChannel=_currentServer.Channels.FirstOrDefault(c => c.Id == RoomId);
                 checkScrollToBotoom = false;
                 _currentRoomId = RoomId;
                 var (latest, loc) = await MessageManager.GetLatestMessage(RoomId);
+
                 _messages.Clear();
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
                 Console.WriteLine("Registered message handler for ChatService.");
