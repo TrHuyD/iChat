@@ -1,4 +1,5 @@
 ﻿using iChat.Client.Services.UserServices.Chat;
+using iChat.DTOs.Users;
 
 namespace iChat.Client.DTOs.Chat
 {

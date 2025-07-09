@@ -29,7 +29,7 @@ namespace iChat.BackEnd.Controllers
         [Authorize]
         public async Task<IActionResult> GetProfile()
         {
-            var userId = new UserClaimHelper(User).GetUserId();
+            var userId = new UserClaimHelper(User).GetUserIdStr();
 
             var userProfile = await _userService.GetUserProfileAsync(userId);
             if (userProfile == null)
@@ -45,7 +45,7 @@ namespace iChat.BackEnd.Controllers
             var cacheKey = $"complete_info:{userId}";
             if (!_cache.TryGetValue(cacheKey, out UserCompleteDto? package))
             {
-                var userProfile = await _userService.GetUserProfileAsync(userId);
+                var userProfile = await _userService.GetUserProfileAsync(userId.ToString());
                 var userServerList = await serverListService.GetServerList(userId);
 
                 package = new UserCompleteDto
@@ -57,7 +57,6 @@ namespace iChat.BackEnd.Controllers
             }
             return package is null ? NotFound() : Ok(package);
         }
-   //     [AllowAnonymous]
 
 
     }

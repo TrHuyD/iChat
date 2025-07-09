@@ -6,5 +6,20 @@ using System.Threading.Tasks;
 
 namespace iChat.DTOs.Users
 {
-    public record UserMetadata(string UserId, string DisplayName, string AvatarUrl);
+    public class UserMetadata
+    {
+        public string UserId { get; set; } 
+        public string DisplayName { get; set; }
+        public string AvatarUrl { get; set; }
+        public UserMetadata(string UserId, string DisplayName, string AvatarUrl)
+        {
+            this.UserId = UserId;
+            this.DisplayName = DisplayName;
+            this.AvatarUrl = AvatarUrl;
+        }
+        public UserMetadata()
+        {
+
+        }
+    }
 }

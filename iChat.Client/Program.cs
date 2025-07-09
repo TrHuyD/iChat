@@ -33,7 +33,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped<FieldCssClassProvider, BootstrapFieldClassProvider>();
 builder.Services.AddSingleton<ToastService>();
-builder.Services.AddSingleton<UserMetadataService>();
+builder.Services.AddScoped<UserMetadataService>();
 
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<LastVisitedChannelService>();

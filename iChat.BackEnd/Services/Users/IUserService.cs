@@ -8,7 +8,9 @@ namespace iChat.BackEnd.Services.Users.Auth
     public interface IUserService
     {
    
-        Task<UserProfileDto?> GetUserProfileAsync(long userId);
-        Task<UserCompleteDto?> GetUserCompleteInfoAsync(long userId);
+        Task<UserProfileDto?> GetUserProfileAsync(string userId);
+        Task<UserCompleteDto?> GetUserCompleteInfoAsync(string userId);
+        Task<List<UserMetadata>> GetUserMetadataBatchAsync(List<string> userIds);
+        Task<UserMetadata> GetUserMetadataAsync(string userId);
     }
 }

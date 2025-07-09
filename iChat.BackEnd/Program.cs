@@ -165,14 +165,17 @@ new SqlAuthBuilderHelper().AddService(builder);
 //        options.ClientId = builder.Configuration["Auth0:ClientId"];
 //    });
 
-builder.Services.AddTransient<IChatCreateService,EfCoreChatCreateService>();
+builder.Services.AddScoped<IChatCreateService,EfCoreChatCreateService>();
 //builder.Services.AddTransient < Neo4jCreateUserService>();
-builder.Services.AddTransient<CreateUserService>();
-builder.Services.AddTransient<IUserService, UserService>();
+builder.Services.AddScoped<CreateUserService>();
+builder.Services.AddScoped<IUserService, EfcoreUserService>();
 //builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPublicUserService, PublicUserService>();
-builder.Services.AddTransient<IMessageLastSeenService, RedisMessageLastSeenService>();
-builder.Services.AddTransient<IUserPresenceCacheService, MemCacheUserPresence>();
+builder.Services.AddScoped<IMessageLastSeenService, RedisMessageLastSeenService>();
+builder.Services.AddScoped<IUserPresenceCacheService, MemCacheUserPresence>();
+builder.Services.AddScoped<UserMetadataService>();
+builder.Services.AddScoped<IUserMetaDataCacheService, UserMetadataRedisCacheService>();
+builder.Services.AddTransient<Lazy<IUserService>>(provider => new Lazy<IUserService>(() => provider.GetRequiredService<IUserService>()));
 builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();
 builder.Services.AddEndpointsApiExplorer();
 

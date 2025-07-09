@@ -11,9 +11,9 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
         private readonly TimeSpan _defaultTtl = TimeSpan.FromHours(1);
         private readonly TimeSpan _notFoundTtl = TimeSpan.FromMinutes(5);
         string GetMetadataKey(string userId) => $"user:{userId}:metadata";
-        public UserMetadataRedisCacheService(IConnectionMultiplexer redisConnection)
+        public UserMetadataRedisCacheService(AppRedisService appRedis)
         {
-            _redis = redisConnection.GetDatabase();
+            _redis = appRedis.GetDatabase();
         }
 
         public async Task<UserMetadata?> GetAsync(string userId)
