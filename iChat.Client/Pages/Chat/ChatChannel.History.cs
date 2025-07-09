@@ -8,6 +8,11 @@
         private int _currentBucketIndex = 0;
         private async Task TriggerLoadOlderHistoryRequest()
         {
+            if (_currentBucketIndex == 0)
+            {
+                _isOldHistoryRequestButtonDisabled = true;
+                return;
+            }
             if (_isLoading || _isOldHistoryRequestButtonDisabled)
                 return;
 

@@ -85,8 +85,16 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
                 return BadRequest("Invalid channel ID.");
             if (bucketId < 0)
                 return BadRequest("Invalid bucket ID.");
-            var bucket = await readService.GetBucketById(channelId, bucketId);
-            return Ok(bucket);
+            try
+            {
+                var bucket = await readService.GetBucketById(channelId, bucketId);
+                return Ok(bucket);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error retrieving bucket: {ex.Message}");
+            }
+            
         }
         
     }

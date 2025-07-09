@@ -90,9 +90,10 @@ namespace iChat.Client.Pages.Chat
                 _currentBucketIndex = latest[0].BucketId;
                 await ChatService.JoinRoomAsync(ServerId);
                 StateHasChanged();
+                checkScrollToBotoom = checkScrollToTop = _isOldHistoryRequestButtonDisabled = checkScrollToTop = _currentBucketIndex == 0;
                 await Task.Delay(125);
                 await ScrollToMessage(loc);
-                checkScrollToTop = _currentBucketIndex == 0;
+               
             }
         }
 
