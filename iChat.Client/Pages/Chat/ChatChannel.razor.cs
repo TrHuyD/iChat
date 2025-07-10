@@ -1,5 +1,6 @@
 ﻿using iChat.Client.Data;
 using iChat.Client.DTOs.Chat;
+using iChat.Client.Services.UserServices;
 using iChat.Client.Services.UserServices.Chat;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
@@ -26,7 +27,7 @@ namespace iChat.Client.Pages.Chat
         private string _currentUserId = "";
         private bool _shouldScrollToBottom = false;
         private readonly Channel<ChatMessageDtoSafe> _sendQueue = Channel.CreateUnbounded<ChatMessageDtoSafe>();
-        
+
         private Task? _sendQueueTask;
         private SortedList<long, RenderedMessage> _messages = new();
         private List<MessageGroup> _groupedMessages = new();
@@ -77,8 +78,10 @@ namespace iChat.Client.Pages.Chat
                 {
                     _currentServerId = ServerId;
                     _currentServer = _ServerCacheManager.GetServer(_currentServerId);
+                  await  _ServerCacheManager.OnServerChange(ServerId);
                 }
-                _currentChannel=_currentServer.Channels.FirstOrDefault(c => c.Id == RoomId);
+                await _ServerCacheManager.OnChannelChange(RoomId);
+                _currentChannel =_currentServer.Channels.FirstOrDefault(c => c.Id == RoomId);
                 _currentRoomId = RoomId;
                 LoadState();
                 checkScrollToBotoom = false;

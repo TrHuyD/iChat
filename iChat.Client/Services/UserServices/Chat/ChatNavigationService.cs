@@ -1,6 +1,9 @@
-﻿using iChat.Client.Services.Auth;
+﻿using iChat.Client.Data.Chat;
+using iChat.Client.Services.Auth;
 using iChat.Client.Services.UI;
+using iChat.Client.Services.UserServices.Chat.Util;
 using iChat.DTOs.Users.Messages;
+using Microsoft.AspNetCore.Components;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,11 +22,15 @@ namespace iChat.Client.Services.UserServices
         public event Action OnChatServersChanged;
         public JwtAuthHandler _http;
         private readonly ToastService _toastService;
+        private readonly LastVisitedChannelService _channelTracker;
+        public event Action<ChatServerDtoUser> ServerChanged;
+        public event Action<string> ChannelChanged;
 
-        public ChatNavigationService(JwtAuthHandler jwtAuthHandler,ToastService toast)
+        public ChatNavigationService(JwtAuthHandler jwtAuthHandler,ToastService toast, LastVisitedChannelService channelTracker)
         {   
             _http = jwtAuthHandler ?? throw new ArgumentNullException(nameof(jwtAuthHandler));
             _toastService = toast ?? throw new ArgumentNullException(nameof(toast));
+            _channelTracker = channelTracker ;
         }
 
         /// <summary>
@@ -157,16 +164,45 @@ namespace iChat.Client.Services.UserServices
         {
             return ChatServers.FirstOrDefault(s => s.Id == serverId);
         }
-        Dictionary<string,string> CachedInviteLink= new Dictionary<string, string>();
-        public async Task<string> GetInviteLink(string serverId)
+     
+        public async Task<bool> HasServer(string serverId)
         {
-            if(CachedInviteLink.TryGetValue(serverId, out var cachedLink))
+            if (string.IsNullOrEmpty(serverId))
+            return false;
+            return ChatServers.Any(s => s.Id == serverId);
+        }
+        public async Task NavigateToServer(string serverId , NavigationManager nav)
+        {
+            var server = GetServer(serverId);
+            if (server == null || server.Channels.Count == 0)
+                return;
+
+            var last = await _channelTracker.GetLastChannelAsync(serverId);
+            var target = server.Channels.FirstOrDefault(c => c.Id == last)
+                      ?? server.Channels.OrderBy(c => c.Order).FirstOrDefault();
+
+            if (target != null)
             {
-                return cachedLink;
+                await _channelTracker.SaveLastChannelAsync(serverId, target.Id);
+                nav.NavigateTo($"/chat/{serverId}/{target.Id}");
             }
-            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/Chat/{serverId}/InviteLink");
-            var response = await _http.SendAuthAsync(request);
-            return "";
+            ServerChanged?.Invoke(server);
+
+        }
+        public async Task NavigateToChannel(string serverId, string channelId,  NavigationManager nav)
+        {
+            
+            await _channelTracker.SaveLastChannelAsync(serverId, channelId);
+            nav.NavigateTo($"/chat/{serverId}/{channelId}");
+        }
+        public async Task OnServerChange(string serverId)
+        {
+            var server = GetServer(serverId);
+            ServerChanged?.Invoke(server);
+        }
+        public async Task OnChannelChange(string channelId)
+        {
+            ChannelChanged?.Invoke(channelId);
         }
     }
 }

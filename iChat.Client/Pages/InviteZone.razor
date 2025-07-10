@@ -1,17 +1,83 @@
 ﻿@page "/inv/{InviteId}"
+@using iChat.Client.Services.UserServices
+@using iChat.Client.DTOs.Chat
 @inject NavigationManager Navigation
-
+@inject InviteService InviteService
+@inject ChatNavigationService chatNavigation
 @code {
     [Parameter] public string InviteId { get; set; } = string.Empty;
-    private ChatServerMetadata Server = new ChatServerMetadata
-    {
-        Name = "123",
-        AvatarUrl = "https://media.tenor.com/vNB3iUXsxnQAAAAe/loading-gif.png"
-    };
 
-    private void Continue() => Navigation.NavigateTo("/chat");
+    private ChatServerMetadata? Server;
+    private bool _loading = true;
+    private bool _failed = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Server = await InviteService.GetServerFromInvite(InviteId);
+            if(await chatNavigation.HasServer(Server.Id))
+            {
+                await chatNavigation.NavigateToServer(Server.Id, Navigation);
+                return;
+            }
+            if (Server == null)
+            {
+                _failed = true;
+            }
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"Error fetching invite: {ex.Message}");
+            _failed = true;
+        }
+        _loading = false;
+
+        StateHasChanged();
+    }
+
+    private async Task Continue()
+    {
+        var serverId = await InviteService.UseInvite(InviteId);
+        if (serverId != null)
+        {
+            Navigation.NavigateTo($"/chat/{serverId}");
+        }
+        else
+        {
+            _failed = true;
+        }
+    }
+
     private void ExitToMainMenu() => Navigation.NavigateTo("/");
 }
+
+<div class="overlay" @onclick="ExitToMainMenu">
+    <div class="launch-box" @onclick:stopPropagation>
+        @if (_loading)
+        {
+            <img src="https://media.tenor.com/vNB3iUXsxnQAAAAe/loading-gif.png" class="server-avatar" alt="Loading" />
+            <div class="launch-title">Loading...</div>
+        }
+        else if (_failed || Server == null)
+        {
+            <img src="" class="server-avatar" alt="Error" />
+            <div class="launch-title">Invalid or Expired Invite</div>
+            <div class="launch-desc">This invite may be invalid or has expired. Please check the link or ask for a new one.</div>
+            <button class="launch-button" @onclick="ExitToMainMenu">Return to Home</button>
+        }
+        else
+        {
+            <img src="@Server.AvatarUrl" class="server-avatar" alt="Server Avatar" />
+            <div class="launch-title">@Server.Name</div>
+            <div class="launch-desc">
+                You've been invited to join <strong>@Server.Name</strong>. Click continue to join the server.
+            </div>
+            <button class="launch-button" @onclick="Continue">Continue</button>
+        }
+    </div>
+</div>
+
 <style>
     html, body {
         height: 100%;
@@ -75,14 +141,3 @@
             background-color: #4752c4;
         }
 </style>
-
-<div class="overlay" @onclick="ExitToMainMenu">
-    <div class="launch-box" @onclick:stopPropagation>
-        <img src="@Server.AvatarUrl" class="server-avatar" alt="Server Avatar" />
-        <div class="launch-title">@Server.Name Server</div>
-        <div class="launch-desc">
-            We've beamed the info to your app. You can close this tab or continue with the web version.
-        </div>
-        <button class="launch-button" @onclick="Continue">Continue</button>
-    </div>
-</div>

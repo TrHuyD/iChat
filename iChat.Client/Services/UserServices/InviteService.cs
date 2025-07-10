@@ -23,6 +23,7 @@ namespace iChat.Client.Services.UserServices
                 var response = await _http.SendAuthAsync(request);
                 if(!response.IsSuccessStatusCode)
                 {
+                    Console.WriteLine("Failed to parse invite link: {StatusCode}", response.StatusCode);
                     _logger.LogWarning("Failed to parse invite link: {StatusCode}", response.StatusCode);
                     return null;
                 }
@@ -31,11 +32,12 @@ namespace iChat.Client.Services.UserServices
             }
             catch (HttpRequestException ex)
             {
+                Console.WriteLine("Failed to parse invite link: {Message}", ex.Message);
                 _logger.LogWarning("Failed to parse invite link: {Message}", ex.Message);
                 return null;
             }
         }
-        public async Task<long?> UseInvite(string inviteId)
+        public async Task<string?> UseInvite(string inviteId)
         {
             try
             {
@@ -86,7 +88,7 @@ namespace iChat.Client.Services.UserServices
 
         private class InviteJoinResult
         {
-            public long ServerId { get; set; }
+            public string ServerId { get; set; }
         }
     }
 

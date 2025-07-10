@@ -18,7 +18,13 @@ namespace iChat.Client.Layout
         private bool showCreateServer = false;
         private bool showCreateChannel = false;
         private ChatServerDtoUser? _selectedServer;
+        private string _selectedChannelId= string.Empty;
         private string SelectedServerId => _selectedServer?.Id ?? string.Empty;
+        protected override async Task OnInitializedAsync()
+        {
+            ChatNavService.ServerChanged += OnServerChange;
+            ChatNavService.ChannelChanged += OnChannelChange;
+        }
         private void Reset()
         {
             _showServerMenu = false;
@@ -72,30 +78,39 @@ namespace iChat.Client.Layout
         private void ClearServerSelection()
         {
             _selectedServer = null;
+            Navigation.NavigateTo("/");
             StateHasChanged();
         }
-        private async Task ShowChannelList(ChatServerDtoUser server)
+
+        public async Task ShowChannelList(string serverId)
+        {
+            var server = ChatNavService.GetServer(serverId);
+            if (server == null) return;
+            await ChatNavService.NavigateToServer(serverId, Navigation);
+           
+        }
+        public void OnServerChange(ChatServerDtoUser server)
         {
             _selectedServer = server;
-            var last = await ChannelTracker.GetLastChannelAsync(server.Id);
-            var target = server.Channels.FirstOrDefault(c => c.Id == last) ??
-                         server.Channels.OrderBy(c => c.Order).FirstOrDefault();
-            if (target != null)
-            {
-                await ChannelTracker.SaveLastChannelAsync(server.Id, target.Id);
-                Navigation.NavigateTo($"/chat/{server.Id}/{target.Id}");
-            }
             StateHasChanged();
         }
+        public void OnChannelChange(string channelId)
+        {
+            _selectedChannelId= channelId;
+            StateHasChanged();
+        }
+
         private async Task NavigateToChannel(string serverId, string channelId)
         {
-            await ChannelTracker.SaveLastChannelAsync(serverId, channelId);
-            Navigation.NavigateTo($"/chat/{serverId}/{channelId}");
+            await ChatNavService.NavigateToChannel(serverId, channelId, Navigation);
         }
         public void Dispose()
         {
             LoadingService.OnAppReadyStateChanged -= StateHasChanged;
             ChatNavService.OnChatServersChanged -= StateHasChanged;
+            ChatNavService.ServerChanged -= OnServerChange;
+            ChatNavService.ChannelChanged -= OnChannelChange;
+
         }
     }
 }

@@ -43,7 +43,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             try
             {
                 var serverId = await _service.ParseInviteLink(inviteId);
-                return Ok(_localcache.GetServerAsync(serverId,false));
+                return Ok(await _localcache.GetServerAsync(serverId,false));
             }
             catch (InvalidOperationException ex)
             {
@@ -62,7 +62,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                 var serverId = await _service.ParseInviteLink(inviteId);
                 await _joinService.Join(long.Parse(userId), long.Parse(serverId));
-                return Ok(new { serverId });
+                return Ok();
             }
             catch (InvalidOperationException ex)
             {

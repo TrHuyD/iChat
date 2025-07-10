@@ -117,6 +117,10 @@
     margin-right: 8px;
     color: #8e9297;
 }
+.channel-item.active {
+    background-color: #404249;
+    color: white;
+}
 
 .channel-name {
     font-size: 14px;
@@ -232,4 +236,3 @@
     .context-menu-item .danger i {
         color: #f04747;
     }
-

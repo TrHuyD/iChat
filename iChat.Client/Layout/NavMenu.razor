@@ -37,7 +37,7 @@
             @foreach (var server in ChatNavService.ChatServers)
             {
                 <div class="server-icon @(_selectedServer?.Id == server.Id ? "active" : "")" 
-                     @onclick="() => ShowChannelList(server)"
+                     @onclick="() => ShowChannelList(server.Id)"
                      @oncontextmenu="(e) => ShowServerContextMenu(e, server)"
                      @oncontextmenu:preventDefault="true">
                     <img src="@server.AvatarUrl" alt="@server.Name" />
@@ -71,7 +71,8 @@
                         <div class="channel-list">
                             @foreach (var channel in _selectedServer.Channels.OrderBy(c => c.Order))
                             {
-                                <div class="channel-item" @onclick="() => NavigateToChannel(_selectedServer.Id, channel.Id)">
+                                <div class="channel-item @(channel.Id == _selectedChannelId ? "active" : "")" 
+                                     @onclick="() => NavigateToChannel(_selectedServer.Id, channel.Id)">
                                     <span class="channel-prefix">#</span>
                                     <span class="channel-name">@channel.Name</span>
                                 </div>
