@@ -215,3 +215,21 @@
         .user-box .user-actions i:hover {
             color: #ffffff;
         }
+
+
+.toggle-switch.active .toggle-slider {
+    transform: translateX(16px);
+}
+
+.context-menu-item.danger {
+    color: #f04747;
+}
+
+    .context-menu-item.danger:hover {
+        background-color: #4e1e1e;
+    }
+
+    .context-menu-item .danger i {
+        color: #f04747;
+    }
+

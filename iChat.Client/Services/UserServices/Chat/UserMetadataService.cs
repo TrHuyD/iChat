@@ -17,7 +17,10 @@ namespace iChat.Client.Services.UserServices.Chat
         private readonly System.Timers.Timer _timer;
         public event Action<List<UserMetadataReact>>? _onMetadataUpdated;
         JwtAuthHandler _https;
-
+        public IEnumerable<UserMetadataReact> GetAll()
+        {
+                       return _cache.Values;
+        }
         public UserMetadataService(JwtAuthHandler jwtAuthHandler)
         {
             _https = jwtAuthHandler;

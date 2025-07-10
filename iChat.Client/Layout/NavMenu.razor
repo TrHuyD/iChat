@@ -1,4 +1,6 @@
-﻿@using iChat.Client.Modals.User
+﻿@using iChat.Client.DTOs.Chat
+@using iChat.Client.Modals.Servers
+@using iChat.Client.Modals.User
 @using iChat.Client.Services.UserServices
 @using iChat.Client.Services.UserServices.Chat
 @using iChat.Client.Services.UserServices.Chat.Util
@@ -12,11 +14,15 @@
 @inject ChatMessageCacheService MessageManager
 @inject ChatSignalRClientService ChatService
 @inject UserMetadataService _userMetadataService
+@inject InviteService InviteService
 @inject IJSRuntime JS
 @inject iChat.Client.Services.Auth.JwtAuthHandler _https
 @implements IDisposable
 
-<div class="discord-nav">
+
+
+
+<div class="discord-nav" @onclick="HideContextMenu">
     <!-- Server List (Left Sidebar) -->
     <div class="server-sidebar">
         <!-- Home Button -->
@@ -30,73 +36,73 @@
         <div class="server-list">
             @foreach (var server in ChatNavService.ChatServers)
             {
-                <div class="server-icon @(_selectedServer?.Id == server.Id ? "active" : "")" @onclick="() => ShowChannelList(server)">
+                <div class="server-icon @(_selectedServer?.Id == server.Id ? "active" : "")" 
+                     @onclick="() => ShowChannelList(server)"
+                     @oncontextmenu="(e) => ShowServerContextMenu(e, server)"
+                     @oncontextmenu:preventDefault="true">
                     <img src="@server.AvatarUrl" alt="@server.Name" />
                 </div>
             }
         </div>
-
         <!-- Add Server Button -->
         <div class="server-icon add-server" @onclick="() => showCreateServer = true">
             <i class="fas fa-plus"></i>
         </div>
     </div>
-
+    
     <!-- Channel Sidebar (with resizable wrapper) -->
     <div class="channel-sidebar-wrapper">
-    <div class="channel-sidebar">
-        @if (_selectedServer != null)
-        {
+        <div class="channel-sidebar">
+            @if (_selectedServer != null)
+            {
+                <div class="sidebar-header">
+                    <h3>@_selectedServer.Name</h3>
+                    <button class="sidebar-toggle" @onclick:stopPropagation @onclick="(e) => ShowServerDropdown(e)">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
 
-            <div class="sidebar-header">
-                <h3>@_selectedServer.Name</h3>
-                             <button class="sidebar-toggle" @onclick="ClearServerSelection">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+                <div class="channel-scrollable">
+                    <div class="channel-category">
+                        <div class="category-header">
+                            <span>CHANNELS</span>
+                        </div>
 
-            <div class="channel-scrollable">
-                <div class="channel-category">
-                    <div class="category-header">
-                        <span>CHANNELS</span>
-                    </div>
+                        <div class="channel-list">
+                            @foreach (var channel in _selectedServer.Channels.OrderBy(c => c.Order))
+                            {
+                                <div class="channel-item" @onclick="() => NavigateToChannel(_selectedServer.Id, channel.Id)">
+                                    <span class="channel-prefix">#</span>
+                                    <span class="channel-name">@channel.Name</span>
+                                </div>
+                            }
 
-                    <div class="channel-list">
-                        @foreach (var channel in _selectedServer.Channels.OrderBy(c => c.Order))
-                        {
-                            <div class="channel-item" @onclick="() => NavigateToChannel(_selectedServer.Id, channel.Id)">
-                                <span class="channel-prefix">#</span>
-                                <span class="channel-name">@channel.Name</span>
-                            </div>
-                        }
-
-                        @if (_selectedServer.isadmin)
-                        {
-                            <div class="channel-item add-channel" @onclick="() => showCreateChannel = true">
-                                <span class="channel-prefix">+</span>
-                                <span class="channel-name">Create Channel</span>
-                            </div>
-                        }
+                            @if (_selectedServer.isadmin)
+                            {
+                                <div class="channel-item add-channel" @onclick="() => showCreateChannel = true">
+                                    <span class="channel-prefix">+</span>
+                                    <span class="channel-name">Create Channel</span>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
-        }
-        else
-        {
-            <div class="sidebar-header">
-                <h3>Home</h3>
-            </div>
-            <div class="channel-scrollable">
-                <div class="channel-category">
-                    <div class="channel-list">
-                        <div class="channel-item">Friends / Placeholder</div>
+            }
+            else
+            {
+                <div class="sidebar-header">
+                    <h3>Home</h3>
+                </div>
+                <div class="channel-scrollable">
+                    <div class="channel-category">
+                        <div class="channel-list">
+                            <div class="channel-item">Friends / Placeholder</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     </div>
-</div>
-
 
     <!-- User Box -->
     <div class="user-box">
@@ -114,61 +120,19 @@
 </div>
 
 
+
+
+<ServerMenuModal IsVisible="@_showServerMenu" 
+                 IsVisibleChanged="@((val) => _showServerMenu = val)"
+                 Server="@_contextMenuServer"
+                 ContextMenuX="@_contextMenuX"
+                 ContextMenuY="@_contextMenuY"
+                 OnLeaveServer="@HandleLeaveServer"
+                 OnInviteUser="@HandleInviteUser" />
+
 <CreateServerModal IsVisible="@showCreateServer" IsVisibleChanged="@((val) => showCreateServer = val)" />
 <CreateChannelModal IsVisible="@showCreateChannel" IsVisibleChanged="@((val) => showCreateChannel = val)" ServerId="@SelectedServerId" />
-@code {
-    private UserProfileDto userProfileDto = new UserProfileDto();
-    private bool showCreateServer = false;
-    private bool showCreateChannel = false;
-    private ChatServerDtoUser? _selectedServer;
-    private string SelectedServerId => _selectedServer?.Id ?? string.Empty;
-
-    private bool _showServerMenu = false;
-    private string? _inviteLink;
-    private string _searchQuery = "";
-    private List<UserMetadata> _filteredUsers = new();
 
 
-    protected override void OnInitialized()
-    {
-        LoadingService.OnAppReadyStateChanged += StateHasChanged;
-        ChatNavService.OnChatServersChanged += StateHasChanged;
-    }
 
-    private void ClearServerSelection()
-    {
-        _selectedServer = null;
-        StateHasChanged();
-    }
 
-    private async Task ShowChannelList(ChatServerDtoUser server)
-    {
-        // Always select the server first
-        _selectedServer = server;
-
-        // Then navigate to the last visited channel or default channel
-        var last = await ChannelTracker.GetLastChannelAsync(server.Id);
-        var target = server.Channels.FirstOrDefault(c => c.Id == last) ??
-                     server.Channels.OrderBy(c => c.Order).FirstOrDefault();
-
-        if (target != null)
-        {
-            await ChannelTracker.SaveLastChannelAsync(server.Id, target.Id);
-            Navigation.NavigateTo($"/chat/{server.Id}/{target.Id}");
-        }
-
-        StateHasChanged();
-    }
-
-    private async Task NavigateToChannel(string serverId, string channelId)
-    {
-        await ChannelTracker.SaveLastChannelAsync(serverId, channelId);
-        Navigation.NavigateTo($"/chat/{serverId}/{channelId}");
-    }
-
-    public void Dispose()
-    {
-        LoadingService.OnAppReadyStateChanged -= StateHasChanged;
-        ChatNavService.OnChatServersChanged -= StateHasChanged;
-    }
-}

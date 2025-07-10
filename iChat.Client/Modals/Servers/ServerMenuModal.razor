@@ -1,0 +1,92 @@
+﻿@using iChat.Client.DTOs.Chat
+@using iChat.Client.Services.UserServices
+@using iChat.Client.Services.UserServices.Chat
+@using iChat.DTOs.Users.Messages
+@inject InviteService InviteService
+@inject IJSRuntime JS
+
+@if (IsVisible && Server != null)
+{
+    <div class="discord-context-menu"
+         style="position: fixed; top: @(ContextMenuY)px; left: @(ContextMenuX)px; z-index: 1000;"
+         @onclick:stopPropagation>
+
+        <div class="context-menu-header">
+            <span>@Server.Name</span>
+            <button class="close-btn" @onclick="HideContextMenu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        @if (Server.isadmin)
+        {
+            <div class="context-menu-item" @onclick="ShowInviteSection">
+                <i class="fas fa-user-plus"></i>
+                <span>Invite People</span>
+            </div>
+            <div class="context-menu-item" @onclick="() => { }">
+                <i class="fas fa-edit"></i>
+                <span>Edit Server Profile</span>
+            </div>
+        }
+
+        <div class="context-menu-separator"></div>
+
+        <div class="context-menu-item danger" @onclick="LeaveServer">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Leave Server</span>
+        </div>
+    </div>
+}
+
+<!-- Invite Modal -->
+@if (_inviteSectionVisible)
+{
+    <div class="invite-overlay" @onclick="() => _inviteSectionVisible = false">
+        <div class="invite-modal" @onclick:stopPropagation>
+            <div class="invite-header">
+                <h3>Invite friends to @Server?.Name</h3>
+                <button class="close-btn" @onclick="() => _inviteSectionVisible = false">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="invite-content">
+                <input class="search-input" placeholder="Search for friends" @bind="_searchQuery" @bind:event="oninput" />
+
+                <div class="user-list">
+                    @foreach (var user in _filteredUsers)
+                    {
+                        <div class="user-entry">
+                            <div class="user-avatar">
+                                <img src="@user.AvatarUrl" alt="@user.DisplayName" />
+                            </div>
+                            <div class="user-info">
+                                <span class="user-name">@user.DisplayName</span>
+                                <span class="user-status">Online</span>
+                            </div>
+                            <button class="invite-btn" @onclick="() => InviteUser(user.UserId)">
+                                Invite
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                <div class="invite-link-section">
+                    <label>Or, send a server invite link to a friend</label>
+                    <div class="invite-link-box">
+                        @if (!string.IsNullOrEmpty(_inviteLink))
+                        {
+                            <input type="text" readonly value="@_inviteLink" />
+                            <button class="copy-btn" @onclick="CopyToClipboard">Copy</button>
+                        }
+                        else
+                        {
+                            <button class="generate-btn" @onclick="GenerateInviteLink">Generate Invite Link</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

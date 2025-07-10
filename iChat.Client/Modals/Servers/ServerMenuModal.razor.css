@@ -1,0 +1,252 @@
+﻿.discord-context-menu {
+    background-color: #2f3136;
+    border-radius: 8px;
+    padding: 8px 0;
+    width: 240px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    color: white;
+    font-size: 14px;
+}
+
+.context-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid #202225;
+    font-weight: bold;
+    font-size: 14px;
+    color: #ffffff;
+}
+
+    .context-menu-header .close-btn {
+        background: none;
+        border: none;
+        color: #b9bbbe;
+        cursor: pointer;
+    }
+
+.context-menu-item {
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+    .context-menu-item:hover {
+        background-color: #40444b;
+    }
+
+    .context-menu-item i {
+        margin-right: 8px;
+    }
+
+    .context-menu-item span {
+        flex-grow: 1;
+    }
+
+    .context-menu-item .shortcut-icon,
+    .context-menu-item .boost-indicator {
+        color: #b9bbbe;
+    }
+
+.context-menu-separator {
+    height: 1px;
+    background-color: #202225;
+    margin: 8px 0;
+}
+
+.toggle-item {
+    justify-content: space-between;
+}
+
+.toggle-switch {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background-color: #4f545c;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: background-color 0.2s ease;
+}
+
+    .toggle-switch.active {
+        background-color: #3ba55d;
+    }
+
+.toggle-slider {
+    width: 16px;
+    height: 16px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+
+.toggle-switch.active .toggle-slider {
+    transform: translateX(16px);
+}
+
+.context-menu-item.danger {
+    color: #f04747;
+}
+
+    .context-menu-item.danger:hover {
+        background-color: #4e1e1e;
+    }
+
+    .context-menu-item .danger i {
+        color: #f04747;
+    }
+
+.invite-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+
+.invite-modal {
+    background-color: #2f3136;
+    border-radius: 8px;
+    width: 480px;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow: auto;
+    padding: 16px;
+    color: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.invite-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+    .invite-header h3 {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .invite-header .close-btn {
+        background: none;
+        border: none;
+        color: #b9bbbe;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+.invite-content .search-input {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: none;
+    background-color: #202225;
+    color: white;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.user-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: #202225 #2f3136;
+}
+
+.user-entry {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+    .user-entry:hover {
+        background-color: #3a3c43;
+    }
+
+.user-avatar img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.user-info {
+    flex-grow: 1;
+    margin-left: 12px;
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+}
+
+.user-name {
+    color: white;
+    font-weight: 500;
+}
+
+.user-status {
+    color: #72767d;
+    font-size: 11px;
+}
+
+.invite-btn {
+    background-color: #5865f2;
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+    .invite-btn:hover {
+        background-color: #4752c4;
+    }
+
+.invite-link-section {
+    margin-top: 12px;
+}
+
+.invite-link-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+    .invite-link-box input[type="text"] {
+        flex-grow: 1;
+        background-color: #202225;
+        border: none;
+        padding: 8px;
+        border-radius: 4px;
+        color: white;
+    }
+
+.copy-btn,
+.generate-btn {
+    background-color: #5865f2;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+    .copy-btn:hover,
+    .generate-btn:hover {
+        background-color: #4752c4;
+    }

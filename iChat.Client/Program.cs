@@ -93,5 +93,6 @@ builder.Services.AddScoped<SignalRConnectionFactory>();
 builder.Services.AddScoped<ChatSignalRClientService>();
 builder.Services.AddScoped< ChatNavigationService>();
 builder.Services.AddScoped<ChatMessageCacheService>();
+builder.Services.AddScoped<InviteService>();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 await builder.Build().RunAsync();
