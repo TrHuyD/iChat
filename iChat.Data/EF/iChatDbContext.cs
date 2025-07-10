@@ -32,6 +32,7 @@ namespace iChat.Data.EF
             builder.ApplyConfiguration(new ChatChannelConfiguration());
             builder.ApplyConfiguration(new ChannelPermissionOverrideConfiguration());
             builder.ApplyConfiguration(new BucketConfiguration());
+            builder.ApplyConfiguration(new ServerBanConfiguration());
             //builder.seed();
             base.OnModelCreating(builder);
         }
@@ -48,5 +49,6 @@ namespace iChat.Data.EF
 
         public DbSet<UserChatRole> UserChatRoles { get; set; }
         public DbSet<UserChatServer> UserChatServers { get; set; }
+        public DbSet<ServerBan> ServerBans { get; set; }
     }
 }

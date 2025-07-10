@@ -34,4 +34,8 @@
     <ProjectReference Include="..\iChat.ViewModels\iChat.ViewModels.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Entities\Servers\NewFolder\" />
+  </ItemGroup>
+
 </Project>

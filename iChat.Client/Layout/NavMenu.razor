@@ -27,7 +27,6 @@
                     <img src="@server.AvatarUrl" alt="@server.Name" />
                 </div>
             }
-           
         </div>
 
         <!-- Add Server Button -->
@@ -36,46 +35,78 @@
         </div>
     </div>
 
-    <!-- Channel List Sidebar - Only show when a server is selected -->
-    @if (_selectedServer != null)
-    {
-        <div class="channel-sidebar">
+    <!-- Channel Sidebar (with resizable wrapper) -->
+    <div class="channel-sidebar-wrapper">
+    <div class="channel-sidebar">
+        @if (_selectedServer != null)
+        {
             <div class="sidebar-header">
                 <h3>@_selectedServer.Name</h3>
-                <button class="sidebar-toggle" @onclick="ClearServerSelection">
-                    <i class="fas fa-times"></i>
-                </button>
             </div>
 
-            <div class="channel-category">
-                <div class="category-header">
-                    <span>CHANNELS</span>
-                </div>
+            <div class="channel-scrollable">
+                <div class="channel-category">
+                    <div class="category-header">
+                        <span>CHANNELS</span>
+                    </div>
 
-                <div class="channel-list">
-                    @foreach (var channel in _selectedServer.Channels.OrderBy(c => c.Order))
-                    {
-                        <div class="channel-item" @onclick="() => NavigateToChannel(_selectedServer.Id, channel.Id)">
-                            <span class="channel-prefix">#</span>
-                            <span class="channel-name">@channel.Name</span>
-                        </div>
-                    }
-                    @if (_selectedServer.isadmin)
-                    {
-                        <div class="channel-item add-channel" @onclick="() => showCreateChannel = true">
-                            <span class="channel-prefix">+</span>
-                            <span class="channel-name">Create Channel</span>
-                        </div>
-                    }
+                    <div class="channel-list">
+                        @foreach (var channel in _selectedServer.Channels.OrderBy(c => c.Order))
+                        {
+                            <div class="channel-item" @onclick="() => NavigateToChannel(_selectedServer.Id, channel.Id)">
+                                <span class="channel-prefix">#</span>
+                                <span class="channel-name">@channel.Name</span>
+                            </div>
+                        }
+
+                        @if (_selectedServer.isadmin)
+                        {
+                            <div class="channel-item add-channel" @onclick="() => showCreateChannel = true">
+                                <span class="channel-prefix">+</span>
+                                <span class="channel-name">Create Channel</span>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
-        </div>
-    }
+        }
+        else
+        {
+            <div class="sidebar-header">
+                <h3>Home</h3>
+            </div>
+            <div class="channel-scrollable">
+                <div class="channel-category">
+                    <div class="channel-list">
+                        <div class="channel-item">Friends / Placeholder</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 </div>
+
+
+    <!-- User Box -->
+    <div class="user-box">
+        <img class="avatar" src="@userProfileDto.AvatarUrl" />
+        <div class="user-info">
+            <div class="username">@userProfileDto.Name</div>
+            <div class="status">Online</div>
+        </div>
+        <div class="user-actions">
+            <i class="fas fa-microphone-slash"></i>
+            <i class="fas fa-headphones"></i>
+            <i class="fas fa-cog"></i>
+        </div>
+    </div>
+</div>
+
 
 <CreateServerModal IsVisible="@showCreateServer" IsVisibleChanged="@((val) => showCreateServer = val)" />
 <CreateChannelModal IsVisible="@showCreateChannel" IsVisibleChanged="@((val) => showCreateChannel = val)" ServerId="@SelectedServerId" />
 @code {
+    private UserProfileDto userProfileDto = new UserProfileDto();
     private bool showCreateServer = false;
     private bool showCreateChannel = false;
     private ChatServerDto? _selectedServer;

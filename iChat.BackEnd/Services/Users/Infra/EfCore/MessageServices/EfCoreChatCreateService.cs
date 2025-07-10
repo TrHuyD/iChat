@@ -87,7 +87,8 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 Name = serverName,
                 CreatedAt = serverId.CreatedAt,
                 ChatChannels = new List<ChatChannel>(),
-                AdminId = adminUserId
+                AdminId = adminUserId,
+                Avatar= "https://cdn.discordapp.com/embed/avatars/0.png",
             };
 
             var generalChannel = new ChatChannel

@@ -68,6 +68,10 @@ public class UserStateService
             throw new InvalidOperationException("User profile is not loaded yet.");
         return _userProfile.Id;
     }
+    public UserProfileDto? GetUserProfile()
+    {
+        return _userProfile;
+    }
     public async Task<UserProfileDto?> GetUserAsync()
     {
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/users/profile");

@@ -1,8 +1,10 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.Data.EF;
+using iChat.Data.Entities.Servers;
 using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq.Expressions;
 
 namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 {
@@ -40,7 +42,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 {
                     Id = ucs.ChatServer.Id.ToString(),
                     Name = ucs.ChatServer.Name,
-                    AvatarUrl = ucs.ChatServer.Avatar ?? "https://cdn.discordapp.com/embed/avatars/0.png",
+                    AvatarUrl = ucs.ChatServer.Avatar ,
                     Position = ucs.Order,
                     isadmin = ucs.ChatServer.AdminId == userId,
                     Channels = ucs.ChatServer.ChatChannels
@@ -54,6 +56,23 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 })
                 .ToListAsync();
         }
+        public static Expression<Func<UserChatServer, ChatServerDto>> AsChatServerDto(long userId) =>
+                ucs => new ChatServerDto
+                {
+                    Id = ucs.ChatServer.Id.ToString(),
+                    Name = ucs.ChatServer.Name,
+                    AvatarUrl = ucs.ChatServer.Avatar,
+                    Position = ucs.Order,
+                    isadmin = ucs.ChatServer.AdminId == userId,
+                    Channels = ucs.ChatServer.ChatChannels
+                        .Select(c => new ChatChannelDtoLite
+                        {
+                            Id = c.Id.ToString(),
+                            Name = c.Name,
+                            Order = c.Order
+                        })
+                        .ToList()
+                };
 
         public async Task<List<long>> GetServerMembersAsync(long serverId)
         {

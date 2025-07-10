@@ -113,9 +113,9 @@ new ValidatorsHelper(builder);
 builder.Services.AddTransient<IChatServerEditService,EfCoreChatServerEditService>();
 //builder.Services.AddTransient(provider =>
 //    new Lazy<Neo4jChatListingService>(() => provider.GetRequiredService<Neo4jChatListingService>()));
-builder.Services.AddTransient<IChatListingService,EfCoreChatListingService>();
-builder.Services.AddTransient<IMessageDbReadService, EfCoreMessageReadService>();
-builder.Services.AddTransient<IMessageDbWriteService, EfCoreMessageWriteService>();
+builder.Services.AddScoped<IChatListingService,EfCoreChatListingService>();
+builder.Services.AddScoped<IMessageDbReadService, EfCoreMessageReadService>();
+builder.Services.AddScoped<IMessageDbWriteService, EfCoreMessageWriteService>();
 builder.Services.AddSingleton<MessageTimeLogger>();
 builder.Services.AddSingleton<MessageWriteQueueService>();
 builder.Services.AddHostedService<BucketingPrediodicService>();
@@ -132,10 +132,13 @@ builder.Services.AddTransient<IChatReadMessageService, Test_UserChatReadMessageS
 
 
 // Database Context
-builder.Services.AddDbContext<iChatDbContext>(options =>
-    options.UseNpgsql($"{builder.Configuration.GetValue<string>("PostgreSQL:ConnectionString")}")
-     .LogTo(Console.WriteLine, LogLevel.Information));
-    
+builder.Services.AddDbContext<iChatDbContext>(
+    options =>
+        options.UseNpgsql(builder.Configuration.GetValue<string>("PostgreSQL:ConnectionString"))
+               .LogTo(Console.WriteLine, LogLevel.Information),
+    ServiceLifetime.Scoped 
+);
+
 
 
 // Identity Configuration with Cookie Authentication
@@ -168,7 +171,7 @@ new SqlAuthBuilderHelper().AddService(builder);
 builder.Services.AddScoped<IChatCreateService,EfCoreChatCreateService>();
 //builder.Services.AddTransient < Neo4jCreateUserService>();
 builder.Services.AddScoped<CreateUserService>();
-builder.Services.AddScoped<IUserService, EfcoreUserService>();
+builder.Services.AddTransient<IUserService, EfcoreUserService>();
 //builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPublicUserService, PublicUserService>();
 builder.Services.AddScoped<IMessageLastSeenService, RedisMessageLastSeenService>();

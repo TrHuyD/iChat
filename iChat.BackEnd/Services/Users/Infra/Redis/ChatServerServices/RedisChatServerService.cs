@@ -25,13 +25,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
                     var tasks = new List<Task>();
                     foreach (var server in chunk)
                     {
-                        var serverMeta = new
-                        {
-                            server.Id,
-                            server.Name,
-                            server.AvatarUrl,
-                            server.CreatedAt
-                        };
+                        var serverMeta = server;
                         var serverKey = RedisVariableKey.GetServerMetadataKey(server.Id);
                         tasks.Add(batch.StringSetAsync(serverKey, JsonSerializer.Serialize(serverMeta)));
                         if (server.Channels.Any())
@@ -101,6 +95,9 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
                             break;
                         case "last_bucket_id":
                             if (int.TryParse(value, out var bucketId)) channel.last_bucket_id = bucketId;
+                            break;
+                        default:
+                            //ignored
                             break;
                     }
                 }

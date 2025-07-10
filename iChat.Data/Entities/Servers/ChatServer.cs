@@ -14,6 +14,7 @@ namespace iChat.Data.Entities.Servers
         public ICollection<ChatRole> ChatRoles { get; set; } = new List<ChatRole>();
         public ICollection<ChatChannel> ChatChannels { get; set; } = new List<ChatChannel>();
         public ICollection<UserChatServer> UserChatServers { get; set; } = new List<UserChatServer>();
+        public ICollection<ServerBan> Bans { get; set; } = new List<ServerBan>();
 
     }
 }
