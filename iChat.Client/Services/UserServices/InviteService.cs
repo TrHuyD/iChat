@@ -8,7 +8,7 @@ namespace iChat.Client.Services.UserServices
     {
         private readonly JwtAuthHandler _http;
         private readonly ILogger<InviteService> _logger;
-
+        private readonly Dictionary<string, string> _inviteCache = new();
         public InviteService(JwtAuthHandler http, ILogger<InviteService> logger)
         {
             _http = http;
@@ -19,7 +19,7 @@ namespace iChat.Client.Services.UserServices
         {
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, $"api/Chat/InviteLink/{inviteId}");
+                var request = new HttpRequestMessage(HttpMethod.Get, $"/api/Chat/InviteLink/{inviteId}");
                 var response = await _http.SendAuthAsync(request);
                 if(!response.IsSuccessStatusCode)
                 {
@@ -39,7 +39,7 @@ namespace iChat.Client.Services.UserServices
         {
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Post, $"api/Chat/InviteLink/{inviteId}");
+                var request = new HttpRequestMessage(HttpMethod.Post, $"/api/Chat/InviteLink/{inviteId}");
                 var response = await _http.SendAuthAsync(request);
                 if (!response.IsSuccessStatusCode)
                 {
@@ -62,14 +62,20 @@ namespace iChat.Client.Services.UserServices
         {
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, $"api/Chat/{serverId}/InviteLink");
-                var response = await _http.SendAuthAsync(request);
-                if(response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                var value = "";
+                if (!_inviteCache.TryGetValue(serverId, out value))
                 {
-                    _logger.LogWarning("Unauthorized access while creating invite link for server {ServerId}", serverId);
-                    return null;
+                    var request = new HttpRequestMessage(HttpMethod.Get, $"/api/Chat/{serverId}/InviteLink");
+                    var response = await _http.SendAuthAsync(request);
+                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        _logger.LogWarning("Unauthorized access while creating invite link for server {ServerId}", serverId);
+                        return null;
+                    }
+                    value = await response.Content.ReadAsStringAsync();
+                    _inviteCache[serverId] = value;
                 }
-                return "https://localhost:7156/inv/"+ await response.Content.ReadAsStringAsync();
+                return "https://localhost:7156/inv/" + value;
             }
             catch (HttpRequestException ex)
             {

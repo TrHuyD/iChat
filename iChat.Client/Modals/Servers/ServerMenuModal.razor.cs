@@ -20,12 +20,18 @@ namespace iChat.Client.Modals.Servers
         private bool _inviteSectionVisible = false;
         private string _searchQuery = "";
         private List<UserMetadataReact> _filteredUsers = new List<UserMetadataReact>();
+        private string _prevServerLink = "";
         private string _inviteLink = "";
         protected override void OnParametersSet()
         {
             if (IsVisible && Server != null)
             {
                 UpdateFilteredUsers();
+                if(_prevServerLink!=Server.Id)
+                {
+                    _inviteLink = string.Empty;
+                    _prevServerLink = Server.Id;
+                }
             }
         }
         private async Task HideContextMenu()

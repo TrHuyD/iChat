@@ -1,11 +1,13 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 {
     [ApiController]
     [Route("api/Chat")]
+    [Authorize]
     public class ChatServerInviteController :ControllerBase
     {
         private readonly RedisCSInviteLinkService _service;
@@ -16,7 +18,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             _localcache = localcache;
             _service = service;
         }
-        [HttpGet("{serverId:long}/InviteLink")]
+        [HttpGet("{serverId}/InviteLink")]
         public async Task<IActionResult> GetInviteLink(string serverId)
         {
             var userId = new UserClaimHelper(User).GetUserIdStr();
