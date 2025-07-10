@@ -24,17 +24,17 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis
             return await _service.CheckAndExtendMembershipExpiryAsync(key, serverId, expiryTimeSpan);
         }
 
-        public async Task<int> AddUserServersAsync(long userId, IEnumerable<ChatServerDto> servers)
+        public async Task<int> AddUserServersAsync(long userId, IEnumerable<ChatServerDtoUser> servers)
         {
             var key = RedisVariableKey.GetUserServerKey(userId);
             await _service.PushToListAsync(key, servers.ToList(), expiryTimeSpan);
             return servers.Count();
         }
 
-        public async Task<List<ChatServerDto>?> GetUserServersAsync(long userId)
+        public async Task<List<ChatServerDtoUser>?> GetUserServersAsync(long userId)
         {
             var key = RedisVariableKey.GetUserServerKey(userId);
-            return await _service.GetListAsync<ChatServerDto>(key);
+            return await _service.GetListAsync<ChatServerDtoUser>(key);
         }
 
         public async Task<List<string>?> GetServerChannelsAsync(long serverId)

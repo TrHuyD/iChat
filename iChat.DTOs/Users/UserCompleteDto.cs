@@ -9,7 +9,7 @@ namespace iChat.DTOs.Users
 {
     public class UserCompleteDto
     {
-     public   List<ChatServerDto> ChatServers { get; set; } 
+     public   List<ChatServerDtoUser> ChatServers { get; set; } 
      public UserProfileDto UserProfile { get; set; }
      public List<string> FriendList { get; set; } = new List<string>();
         public List<string> BlockedList { get; set; } = new List<string>();

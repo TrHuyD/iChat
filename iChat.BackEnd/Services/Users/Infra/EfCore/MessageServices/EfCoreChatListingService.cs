@@ -34,11 +34,11 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 .Select(ucs => ucs.ChatServerId)
                 .ToListAsync();
         }
-        public async Task<List<ChatServerDto>> GetUserChatServersAsync(long userId)
+        public async Task<List<ChatServerDtoUser>> GetUserChatServersAsync(long userId)
         {
             return await _dbContext.UserChatServers
                 .Where(ucs => ucs.UserId == userId)
-                .Select(ucs => new ChatServerDto
+                .Select(ucs => new ChatServerDtoUser
                 {
                     Id = ucs.ChatServer.Id.ToString(),
                     Name = ucs.ChatServer.Name,
@@ -56,8 +56,8 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 })
                 .ToListAsync();
         }
-        public static Expression<Func<UserChatServer, ChatServerDto>> AsChatServerDto(long userId) =>
-                ucs => new ChatServerDto
+        public static Expression<Func<UserChatServer, ChatServerDtoUser>> AsChatServerDto(long userId) =>
+                ucs => new ChatServerDtoUser
                 {
                     Id = ucs.ChatServer.Id.ToString(),
                     Name = ucs.ChatServer.Name,

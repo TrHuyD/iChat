@@ -76,7 +76,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             };
         }
 
-        public async Task<ChatServerDto> CreateServerAsync(string serverName, long adminUserId)
+        public async Task<ChatServerDtoUser> CreateServerAsync(string serverName, long adminUserId)
         {
             var serverId = _serverIdGen.GenerateId();
             var generalChannelId = _channelIdGen.GenerateId();
@@ -112,7 +112,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _db.ChatServers.Add(server);
             await _db.SaveChangesAsync();
 
-            return new ChatServerDto
+            return new ChatServerDtoUser
             {
                 AvatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png",
                 Id = serverId.Id.ToString(),

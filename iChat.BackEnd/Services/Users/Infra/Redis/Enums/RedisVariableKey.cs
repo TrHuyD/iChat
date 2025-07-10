@@ -50,5 +50,13 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.Enums
             return  $"user:{userId}:server:{serverId}:last_seen";
         }
 
+        internal static RedisKey GetInviteLinkKey(string inviteId)
+        {
+            return $"invite:{inviteId}";
+        }
+        internal static RedisKey GetServerInviteKey(string serverId)
+        {
+            return $"server_invite_id:{serverId}";
+        }
     }
 }

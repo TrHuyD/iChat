@@ -1,6 +1,7 @@
-﻿using iChat.Data.EF;
-using iChat.BackEnd.Services.StartUpServices.SUS_ChatServer;
+﻿using iChat.BackEnd.Services.StartUpServices.SUS_ChatServer;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices;
+using iChat.Data.EF;
 using Microsoft.Extensions.Hosting;
 
 public class SUS_ServerChannelCacheLoader : IHostedService
@@ -19,13 +20,13 @@ public class SUS_ServerChannelCacheLoader : IHostedService
         // Resolve scoped services
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<iChatDbContext>();
-        var redisChatServerService = scope.ServiceProvider.GetRequiredService<RedisChatServerService>();
+        var cache = scope.ServiceProvider.GetRequiredService<IChatServerMetadataCacheService>();
 
         var serverLister = new SUS_EfCoreServerLister(db);
         var allServers = await serverLister.GetAllServersWithChannelsAsync();
 
         Console.WriteLine($"[SUS] Amount of Server retrieved from EF Core: {allServers.Count}");
-        var result = await redisChatServerService.UploadServersAsync(allServers);
+        var result = await cache.UploadServersAsync(allServers);
         Console.WriteLine($"[SUS] Server Channel Cache Loader completed. Result: {result}");
     }
 

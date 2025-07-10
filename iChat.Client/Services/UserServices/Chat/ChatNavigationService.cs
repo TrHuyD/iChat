@@ -14,7 +14,7 @@ namespace iChat.Client.Services.UserServices
 {
     public class ChatNavigationService
     {
-        public List<ChatServerDto> ChatServers { get; private set; } = new();
+        public List<ChatServerDtoUser> ChatServers { get; private set; } = new();
 
         public event Action OnChatServersChanged;
         public JwtAuthHandler _http;
@@ -30,7 +30,7 @@ namespace iChat.Client.Services.UserServices
         /// Updates the navigation with the provided list of chat servers
         /// </summary>
         /// <param name="chatServers">List of chat servers to display in navigation</param>
-        public void UpdateChatServers(List<ChatServerDto> chatServers)
+        public void UpdateChatServers(List<ChatServerDtoUser> chatServers)
         {
             if (chatServers == null)
                 return;
@@ -53,7 +53,7 @@ namespace iChat.Client.Services.UserServices
         /// <summary>
         /// Adds a single server to the navigation
         /// </summary>
-        public void AddServer(ChatServerDto server)
+        public void AddServer(ChatServerDtoUser server)
         {
             if (server == null)
                 return;
@@ -82,7 +82,7 @@ namespace iChat.Client.Services.UserServices
         /// <summary>
         /// Updates a server's details in the navigation
         /// </summary>
-        public void UpdateServer(ChatServerDto updatedServer)
+        public void UpdateServer(ChatServerDtoUser updatedServer)
         {
             if (updatedServer == null || string.IsNullOrEmpty(updatedServer.Id))
                 return;
@@ -146,14 +146,14 @@ namespace iChat.Client.Services.UserServices
                 throw new InvalidOperationException($"Failed to create server: {errorContent}");
             }
 
-            var newserver = await response.Content.ReadFromJsonAsync<ChatServerDto>();
+            var newserver = await response.Content.ReadFromJsonAsync<ChatServerDtoUser>();
 
             AddServer(newserver);
         }
         /// <summary>
         /// Gets a specific server by ID
         /// </summary>
-        public ChatServerDto GetServer(string serverId)
+        public ChatServerDtoUser GetServer(string serverId)
         {
             return ChatServers.FirstOrDefault(s => s.Id == serverId);
         }

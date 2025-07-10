@@ -176,6 +176,8 @@ builder.Services.AddTransient<IUserService, EfcoreUserService>();
 builder.Services.AddScoped<IPublicUserService, PublicUserService>();
 builder.Services.AddScoped<IMessageLastSeenService, RedisMessageLastSeenService>();
 builder.Services.AddScoped<IUserPresenceCacheService, MemCacheUserPresence>();
+builder.Services.AddScoped<IChatServerService,EfCoreChatServerService>();
+builder.Services.AddScoped<RedisCSInviteLinkService>();
 builder.Services.AddScoped<UserMetadataService>();
 builder.Services.AddScoped<IUserMetaDataCacheService, UserMetadataRedisCacheService>();
 builder.Services.AddTransient<Lazy<IUserService>>(provider => new Lazy<IUserService>(() => provider.GetRequiredService<IUserService>()));

@@ -40,7 +40,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             var cacheKey = $"user:{serverId}:ServerList";
             _localCache.Set(cacheKey, serverList, cacheTime);
         }
-        public  void SetServerListAsync(long serverId, List<ChatServerDto> serverList)
+        public  void SetServerListAsync(long serverId, List<ChatServerDtoUser> serverList)
         {
              SetServerListAsync(serverId, serverList.Select(s =>long.Parse(s.Id)).ToList());
         }

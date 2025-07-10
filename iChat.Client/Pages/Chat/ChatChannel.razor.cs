@@ -17,7 +17,7 @@ namespace iChat.Client.Pages.Chat
         [Parameter] public string ServerId { get; set; } = string.Empty;
         private string? _currentRoomId;
         private string?_currentServerId;
-        private ChatServerDto? _currentServer=new ChatServerDto();
+        private ChatServerDtoUser? _currentServer=new ChatServerDtoUser();
         private ChatChannelDtoLite? _currentChannel= new ChatChannelDtoLite();
         private string _newMessage = string.Empty;
         private ElementReference _messagesContainer;

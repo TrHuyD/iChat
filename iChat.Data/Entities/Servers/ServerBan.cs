@@ -11,6 +11,8 @@ namespace iChat.Data.Entities.Servers
     {
         public long UserId { get; set; }
         public AppUser User { get; set; }
+        public long BannedById { get; set; }
+        public AppUser BannedBy { get; set; }
         public long ChatServerId { get; set; }
         public ChatServer ChatServer { get; set; }
         public string? Reason { get; set; }

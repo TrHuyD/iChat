@@ -26,7 +26,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             _chatListingService = _dbListingService;
             _redisUserSerivce = redisUserSerivce;
         }
-        public async Task<List<ChatServerDto>> GetServerList(long userId)
+        public async Task<List<ChatServerDtoUser>> GetServerList(long userId)
         {
             var result= await _chatListingService.GetUserChatServersAsync(userId);
             _localCache.SetServerListAsync(userId, result);

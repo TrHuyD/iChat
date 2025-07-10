@@ -109,7 +109,7 @@
     private UserProfileDto userProfileDto = new UserProfileDto();
     private bool showCreateServer = false;
     private bool showCreateChannel = false;
-    private ChatServerDto? _selectedServer;
+    private ChatServerDtoUser? _selectedServer;
     private string SelectedServerId => _selectedServer?.Id ?? string.Empty;
     protected override void OnInitialized()
     {
@@ -123,7 +123,7 @@
         StateHasChanged();
     }
 
-    private async Task ShowChannelList(ChatServerDto server)
+    private async Task ShowChannelList(ChatServerDtoUser server)
     {
         // Always select the server first
         _selectedServer = server;

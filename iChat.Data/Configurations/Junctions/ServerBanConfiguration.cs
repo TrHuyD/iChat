@@ -17,6 +17,10 @@ namespace iChat.Data.Configurations.Junctions
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(x => x.BannedBy)
+                .WithMany()
+                .HasForeignKey(x => x.BannedById)
+                .OnDelete(DeleteBehavior.Restrict); // Restrict to prevent deletion of the user who banned
             builder.HasOne(x => x.ChatServer)
                 .WithMany(s=>s.Bans)
                 .HasForeignKey(x => x.ChatServerId)

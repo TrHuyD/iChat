@@ -1,5 +1,5 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
-
+using iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -66,5 +66,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             var lastSeenList = await _service.GetLastSeenMessageAsync(serverId, userId);
             return Ok(lastSeenList);
         }
+        
+
     }
 }

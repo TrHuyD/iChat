@@ -57,7 +57,7 @@ public class UserStateService
         _userProfile = package.UserProfile;
         return true;
     }
-    //public async Task LoadServerList(List<ChatServerDto> list)
+    //public async Task LoadServerList(List<ChatServerDtoUser> list)
     //{
     //    var chatNavService = _serviceProvider.GetRequiredService<ChatNavigationService>();
 

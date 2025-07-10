@@ -7,7 +7,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
         Task<List<long>> GetServerChannelListAsync(long serverId);
         Task<List<long>> GetUserServersAsync(long userId);
         Task<List<long>> GetServerMembersAsync(long serverId);
-        Task<List<ChatServerDto>> GetUserChatServersAsync(long userId);
+        Task<List<ChatServerDtoUser>> GetUserChatServersAsync(long userId);
         async Task<List<string>> GetServerChannelListAsStringAsync(long serverId)
     => (await GetServerChannelListAsync(serverId)).Select(id => id.ToString()).ToList();
 
