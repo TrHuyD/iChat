@@ -181,6 +181,8 @@ builder.Services.AddScoped<RedisCSInviteLinkService>();
 builder.Services.AddScoped<UserMetadataService>();
 builder.Services.AddScoped<IUserMetaDataCacheService, UserMetadataRedisCacheService>();
 builder.Services.AddTransient<Lazy<IUserService>>(provider => new Lazy<IUserService>(() => provider.GetRequiredService<IUserService>()));
+builder.Services.AddSingleton<IChatServerMetadataCacheService, MemCacheChatServerMetadataService>();
+
 builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();
 builder.Services.AddScoped<IMessageSearchService, EfCoreMessageSearchService>();
 builder.Services.AddEndpointsApiExplorer();

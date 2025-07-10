@@ -1,0 +1,88 @@
+﻿@page "/inv/{InviteId}"
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter] public string InviteId { get; set; } = string.Empty;
+    private ChatServerMetadata Server = new ChatServerMetadata
+    {
+        Name = "123",
+        AvatarUrl = "https://media.tenor.com/vNB3iUXsxnQAAAAe/loading-gif.png"
+    };
+
+    private void Continue() => Navigation.NavigateTo("/chat");
+    private void ExitToMainMenu() => Navigation.NavigateTo("/");
+}
+<style>
+    html, body {
+        height: 100%;
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: url('http://cdn.backgroundhost.com/backgrounds/subtlepatterns/black_lozenge.png') repeat;
+        background-size: auto;
+        color: white;
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .launch-box {
+        background-color: #2c2f33;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        max-width: 400px;
+        text-align: center;
+    }
+
+    .server-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        margin-bottom: 1rem;
+        object-fit: cover;
+    }
+
+    .launch-title {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .launch-desc {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        color: #ccc;
+    }
+
+    .launch-button {
+        background-color: #5865F2;
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+        .launch-button:hover {
+            background-color: #4752c4;
+        }
+</style>
+
+<div class="overlay" @onclick="ExitToMainMenu">
+    <div class="launch-box" @onclick:stopPropagation>
+        <img src="@Server.AvatarUrl" class="server-avatar" alt="Server Avatar" />
+        <div class="launch-title">@Server.Name Server</div>
+        <div class="launch-desc">
+            We've beamed the info to your app. You can close this tab or continue with the web version.
+        </div>
+        <button class="launch-button" @onclick="Continue">Continue</button>
+    </div>
+</div>

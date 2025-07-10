@@ -26,7 +26,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
             var serverkey = RedisVariableKey.GetServerInviteKey(serverId);
             var existimte = await db.KeyTimeToLiveAsync(serverkey);
             string inviteId = string.Empty;
-            if (existimte.Value.Days>1)
+            if (existimte!=null&&existimte.Value.Days>1)
             {
                 inviteId = await db.StringGetAsync(serverkey);
                 await db.KeyExpireAsync(serverkey, default_invite_lifetime);

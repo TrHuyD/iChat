@@ -157,5 +157,16 @@ namespace iChat.Client.Services.UserServices
         {
             return ChatServers.FirstOrDefault(s => s.Id == serverId);
         }
+        Dictionary<string,string> CachedInviteLink= new Dictionary<string, string>();
+        public async Task<string> GetInviteLink(string serverId)
+        {
+            if(CachedInviteLink.TryGetValue(serverId, out var cachedLink))
+            {
+                return cachedLink;
+            }
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/Chat/{serverId}/InviteLink");
+            var response = await _http.SendAuthAsync(request);
+            return "";
+        }
     }
 }

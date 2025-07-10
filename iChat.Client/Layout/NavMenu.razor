@@ -1,12 +1,19 @@
 ﻿@using iChat.Client.Modals.User
 @using iChat.Client.Services.UserServices
+@using iChat.Client.Services.UserServices.Chat
 @using iChat.Client.Services.UserServices.Chat.Util
 @using iChat.Client.Services.UserServices.ChatService
+@using iChat.DTOs.Users
 @using iChat.DTOs.Users.Messages
 @inject ChatNavigationService ChatNavService
 @inject UserStateService LoadingService
 @inject NavigationManager Navigation
 @inject LastVisitedChannelService ChannelTracker
+@inject ChatMessageCacheService MessageManager
+@inject ChatSignalRClientService ChatService
+@inject UserMetadataService _userMetadataService
+@inject IJSRuntime JS
+@inject iChat.Client.Services.Auth.JwtAuthHandler _https
 @implements IDisposable
 
 <div class="discord-nav">
@@ -40,8 +47,12 @@
     <div class="channel-sidebar">
         @if (_selectedServer != null)
         {
+
             <div class="sidebar-header">
                 <h3>@_selectedServer.Name</h3>
+                             <button class="sidebar-toggle" @onclick="ClearServerSelection">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
             <div class="channel-scrollable">
@@ -111,6 +122,13 @@
     private bool showCreateChannel = false;
     private ChatServerDtoUser? _selectedServer;
     private string SelectedServerId => _selectedServer?.Id ?? string.Empty;
+
+    private bool _showServerMenu = false;
+    private string? _inviteLink;
+    private string _searchQuery = "";
+    private List<UserMetadata> _filteredUsers = new();
+
+
     protected override void OnInitialized()
     {
         LoadingService.OnAppReadyStateChanged += StateHasChanged;

@@ -25,6 +25,7 @@ namespace iChat.BackEnd.Services.StartUpServices.SUS_ChatServer
                     AvatarUrl = s.Avatar ?? "https://cdn.discordapp.com/embed/avatars/0.png",
                     CreatedAt=s.CreatedAt
                     ,
+                    AdminId=s.AdminId.ToString(),
                     Channels = s.ChatChannels
                         .OrderBy(c => c.Order)
                         .Select(c => new ChatChannelDtoLite
