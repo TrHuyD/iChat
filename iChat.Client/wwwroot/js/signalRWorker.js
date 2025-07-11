@@ -1,4 +1,4 @@
-﻿// signalRWorker.js
+﻿// signalrworker.js
 window.signalRInterop = {
     initialize: async function (dotNetRef) {
         const worker = new SharedWorker('/js/sharedWorker.js');

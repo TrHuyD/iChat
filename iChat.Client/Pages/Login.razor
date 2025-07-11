@@ -43,7 +43,7 @@
         var loginJson = System.Text.Json.JsonSerializer.Serialize(login);
 
     var jsResponse = await JS.InvokeAsync<JsFetchResponse>(
-        "fetchWithCredentials",
+        "fetchwithcredentials",
         url,
         new
         {

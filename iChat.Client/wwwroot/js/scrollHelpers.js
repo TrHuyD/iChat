@@ -1,5 +1,5 @@
-﻿//scrollHelpers.js
-window.scrollHelpers = {
+﻿//scrollhelpers.js
+window.scrollhelpers = {
     getScrollMetrics: function (element) {
         return {
             scrollTop: element.scrollTop,

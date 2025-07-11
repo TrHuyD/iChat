@@ -57,7 +57,7 @@ public TokenProvider(NavigationManager navigation,HttpClient http)
         public async Task<RetrieveTokenResult> RetrieveNewToken()
         {
 #if DEBUG
-            var jsResponse = await _iJS.InvokeAsync<JsFetchResponse>("fetchWithCredentials", "https://localhost:6051/api/Auth/refreshtoken", null);
+            var jsResponse = await _iJS.InvokeAsync<JsFetchResponse>("fetchwithcredentials", "https://localhost:6051/api/Auth/refreshtoken", null);
             var refreshResponse = jsResponse.ToHttpResponseMessage();
 
 #else

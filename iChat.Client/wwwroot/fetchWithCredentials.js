@@ -1,4 +1,4 @@
-﻿window.fetchWithCredentials = async function (url, options) {
+﻿window.fetchwithcredentials = async function (url, options) {
     options = options || {};
     options.credentials = "include"; 
     return fetch(url, options).then(async res => {
