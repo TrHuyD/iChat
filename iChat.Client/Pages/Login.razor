@@ -6,7 +6,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @layout BaseLayout
-
+@inject ConfigService _configService
 <h3>Login</h3>
 
 <EditForm Model="login" OnValidSubmit="HandleLogin">
@@ -82,6 +82,7 @@
         {
             Content = JsonContent.Create(login)
         };
+        request.RequestUri = new Uri(_configService.ApiBaseUrl + request.RequestUri);
         var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         if (response.IsSuccessStatusCode)

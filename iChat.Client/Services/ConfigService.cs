@@ -1,0 +1,12 @@
+﻿namespace iChat.Client.Services
+{
+    public class ConfigService
+    {
+#if DEBUG
+        public string ApiBaseUrl { get; set; } = "https://localhost:6051";
+#else
+        public string ApiBaseUrl { get; set; } = "https://ichat.dedyn.io";
+#endif
+    }
+
+}
