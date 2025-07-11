@@ -3,7 +3,7 @@ name: Build and Deploy iChat.Client to GitHub Pages
 on:
   push:
     branches:
-      ["Action-testing"]
+      - Action-testing
 
 permissions:
   contents: read
@@ -26,13 +26,10 @@ jobs:
         with:
           dotnet-version: '9.0.x'
       
-	- name: Publish Blazor app
-	  run: |
-	    dotnet publish ./iChat.Client -c Release -o ./publish -p:BaseHref="/" -p:PublishTrimmed=false
-
-          # Ensure critical files exist
+      - name: Publish Blazor app
+        run: |
+          dotnet publish ./iChat.Client -c Release -o ./publish -p:BaseHref="/" -p:PublishTrimmed=false
           touch ./publish/wwwroot/.nojekyll
-          touch ./publish/wwwroot/index.html
       
       - name: Verify publish output
         run: |
