@@ -54,18 +54,11 @@ builder.Services.AddScoped<JwtAuthHandler>(sp =>
     var tokenProvider = sp.GetRequiredService<TokenProvider>();
     var navigationManager = sp.GetRequiredService<NavigationManager>();
     var configService = sp.GetRequiredService<ConfigService>();
-#if DEBUG
     var handler = new JwtAuthHandler(tokenProvider, navigationManager,configService)
     {
         InnerHandler = new HttpClientHandler()
     };
-#else
-    var handler = new JwtAuthHandler(tokenProvider, navigationManager)
-    {
-        InnerHandler = new HttpClientHandler() 
-    };
-    
-#endif
+
     return handler;
 });
 builder.Services.AddIndexedDB(dbStore =>
