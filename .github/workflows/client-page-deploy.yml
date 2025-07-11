@@ -1,46 +1,51 @@
-name: Deploy iChat.Client to GitHub Pages
+name: Build and Deploy iChat.Client to GitHub Pages
 
 on:
   push:
     branches:
-      ["master"]
+      - main
+
+# Add these permissions
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'  # Or your target .NET version
-
-      - name: Publish iChat.Client for GitHub Pages
-        run: |
-          dotnet publish ./iChat.Client/iChat.Client.csproj \
-            -c Release \
-            -o publish \
-            -p:GHPages=true -p:GHPagesBase="/iChat/" -p:BaseHref="/iChat/"
-
-      - name: Configure GitHub Pages deployment
-        uses: actions/configure-pages@v5
-
-      - name: Upload site artifact
+          dotnet-version: '9.0.x'
+      
+      - name: Publish Blazor app
+        run: dotnet publish ./iChat.Client -c Release -o ./publish -p:BaseHref="/iChat/" -p:PublishTrimmed=false
+      
+      - name: Add .nojekyll file
+        run: touch ./publish/wwwroot/.nojekyll
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: publish/wwwroot
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build-deploy
-
-    steps:
+          path: './publish/wwwroot'
+      
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
