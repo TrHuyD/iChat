@@ -3,16 +3,12 @@ name: Build and Deploy iChat.Client to GitHub Pages
 on:
   push:
     branches:
-      - main
+      ["Action-testing"]
 
 permissions:
   contents: read
   pages: write
   id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
 
 jobs:
   build-deploy:
@@ -33,14 +29,18 @@ jobs:
       - name: Publish Blazor app
         run: |
           dotnet publish ./iChat.Client -c Release -o ./publish -p:BaseHref="/iChat/" -p:PublishTrimmed=false
-          # Create .nojekyll file in wwwroot
+          # Ensure critical files exist
           touch ./publish/wwwroot/.nojekyll
+          touch ./publish/wwwroot/index.html
       
       - name: Verify publish output
         run: |
+          echo "Contents of wwwroot:"
           ls -la ./publish/wwwroot
-          echo "Checking for important files:"
+          echo "Checking framework files:"
           ls ./publish/wwwroot/_framework/
+          echo "Checking for index.html:"
+          cat ./publish/wwwroot/index.html
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
