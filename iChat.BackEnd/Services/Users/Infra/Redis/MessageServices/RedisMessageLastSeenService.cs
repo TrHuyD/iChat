@@ -1,6 +1,5 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.Redis.Enums;
-using iChat.Client.Data.Chat;
 using StackExchange.Redis;
 
 namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices

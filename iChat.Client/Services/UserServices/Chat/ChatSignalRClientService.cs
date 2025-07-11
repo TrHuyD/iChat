@@ -8,7 +8,11 @@ namespace iChat.Client.Services.UserServices.Chat
     {
         private readonly SignalRConnectionFactory _connectionFactory;
         private HubConnection? _hubConnection;
+#if DEBUG
         private const string ChatHubPath = "https://localhost:6051/api/chathub";
+#else
+         private const string ChatHubPath = "/api/chathub";
+#endif
         private readonly ChatMessageCacheService _MessageCacheService;
         private readonly ChatNavigationService _chatNavigationService;
         public ChatSignalRClientService(SignalRConnectionFactory connectionFactory,ChatMessageCacheService MessageCacheService, ChatNavigationService chatNavigationService)

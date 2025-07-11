@@ -117,7 +117,6 @@
     <ProjectReference Include="..\iChat.ViewModels\iChat.ViewModels.csproj" />
 
     <!-- Reference to Blazor Client project -->
-    <ProjectReference Include="..\iChat.Client\iChat.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

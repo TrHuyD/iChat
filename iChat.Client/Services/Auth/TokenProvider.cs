@@ -1,11 +1,11 @@
 ﻿
-#if DEBUG
+
 using iChat.Client.DTOs.DEV;
 using iChat.DTOs.Users.Auth;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Net.Http.Json;
-#endif
+
 
 namespace iChat.Client.Services.Auth
 {
@@ -46,9 +46,12 @@ namespace iChat.Client.Services.Auth
         }
 
 #else
-public TokenProvider(NavigationManager navigation)
+        private HttpClient _httpClient;
+
+public TokenProvider(NavigationManager navigation,HttpClient http)
         {
             _navigation = navigation;
+            _httpClient=http;
         }
 #endif
         public async Task<RetrieveTokenResult> RetrieveNewToken()
@@ -59,7 +62,7 @@ public TokenProvider(NavigationManager navigation)
 
 #else
             var refreshRequest = new HttpRequestMessage(HttpMethod.Get, "/api/Auth/refreshtoken");
-            var refreshResponse = await base.SendAsync(refreshRequest, cancellationToken);
+            var refreshResponse = await _httpClient.SendAsync(refreshRequest);
 #endif
             if (refreshResponse.IsSuccessStatusCode)
             {

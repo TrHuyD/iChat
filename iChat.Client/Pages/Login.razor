@@ -78,7 +78,7 @@
             ToastService.ShowToast("An unexpected error occurred.", "danger");
         }
 #else
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://localhost:6051/api/Auth/login")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/Auth/login")
         {
             Content = JsonContent.Create(login)
         };

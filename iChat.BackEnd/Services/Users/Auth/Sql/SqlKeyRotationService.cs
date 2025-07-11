@@ -27,12 +27,12 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
         {
             var token = _context.Request.Cookies["refreshToken"];
             if (string.IsNullOrEmpty(token))
-                return OperationResultT<TokenResponse>.Fail("401", "Invalid credential");
+                return OperationResultT<TokenResponse>.Fail("401", "Invalid credential, refreshtoken is missing");
             var refreshToken = await _dbContext.RefreshTokens
                 .Include(r => r.User)
                 .FirstOrDefaultAsync(r => r.Token == token && r.Revoked == null);
             if (!_refreshTokenService.isUsable(refreshToken))
-                return OperationResultT<TokenResponse>.Fail("401", "Invalid credential");
+                return OperationResultT<TokenResponse>.Fail("401", "Invalid credential, unusable token");
             _refreshTokenService.RefreshIfNeeded(refreshToken, _context);
 
             var accesstoken = _accessKeyService.GenerateAccessToken(refreshToken.User.Id.ToString());

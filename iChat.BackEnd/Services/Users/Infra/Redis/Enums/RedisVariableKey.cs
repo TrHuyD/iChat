@@ -1,5 +1,4 @@
-﻿using iChat.Client.Data.Chat;
-using StackExchange.Redis;
+﻿using StackExchange.Redis;
 using Key = iChat.BackEnd.Services.Users.Infra.Redis.RedisKeyTable;
 namespace iChat.BackEnd.Services.Users.Infra.Redis.Enums
 {

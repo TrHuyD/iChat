@@ -1,10 +1,9 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers;
-using iChat.Client.Attributes.Auth;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers.UserControllers
 {
-    [AllowAnonymous]
     [Route("api/users")]
     public class UserMetadataController:ControllerBase
  

@@ -77,8 +77,11 @@
         }
 
         passwordError = "";
-
+#if DEBUG
         var response = await Http.PostAsJsonAsync("https://localhost:6051/api/Auth/register", register);
+#else
+        var response = await Http.PostAsJsonAsync("/api/Auth/register", register);
+#endif
         var result = await response.Content.ReadFromJsonAsync<OperationResult>();
 
         if (response.IsSuccessStatusCode && result?.Success == true)

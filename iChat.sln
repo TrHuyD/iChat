@@ -31,8 +31,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "iChat.Client", "iChat.Clien
 		{A34BBB61-FCD4-4F7C-96B7-13FF6E9B84E4} = {A34BBB61-FCD4-4F7C-96B7-13FF6E9B84E4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "iChat.ComponentArchive", "iChat.ComponentArchive\iChat.ComponentArchive.csproj", "{51616EEA-0993-4D83-BC2D-588D4A76F05F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,10 +57,6 @@ Global
 		{D837F6D1-5B54-48AC-BE91-5F622357891E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D837F6D1-5B54-48AC-BE91-5F622357891E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D837F6D1-5B54-48AC-BE91-5F622357891E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{51616EEA-0993-4D83-BC2D-588D4A76F05F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{51616EEA-0993-4D83-BC2D-588D4A76F05F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{51616EEA-0993-4D83-BC2D-588D4A76F05F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{51616EEA-0993-4D83-BC2D-588D4A76F05F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -73,7 +67,6 @@ Global
 		{76FBEBCF-159C-483B-A821-E4C117D004E1} = {951545AA-CF2A-4240-B947-AC232A39DBAF}
 		{4A30E199-4BF0-495F-A510-C0795A72CE9F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{D837F6D1-5B54-48AC-BE91-5F622357891E} = {951545AA-CF2A-4240-B947-AC232A39DBAF}
-		{51616EEA-0993-4D83-BC2D-588D4A76F05F} = {951545AA-CF2A-4240-B947-AC232A39DBAF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7C26200A-7481-491D-9AB3-AF72E08E2103}
