@@ -31,7 +31,6 @@ namespace iChat.Client.Layout
             _contextMenuY = 0;
             _contextMenuServer = null;
             _filteredUsers = new List<UserMetadataReact>();
-            _inviteLink = "";
             showCreateServer = false;
             showCreateChannel = false;
             _selectedServer = null;
