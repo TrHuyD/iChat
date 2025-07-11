@@ -26,9 +26,10 @@ jobs:
         with:
           dotnet-version: '9.0.x'
       
-      - name: Publish Blazor app
-        run: |
-          dotnet publish ./iChat.Client -c Release -o ./publish -p:BaseHref="/iChat/" -p:PublishTrimmed=false
+	- name: Publish Blazor app
+	  run: |
+	    dotnet publish ./iChat.Client -c Release -o ./publish -p:BaseHref="/" -p:PublishTrimmed=false
+
           # Ensure critical files exist
           touch ./publish/wwwroot/.nojekyll
           touch ./publish/wwwroot/index.html
