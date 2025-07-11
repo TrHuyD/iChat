@@ -1,0 +1,26 @@
+name: Build and Deploy iChat.Client to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main 
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.4'  
+
+      - name: Publish Blazor app
+        run: dotnet publish ./iChat.Client -c Release -o ./publish -p:BaseHref="/iChat/"
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./publish/wwwroot
