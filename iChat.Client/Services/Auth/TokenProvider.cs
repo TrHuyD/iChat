@@ -47,24 +47,25 @@ namespace iChat.Client.Services.Auth
 
 #else
         private HttpClient _httpClient;
-
-public TokenProvider(NavigationManager navigation,HttpClient http)
+        private ConfigService _configService;
+public TokenProvider(NavigationManager navigation,HttpClient http,ConfigService config)
         {
+            _configService = config;
             _navigation = navigation;
             _httpClient=http;
         }
 #endif
-        public async Task<RetrieveTokenResult> RetrieveNewToken()
+		public async Task<RetrieveTokenResult> RetrieveNewToken()
         {
 #if DEBUG
             var jsResponse = await _iJS.InvokeAsync<JsFetchResponse>("fetchwithcredentials", "https://localhost:6051/api/Auth/refreshtoken", null);
             var refreshResponse = jsResponse.ToHttpResponseMessage();
 
 #else
-            var refreshRequest = new HttpRequestMessage(HttpMethod.Get, "/api/Auth/refreshtoken");
+            var refreshRequest = new HttpRequestMessage(HttpMethod.Get,_configService.ApiBaseUrl+ "/api/Auth/refreshtoken");
             var refreshResponse = await _httpClient.SendAsync(refreshRequest);
 #endif
-            if (refreshResponse.IsSuccessStatusCode)
+			if (refreshResponse.IsSuccessStatusCode)
             {
                 var newToken = await refreshResponse.Content.ReadFromJsonAsync<TokenResponse>();
                 AccessToken = newToken!.AccessToken;
@@ -82,7 +83,7 @@ public TokenProvider(NavigationManager navigation,HttpClient http)
         {
             if(string.IsNullOrWhiteSpace(AccessToken))
             {
-                for (int i = 0; i < 6; i++)
+                for (int i = 0; i < 3; i++)
                 {
                     var rt = await RetrieveNewToken();
                     switch (rt)
