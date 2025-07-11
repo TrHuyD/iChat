@@ -1,26 +1,46 @@
-name: Build and Deploy iChat.Client to GitHub Pages
+name: Deploy iChat.Client to GitHub Pages
 
 on:
   push:
     branches:
-      - main 
+      ["master"]
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
-      - name: Setup .NET SDK
+
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.4'  
+          dotnet-version: '9.0.x'  # Or your target .NET version
 
-      - name: Publish Blazor app
-        run: dotnet publish ./iChat.Client -c Release -o ./publish -p:BaseHref="/iChat/"
+      - name: Publish iChat.Client for GitHub Pages
+        run: |
+          dotnet publish ./iChat.Client/iChat.Client.csproj \
+            -c Release \
+            -o publish \
+            -p:GHPages=true -p:GHPagesBase="/iChat/" -p:BaseHref="/iChat/"
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Configure GitHub Pages deployment
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./publish/wwwroot
+          path: publish/wwwroot
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-deploy
+
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
