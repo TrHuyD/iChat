@@ -19,7 +19,7 @@ namespace iChat.Client.Pages.Chat
         private DateTime? _searchAfter=null;
         private string _sortBy = "timestamp";
         private bool _sortDescending = true;
-        private partial class SavedState
+        private partial class SavedStateServer
         {
             public bool _showSearchSidebar=false;
             public string _searchQuery = string.Empty;
@@ -32,7 +32,7 @@ namespace iChat.Client.Pages.Chat
             public IList<ChatMessageDtoSafeSearchExtended> _searchResults = new List<ChatMessageDtoSafeSearchExtended>();
 
         }
-        private void SaveSearchState(SavedState state)
+        private void SaveSearchState(SavedStateServer state)
         {
             state._showSearchSidebar = _showSearchSidebar;
             state._searchQuery = _searchQuery;
@@ -44,7 +44,7 @@ namespace iChat.Client.Pages.Chat
             state._sortDescending = _sortDescending;
             state._searchResults = _searchResults;
         }
-        private void LoadSearchState(SavedState state)
+        private void LoadSearchState(SavedStateServer state)
         {
             _showSearchSidebar = state._showSearchSidebar;
             _searchQuery = state._searchQuery;
@@ -83,7 +83,7 @@ namespace iChat.Client.Pages.Chat
                           $"&channelId={_searchChannelId}" +
                           $"&queryText={Uri.EscapeDataString(query)}" +
                           $"&page=1&pageSize=20" +
-                          $"&senderId={Uri.EscapeDataString(_searchSenderId ?? "")}" +
+                       //   $"&senderId={Uri.EscapeDataString(_searchSenderId ?? "")}" +
                           $"&sortBy={_sortBy}" +
                           $"&sortDescending={_sortDescending}" +
                           (_searchBefore.HasValue ? $"&toDate={_searchBefore:O}" : "") +

@@ -2,29 +2,40 @@
 {
     public partial class ChatChannel
     {
-        Dictionary<string, SavedState> _savedStates = new();
-       private void SaveState()
+        Dictionary<string, SavedStateServer> _savedStateserver = new();
+        Dictionary<string, SavedStateChannel> _savedStatesChannel = new();
+        private void SaveState()
         {
             if (string.IsNullOrEmpty(_currentRoomId) || string.IsNullOrEmpty(_currentServerId))
                 return;
-            if (!_savedStates.TryGetValue(_currentRoomId, out var savedState))
+            if (!_savedStateserver.TryGetValue(_currentServerId, out var savedStateServer))
             {
-                savedState= _savedStates[_currentRoomId] = new SavedState();
+                savedStateServer = _savedStateserver[_currentServerId] = new ();
             }
-            savedState._showSearchSidebar = _showSearchSidebar;
-            SaveSearchState(savedState);
+            if (!_savedStatesChannel.TryGetValue(_currentRoomId, out var savedStateChannel))
+            {
+                savedStateChannel = _savedStatesChannel[_currentRoomId] = new();
+            }
+            SaveSearchState(savedStateServer);
         }
         private void LoadState()
         {
             if (string.IsNullOrEmpty(_currentRoomId) || string.IsNullOrEmpty(_currentServerId))
                 return;
-            if (!_savedStates.TryGetValue(_currentRoomId, out var savedState))
+            if (!_savedStateserver.TryGetValue(_currentServerId, out var savedStateServer))
             {
-                savedState= _savedStates[_currentRoomId] = new();
+                savedStateServer = _savedStateserver[_currentServerId] = new();
             }
-            LoadSearchState(savedState);
+            if (!_savedStatesChannel.TryGetValue(_currentRoomId, out var savedStateChannel))
+            {
+                savedStateChannel = _savedStatesChannel[_currentRoomId] = new();
+            }
+            if (_currentServerId != ServerId)
+            {
+                LoadSearchState(savedStateServer);
+            }
         }
-        private partial class SavedState
+        private partial class SavedStateChannel
         {
             
         }
