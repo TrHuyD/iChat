@@ -25,6 +25,7 @@ namespace iChat.Client.Services.Auth
                 _accessToken = value;
             }
         }
+
         public DateTime ExpireTime { get; private set; } = DateTime.MinValue;
         public bool isAuthenticated => !string.IsNullOrEmpty(AccessToken);
         //public void SetToken(string token) => AccessToken = token;
@@ -47,24 +48,25 @@ namespace iChat.Client.Services.Auth
 
 #else
         private HttpClient _httpClient;
-
-public TokenProvider(NavigationManager navigation,HttpClient http)
+        private ConfigService _configService;
+public TokenProvider(NavigationManager navigation,HttpClient http,ConfigService config)
         {
+            _configService = config;
             _navigation = navigation;
             _httpClient=http;
         }
 #endif
-        public async Task<RetrieveTokenResult> RetrieveNewToken()
+		public async Task<RetrieveTokenResult> RetrieveNewToken()
         {
 #if DEBUG
             var jsResponse = await _iJS.InvokeAsync<JsFetchResponse>("fetchwithcredentials", "https://localhost:6051/api/Auth/refreshtoken", null);
             var refreshResponse = jsResponse.ToHttpResponseMessage();
 
 #else
-            var refreshRequest = new HttpRequestMessage(HttpMethod.Get, "/api/Auth/refreshtoken");
+            var refreshRequest = new HttpRequestMessage(HttpMethod.Get,_configService.ApiBaseUrl+ "/api/Auth/refreshtoken");
             var refreshResponse = await _httpClient.SendAsync(refreshRequest);
 #endif
-            if (refreshResponse.IsSuccessStatusCode)
+			if (refreshResponse.IsSuccessStatusCode)
             {
                 var newToken = await refreshResponse.Content.ReadFromJsonAsync<TokenResponse>();
                 AccessToken = newToken!.AccessToken;
@@ -78,29 +80,34 @@ public TokenProvider(NavigationManager navigation,HttpClient http)
             }
             return RetrieveTokenResult.Fail;
         }
-        private async Task ReadyToken()
+        private async Task<bool> ReadyToken(bool toLogin=true)
         {
             if(string.IsNullOrWhiteSpace(AccessToken))
             {
-                for (int i = 0; i < 6; i++)
+                for (int i = 0; i < 3; i++)
                 {
                     var rt = await RetrieveNewToken();
                     switch (rt)
                     {
                         case RetrieveTokenResult.Unauthorized:
-                            _navigation.NavigateTo("/login");
-                            throw new HttpRequestException("Fail to connect to Server", null, System.Net.HttpStatusCode.Unauthorized);
-                            return;
+                            if (toLogin)
+                            {
+                                _navigation.NavigateTo("/login");
+                                throw new HttpRequestException("Fail to connect to Server", null, System.Net.HttpStatusCode.Unauthorized);
+                            }
+                            else
+                                return false;
                         case RetrieveTokenResult.Success:
-                            return;
-                        default:
-                            continue;
-                    }
+                                    return true;
+                                default:
+                                    continue;
+                                }
 
                     
                 }
                 throw new HttpRequestException("Fail to connect to Server", null, System.Net.HttpStatusCode.InternalServerError);
             }
+            return true;
             
         }
         public async Task<string> GetToken()
@@ -108,7 +115,15 @@ public TokenProvider(NavigationManager navigation,HttpClient http)
             await ReadyToken();
             return AccessToken;
         }
-
+        public async Task<bool> IsLogin()
+        {
+            if (string.IsNullOrWhiteSpace(AccessToken))
+            {
+                var rt = await ReadyToken(false);
+                return rt;
+            }
+            return true;
+        }
         public enum RetrieveTokenResult
         {
             Success,

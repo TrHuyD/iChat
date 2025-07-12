@@ -26,6 +26,7 @@ namespace iChat.BackEnd.Services.Users.Auth
                 UserName = request.UserName,
                 Email = request.Email,
                 Name = request.Name,
+                AvatarUrl="https://cdn.discordapp.com/embed/avatars/0.png", // Default avatar URL, can be changed later
             };
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)

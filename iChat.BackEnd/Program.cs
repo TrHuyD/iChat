@@ -47,7 +47,7 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    builder.Configuration.AddJsonFile("appsettings.Production.json");
+    builder.Configuration.AddJsonFile("appsettings.production.json");
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AllowClient",

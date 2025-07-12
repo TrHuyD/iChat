@@ -11,13 +11,15 @@ namespace iChat.Client.Services.Auth
     {
         private readonly TokenProvider _tokenProvider;
         private readonly NavigationManager _navigation;
+        private readonly ConfigService _configService;
 
-
-        public JwtAuthHandler(TokenProvider tokenProvider, NavigationManager navigation)
+        public JwtAuthHandler(TokenProvider tokenProvider, NavigationManager navigation,ConfigService configService)
         {
             _tokenProvider = tokenProvider;
             _navigation = navigation;
-        }
+            _configService = configService;
+        } 
+ 
 
         public async Task<HttpResponseMessage> SendAuthAsync(
             HttpRequestMessage request,
@@ -25,11 +27,9 @@ namespace iChat.Client.Services.Auth
             bool browser_cache=true,
             CancellationToken cancellationToken = default)
         {
-#if DEBUG
-            request.RequestUri = new Uri("https://localhost:6051" + request.RequestUri);
-#endif
-            
-            if(!browser_cache)
+            request.RequestUri = new Uri(_configService.ApiBaseUrl + request.RequestUri);
+
+            if (!browser_cache)
             {
                 request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue
                 {

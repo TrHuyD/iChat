@@ -53,18 +53,12 @@ builder.Services.AddScoped<JwtAuthHandler>(sp =>
 {
     var tokenProvider = sp.GetRequiredService<TokenProvider>();
     var navigationManager = sp.GetRequiredService<NavigationManager>();
-#if DEBUG
-    var handler = new JwtAuthHandler(tokenProvider, navigationManager)
+    var configService = sp.GetRequiredService<ConfigService>();
+    var handler = new JwtAuthHandler(tokenProvider, navigationManager,configService)
     {
         InnerHandler = new HttpClientHandler()
     };
-#else
-    var handler = new JwtAuthHandler(tokenProvider, navigationManager)
-    {
-        InnerHandler = new HttpClientHandler() 
-    };
-    
-#endif
+
     return handler;
 });
 builder.Services.AddIndexedDB(dbStore =>
@@ -94,5 +88,6 @@ builder.Services.AddScoped<ChatSignalRClientService>();
 builder.Services.AddScoped< ChatNavigationService>();
 builder.Services.AddScoped<ChatMessageCacheService>();
 builder.Services.AddScoped<InviteService>();
+builder.Services.AddSingleton<ConfigService>();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 await builder.Build().RunAsync();

@@ -13,7 +13,6 @@ namespace iChat.Client.Layout
         private int _contextMenuY = 0;
         private ChatServerDtoUser _contextMenuServer = null;
         private List<UserMetadataReact> _filteredUsers = new List<UserMetadataReact>();
-        private string _inviteLink = "";
         private UserProfileDto userProfileDto = new UserProfileDto();
         private bool showCreateServer = false;
         private bool showCreateChannel = false;
@@ -32,7 +31,6 @@ namespace iChat.Client.Layout
             _contextMenuY = 0;
             _contextMenuServer = null;
             _filteredUsers = new List<UserMetadataReact>();
-            _inviteLink = "";
             showCreateServer = false;
             showCreateChannel = false;
             _selectedServer = null;

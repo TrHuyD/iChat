@@ -23,8 +23,9 @@
 
 
 <div class="discord-nav" @onclick="HideContextMenu">
+    <div class="sc-sidebars">
     <!-- Server List (Left Sidebar) -->
-    <div class="server-sidebar">
+        <div class="server-sidebar">
         <!-- Home Button -->
         <div class="server-icon home-icon">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="ClearServerSelection">
@@ -104,7 +105,7 @@
             }
         </div>
     </div>
-
+     </div>
     <!-- User Box -->
     <div class="user-box">
         <img class="avatar" src="@userProfileDto.AvatarUrl" />
