@@ -17,6 +17,7 @@
                 savedStateChannel = _savedStatesChannel[_currentRoomId] = new();
             }
             SaveSearchState(savedStateServer);
+            
         }
         private void LoadState()
         {

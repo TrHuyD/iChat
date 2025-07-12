@@ -33,11 +33,18 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
             return Task.FromResult(true);
         }
-        public Task<bool> IsAdmin(string serverId,string userId)
+        public Task<bool> IsAdmin(long serverId,long userId)
         {
             if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
                 throw new KeyNotFoundException($"Server {serverId} not found in cache.");
-            return Task.FromResult(server.AdminId == userId);
+            return Task.FromResult(server.AdminId == userId.ToString());
+        }
+        public Task<bool> IsAdmin(long ServerId,long UserId,long ChannelId)
+        {
+            if (!_cache.TryGetValue(GetServerKey(ServerId), out ChatServerMetadata? server))
+                throw new KeyNotFoundException($"Server {ServerId} not found in cache.");
+            var channel = ChannelId.ToString();
+            return Task.FromResult(server.AdminId == UserId.ToString()&&server.Channels.Any(c=>c.Id==channel));
         }
         public Task<ChatServerMetadata?> GetServerAsync(string serverId, bool includeChannels = true)
         {
@@ -101,7 +108,9 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             return _cache.GetOrCreate(key, entry => new Dictionary<long, long>());
         }
 
+        private string GetServerKey(long serverId) => $"server:{serverId}:meta";
         private string GetServerKey(string serverId) => $"server:{serverId}:meta";
-        private string GetChannelKey(string serverId) => $"server:{serverId}:channels";
+        private string GetChannelKey(long serverId) => $"server:{serverId}:channels";
+    private string GetChannelKey(string serverId) => $"server:{serverId}:channels";
     }
 }

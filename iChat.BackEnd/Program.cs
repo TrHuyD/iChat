@@ -105,7 +105,7 @@ builder.Services.AddTransient<MemCacheUserChatService>();
 
 // Add server services
 builder.Services.AddTransient<ServerListService>();
-builder.Services.AddTransient<IChatSendMessageService, Test_UserSendTextMessageService>();
+builder.Services.AddTransient<IMessageWriteService, Test_UserSendTextMessageService>();
 builder.Services.AddTransient<IChatReadMessageService, Test_UserChatReadMessageService>();
 
 // Database Context
@@ -140,7 +140,8 @@ builder.Services.AddScoped<UserMetadataService>();
 builder.Services.AddScoped<IUserMetaDataCacheService, UserMetadataRedisCacheService>();
 builder.Services.AddTransient<Lazy<IUserService>>(provider => new Lazy<IUserService>(() => provider.GetRequiredService<IUserService>()));
 builder.Services.AddSingleton<IChatServerMetadataCacheService, MemCacheChatServerMetadataService>();
-
+builder.Services.AddScoped<IMessageReadService, MessageReadApplicationService>();
+builder.Services.AddScoped<IMessageCacheService,MemCacheMessageService>();
 // Add hosted services
 builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();
 builder.Services.AddScoped<IMessageSearchService, EfCoreMessageSearchService>();

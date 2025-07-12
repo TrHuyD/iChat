@@ -27,6 +27,7 @@ namespace iChat.DTOs.Users.Messages
         public DateTimeOffset CreatedAt { get; set; }
         public long SenderId { get; set; }
         public long RoomId { get; set; }
+        bool isEdited = false;
         //     public string? SenderName { get; set; } = string.Empty;
         //   public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
 

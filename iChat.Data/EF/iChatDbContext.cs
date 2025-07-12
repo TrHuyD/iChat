@@ -1,5 +1,6 @@
 ﻿using iChat.Data.Configurations;
 using iChat.Data.Configurations.Junctions;
+using iChat.Data.Entities.Logs;
 using iChat.Data.Entities.Servers;
 using iChat.Data.Entities.Servers.ChatRoles;
 using iChat.Data.Entities.Users;
@@ -33,6 +34,7 @@ namespace iChat.Data.EF
             builder.ApplyConfiguration(new ChannelPermissionOverrideConfiguration());
             builder.ApplyConfiguration(new BucketConfiguration());
             builder.ApplyConfiguration(new ServerBanConfiguration());
+            builder.ApplyConfiguration(new MessageAuditLogConfiguration());
             //builder.seed();
             base.OnModelCreating(builder);
         }
@@ -46,9 +48,9 @@ namespace iChat.Data.EF
         public DbSet<ChannelPermissionOverride> ChannelPermissionOverrides { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
-
         public DbSet<UserChatRole> UserChatRoles { get; set; }
         public DbSet<UserChatServer> UserChatServers { get; set; }
         public DbSet<ServerBan> ServerBans { get; set; }
+        public DbSet<MessageAuditLog> MessageAuditLogs { get; set; }
     }
 }

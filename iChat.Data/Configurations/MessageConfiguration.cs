@@ -50,12 +50,13 @@ namespace iChat.Data.Configurations
             builder.HasOne(m => m.Bucket)
                 .WithMany(b => b.Messages)
                 .HasForeignKey(m => new { m.ChannelId, m.BucketId });
-            builder.HasGeneratedTsVectorColumn(
-                    p => p.SearchVector,
-                    "english",                      
-                    p => new { p.TextContent })        
-                .HasIndex(p => p.SearchVector)
+            builder.Property(m => m.SearchVector)
+                .HasComputedColumnSql(
+                    "CASE WHEN NOT \"isDeleted\" THEN to_tsvector('english', coalesce(\"TextContent\", '')) ELSE NULL END",
+                    stored: true);
+            builder.HasIndex(m => m.SearchVector)
                 .HasMethod("GIN");
+
         }
     }
 }

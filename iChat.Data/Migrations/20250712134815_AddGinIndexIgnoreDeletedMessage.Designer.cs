@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using NpgsqlTypes;
@@ -12,9 +13,11 @@ using iChat.Data.EF;
 namespace iChat.Data.Migrations
 {
     [DbContext(typeof(iChatDbContext))]
-    partial class iChatDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250712134815_AddGinIndexIgnoreDeletedMessage")]
+    partial class AddGinIndexIgnoreDeletedMessage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -135,8 +138,8 @@ namespace iChat.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<short>("ActionType")
-                        .HasColumnType("smallint");
+                    b.Property<int>("ActionType")
+                        .HasColumnType("integer");
 
                     b.Property<long>("ActorUserId")
                         .HasColumnType("bigint");
@@ -146,11 +149,6 @@ namespace iChat.Data.Migrations
 
                     b.Property<long>("MessageId")
                         .HasColumnType("bigint");
-
-                    b.Property<string>("PreviousContent")
-                        .IsRequired()
-                        .HasMaxLength(40000)
-                        .HasColumnType("character varying(40000)");
 
                     b.Property<DateTimeOffset>("Timestamp")
                         .HasColumnType("timestamp with time zone");
@@ -165,7 +163,7 @@ namespace iChat.Data.Migrations
 
                     b.HasIndex("ChannelId", "ActionType");
 
-                    b.ToTable("MessageAuditLogs");
+                    b.ToTable("message_audit_logs", (string)null);
                 });
 
             modelBuilder.Entity("iChat.Data.Entities.Servers.ChatChannel", b =>

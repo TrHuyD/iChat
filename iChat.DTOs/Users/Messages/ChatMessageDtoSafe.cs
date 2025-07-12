@@ -18,7 +18,9 @@ namespace iChat.DTOs.Users.Messages
         public string ChannelId { get; set; }
         //     public string? SenderName { get; set; } = string.Empty;
         //   public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
-       public ChatMessageDtoSafe(ChatMessageDto chatMessageDto)
+        public bool isEdited { get; set; } = false;
+        public bool isDeleted { get; set; } = false;
+        public ChatMessageDtoSafe(ChatMessageDto chatMessageDto)
         {
             Id = chatMessageDto.Id.ToString();
             Content = chatMessageDto.Content;

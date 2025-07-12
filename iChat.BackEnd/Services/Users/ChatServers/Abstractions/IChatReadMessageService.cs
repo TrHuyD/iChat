@@ -3,6 +3,7 @@ using iChat.DTOs.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
 {
+    [Obsolete]
     public interface IChatReadMessageService
     {
         Task<List<ChatMessageDto>> RetrieveRecentMessage(UserGetRecentMessageRequest request);

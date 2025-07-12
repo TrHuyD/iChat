@@ -18,7 +18,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
         private TimeSpan default_invite_lifetime = TimeSpan.FromDays(7); // Default invite link lifetime
         public async Task<string> CreateInviteLink(string serverId, string userId)
         {
-           var isAdmin =await _localCache.IsAdmin(serverId, userId);
+           var isAdmin =await _localCache.IsAdmin(long.Parse(serverId),long.Parse (userId));
           
             if(!isAdmin)
                 throw new UnauthorizedAccessException($"User {userId} is not an admin of server {serverId}");

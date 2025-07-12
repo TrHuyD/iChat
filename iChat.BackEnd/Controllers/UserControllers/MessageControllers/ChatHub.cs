@@ -18,8 +18,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
     public class ChatHub : Hub
     {
         private readonly ILogger<ChatHub> _logger;
-        private readonly IChatSendMessageService _sendMessageService;
-        private readonly IChatReadMessageService _readMessageService;
+        private readonly IMessageWriteService _sendMessageService;
         private readonly MemCacheUserChatService _localCache; 
 
     //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
@@ -27,15 +26,13 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         private readonly IUserPresenceCacheService _presenceService;
         public ChatHub(
             ILogger<ChatHub> logger,
-            IChatSendMessageService sendMessageService,
-            IChatReadMessageService readMessageService,
+            IMessageWriteService sendMessageService,
             MemCacheUserChatService memCacheUserChatService,
              IUserPresenceCacheService presenceService
             )
         {
             _logger = logger;
             _sendMessageService = sendMessageService;
-            _readMessageService = readMessageService;
             _localCache = memCacheUserChatService;
             _presenceService = presenceService;
         }
@@ -108,7 +105,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             _logger.LogInformation($"Message sent to room {roomId} by user {userId}");
 
             // Broadcast to all members in room
-            await Clients.Group(roomId).SendAsync("ReceiveMessage", new ChatMessageDtoSafe(result.Value));
+            await Clients.Group(roomId).SendAsync("ReceiveMessage", result.Value);
         }
 
         //public async Task<List<ChatMessageDtoSafe>> GetMessageHistory(string roomId, string? beforeMessageId = null)
