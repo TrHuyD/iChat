@@ -25,6 +25,7 @@ namespace iChat.Client.Services.Auth
                 _accessToken = value;
             }
         }
+
         public DateTime ExpireTime { get; private set; } = DateTime.MinValue;
         public bool isAuthenticated => !string.IsNullOrEmpty(AccessToken);
         //public void SetToken(string token) => AccessToken = token;
@@ -79,7 +80,7 @@ public TokenProvider(NavigationManager navigation,HttpClient http,ConfigService 
             }
             return RetrieveTokenResult.Fail;
         }
-        private async Task ReadyToken()
+        private async Task<bool> ReadyToken(bool toLogin=true)
         {
             if(string.IsNullOrWhiteSpace(AccessToken))
             {
@@ -89,19 +90,24 @@ public TokenProvider(NavigationManager navigation,HttpClient http,ConfigService 
                     switch (rt)
                     {
                         case RetrieveTokenResult.Unauthorized:
-                            _navigation.NavigateTo("/login");
-                            throw new HttpRequestException("Fail to connect to Server", null, System.Net.HttpStatusCode.Unauthorized);
-                            return;
+                            if (toLogin)
+                            {
+                                _navigation.NavigateTo("/login");
+                                throw new HttpRequestException("Fail to connect to Server", null, System.Net.HttpStatusCode.Unauthorized);
+                            }
+                            else
+                                return false;
                         case RetrieveTokenResult.Success:
-                            return;
-                        default:
-                            continue;
-                    }
+                                    return true;
+                                default:
+                                    continue;
+                                }
 
                     
                 }
                 throw new HttpRequestException("Fail to connect to Server", null, System.Net.HttpStatusCode.InternalServerError);
             }
+            return true;
             
         }
         public async Task<string> GetToken()
@@ -109,7 +115,15 @@ public TokenProvider(NavigationManager navigation,HttpClient http,ConfigService 
             await ReadyToken();
             return AccessToken;
         }
-
+        public async Task<bool> IsLogin()
+        {
+            if (string.IsNullOrWhiteSpace(AccessToken))
+            {
+                var rt = await ReadyToken(false);
+                return rt;
+            }
+            return true;
+        }
         public enum RetrieveTokenResult
         {
             Success,

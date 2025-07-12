@@ -1,9 +1,11 @@
 ﻿@page "/register"
 @attribute [AllowAnonymousAttribute]
+@using iChat.Client.Services.Auth
 @using iChat.DTOs.Users.Auth
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject ConfigService _configService
+@inject TokenProvider tokenProvider
 @layout BaseLayout
 <h3>Register</h3>
 
@@ -53,6 +55,14 @@
 </p>
 
 @code {
+    protected override async Task OnInitializedAsync()
+    {
+        var isLoggedIn =await tokenProvider.IsLogin();
+        if (isLoggedIn)
+        {
+            Nav.NavigateTo("/", forceLoad: true);
+        }
+    }
     private RegisterRequest register = new();
     private string confirmPassword = "";
     private string passwordError = "";

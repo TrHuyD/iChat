@@ -81,7 +81,7 @@ namespace iChat.Client.Pages.Chat
                     {
                         UserId = msg.Message.SenderId,
                         User = user,
-                        Timestamp = msg.Message.CreatedAt.LocalDateTime,
+                        Timestamp = msg.Message.CreatedAt,
                         Messages = new List<RenderedMessage>()
                     };
                     groups.Add(current);

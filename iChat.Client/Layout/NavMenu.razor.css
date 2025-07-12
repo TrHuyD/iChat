@@ -1,11 +1,16 @@
 .discord-nav {
     display: flex;
+    flex-direction: column;
     height: 100vh;
     background-color: #1e1f22;
     color: white;
     position: relative;
 }
-
+.sc-sidebars {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+}
 .server-sidebar {
     width: 72px;
     background-color: #1e1f22;
@@ -133,8 +138,6 @@
 }
 .channel-sidebar {
     width: 240px;
-    min-width: 180px;
-    max-width: 360px;
     resize: horizontal;
     overflow: auto;
     background-color: #2b2d31;
@@ -173,7 +176,7 @@
     bottom: 0;
     left: 0;
     height: 52px;
-    width: 312px;
+    flex-direction: row;
     padding: 8px;
     background-color: #232428;
     border-top: 1px solid #1e1f22;
@@ -182,6 +185,8 @@
     gap: 8px;
     z-index: 100;
     box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    box-sizing: border-box;
 }
 
     .user-box .avatar {
