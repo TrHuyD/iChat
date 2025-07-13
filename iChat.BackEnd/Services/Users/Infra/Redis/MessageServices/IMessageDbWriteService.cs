@@ -9,8 +9,8 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
     {
         Task UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId);
         Task UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages);
-        Task EditMessageAsync(EditMessageRq rq);
-        Task  DeleteMessageAsync(DeleteMessageRq rq ,bool hasAdminRight=false);
+        Task<int> EditMessageAsync(EditMessageRq rq);
+        Task<int>  DeleteMessageAsync(DeleteMessageRq rq ,bool hasAdminRight=false);
 
     }
 }

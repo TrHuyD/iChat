@@ -1,4 +1,5 @@
 ﻿using iChat.BackEnd.Models.User.MessageRequests;
+using iChat.BackEnd.Services.Users.ChatServers;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Authorization;
@@ -13,11 +14,11 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
     public class ChatSendMessageController :ControllerBase
     {
         readonly IMessageWriteService _writeService;
-        readonly IHubContext<ChatHub> _chatHub;
-        public ChatSendMessageController(IMessageWriteService writeService,IHubContext<ChatHub> chathub)
+        readonly ChatHubResponer _chatHub;
+        public ChatSendMessageController(IMessageWriteService writeService, ChatHubResponer chatHub)
         {
             _writeService = writeService;
-            _chatHub = chathub;
+            _chatHub = chatHub;
         }
         [HttpPost("EditMessage")]
         public async Task<IActionResult> EditMessage([FromBody] UserEditMessageRq rq)
@@ -29,14 +30,14 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             string userId = new UserClaimHelper(User).GetUserIdStr();
             try
             {
-                await _writeService.EditMessageAsync(rq, userId);
+                await _chatHub.EditedMessage(await _writeService.EditMessageAsync(rq, userId));
             }
             catch(Exception ex)
             {
                 return BadRequest($"Fail to edit message {ex.Message}");
             }
-            
-                return Ok("Message edited successfully.");
+
+            return Ok("Message edited successfully.");
         }
         [HttpPost("DeleteMessage")]
         public async Task<IActionResult> DeleteMessage([FromBody] UserDeleteMessageRq rq)
@@ -48,13 +49,13 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             string userId = new UserClaimHelper(User).GetUserIdStr();
             try
             {
-                await _writeService.DeleteMessageAsync(rq, userId);
+               await _chatHub.DeletedMessage(await _writeService.DeleteMessageAsync(rq, userId));
             }
             catch (Exception ex)
-            {
+            {   
                 return BadRequest($"Fail to delete message {ex.Message}");
             }
-            return Ok("Message deleted successfully.");
+                return Ok("Message deleted successfully.");
         }
         //[HttpPost("{channelId}/send")]
         //public async Task<IActionResult> SendMessage(string channelId, [FromBody] UserWeb_MessageRequest request)

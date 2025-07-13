@@ -31,7 +31,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             _idGen = snowflakeService;
         }
 
-        public async Task DeleteMessageAsync(UserDeleteMessageRq rq,string UserId)
+        public async Task<DeleteMessageRt> DeleteMessageAsync(UserDeleteMessageRq rq,string UserId)
         {
             var longrq= new DeleteMessageRq
             {
@@ -42,11 +42,18 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             };
             var isAdmin = await  _serverMetaDataCacheService.IsAdmin(longrq.ServerId,longrq.ChannelId,longrq.UserId);
             var cacheResult =await _cache.DeleteMessageAsync(longrq, isAdmin);
-            await _chatWriteService.DeleteMessageAsync(longrq, isAdmin);
-            
+            var bucketId=await _chatWriteService.DeleteMessageAsync(longrq, isAdmin);
+            return new DeleteMessageRt
+            {
+                ChannelId = rq.ChannelId,
+                MessageId = rq.MessageId,
+                ServerId = rq.ServerId,
+                BucketId =bucketId
+            };
+
         }
 
-        public async Task EditMessageAsync(UserEditMessageRq rq, string UserId)
+        public async Task<EditMessageRt> EditMessageAsync(UserEditMessageRq rq, string UserId)
         {
             var longrq= new EditMessageRq
             {
@@ -55,8 +62,17 @@ namespace iChat.BackEnd.Services.Users.ChatServers
                 UserId = long.Parse(UserId),
                 NewContent = rq.NewContent
             };
+            await _serverMetaDataCacheService.IsInServerWithCorrectStruct(longrq.UserId, longrq.UserId, longrq.ChannelId);
             var cacheResult= await _cache.EditMessageAsync(longrq);
-            await _chatWriteService.EditMessageAsync(longrq);
+            var bucketID =await _chatWriteService.EditMessageAsync(longrq);
+            return new EditMessageRt
+            {
+                ChannelId = rq.ChannelId,
+                MessageId = rq.MessageId,
+                NewContent = rq.NewContent,
+                ServerId = rq.ServerId,
+                BucketId = bucketID
+            };
         }
 
         public async Task<OperationResultT<ChatMessageDtoSafe>> SendTextMessageAsync(MessageRequest request)

@@ -23,7 +23,9 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
             MessageType = m.MessageType,
             Content = m.TextContent ?? "",
             ContentMedia = m.MediaContent ?? "",
-            CreatedAt = m.Timestamp
+            CreatedAt = m.Timestamp,
+            IsEdited= m.LastEditedAt!=null,
+            IsDeleted = m.isDeleted,
         };
 
         public EfCoreMessageReadService(iChatDbContext context)

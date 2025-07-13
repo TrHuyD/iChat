@@ -10,7 +10,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         private static string BucketKey(long channelId, int bucketId) => $"bucket:{channelId}:{bucketId}";
         private static string AllBucketsKey(long channelId) => $"bucket:all:{channelId}";
         private static string LatestBucketsKey(long channelId) => $"bucket:latest:{channelId}";
-
         public MemCacheMessageService(IMemoryCache cache)
         {
             _cache = cache;

@@ -26,7 +26,7 @@ namespace iChat.Data.Entities.Users.Messages
         public DateTimeOffset Timestamp { get; set; }
         public int BucketId { get; set; }
        public Bucket Bucket { get; set; } = null!;
-        public NpgsqlTsVector SearchVector { get; set; } = null!;
+        public NpgsqlTsVector? SearchVector { get; set; } 
         public DateTimeOffset? LastEditedAt { get; set; }
         public bool isDeleted { get; set; } 
 

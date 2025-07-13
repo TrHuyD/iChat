@@ -8,7 +8,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
     public interface IMessageWriteService
     {
         Task<OperationResultT<ChatMessageDtoSafe>> SendTextMessageAsync(MessageRequest request);
-        Task EditMessageAsync(UserEditMessageRq rq,string UserId);
-        Task DeleteMessageAsync(UserDeleteMessageRq rq, string UserId);
+        Task<EditMessageRt> EditMessageAsync(UserEditMessageRq rq,string UserId);
+        Task<DeleteMessageRt> DeleteMessageAsync(UserDeleteMessageRq rq, string UserId);
     }
 }

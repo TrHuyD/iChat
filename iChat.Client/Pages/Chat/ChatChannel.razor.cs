@@ -88,6 +88,8 @@ namespace iChat.Client.Pages.Chat
                 var (latest, loc) = await MessageManager.GetLatestMessage(RoomId);
                 _messages.Clear();
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
+                MessageManager.RegisterOnMessageEdited(HandleEditMessage);
+                MessageManager.ResigterOnMessageDeleted(HandleDeleteMessage);
                 Console.WriteLine("Registered message handler for ChatService.");
                 foreach (var bucket in latest)
                     await AddMessages(bucket);
@@ -108,7 +110,43 @@ namespace iChat.Client.Pages.Chat
                 _shouldScrollToBottom = false;
             }
         }
+        private async Task HandleDeleteMessage( DeleteMessageRt rq)
+        {
+            if(rq.ChannelId != RoomId) return;
+            try
+            {
+                var messageId = long.Parse(rq.MessageId);
+                var rendered= _messages.GetValueOrDefault(messageId);
+                if(rendered != null)
+                {
+                rendered.ToggleDelete();
+                await InvokeAsync(StateHasChanged);
 
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error handling delete message: {ex.Message}");
+            }
+        }
+        private async Task HandleEditMessage(EditMessageRt rq)
+        {
+            if (rq.ChannelId != RoomId) return;
+            try
+            {
+                var messageId = long.Parse(rq.MessageId);
+                var rendered = _messages.GetValueOrDefault(messageId);
+                if (rendered != null)
+                {
+                    rendered.HandleEdit(rq.NewContent);
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error handling edit message: {ex.Message}");
+            }
+        }
         private async Task HandleNewMessage(ChatMessageDtoSafe message)
         {
             if (message.ChannelId != RoomId) return;

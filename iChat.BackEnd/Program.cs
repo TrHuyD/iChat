@@ -142,6 +142,7 @@ builder.Services.AddTransient<Lazy<IUserService>>(provider => new Lazy<IUserServ
 builder.Services.AddSingleton<IChatServerMetadataCacheService, MemCacheChatServerMetadataService>();
 builder.Services.AddScoped<IMessageReadService, MessageReadApplicationService>();
 builder.Services.AddScoped<IMessageCacheService,MemCacheMessageService>();
+builder.Services.AddTransient<ChatHubResponer, ChatHubResponer>();
 // Add hosted services
 builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();
 builder.Services.AddScoped<IMessageSearchService, EfCoreMessageSearchService>();

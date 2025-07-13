@@ -14,6 +14,8 @@ namespace iChat.Client.Services.UserServices.Chat
         private readonly ConcurrentDictionary<long, int> _latestBucketMap = new();
         private readonly JwtAuthHandler _http;
         public event Func<ChatMessageDtoSafe, Task>? OnMessageReceived;
+        public event Func<EditMessageRt, Task>? OnMessageEdited;
+        public event Func<DeleteMessageRt, Task>? OnMessageDeleted;
         public ChatMessageCacheService(JwtAuthHandler http)
         {
             _http = http;
@@ -23,6 +25,64 @@ namespace iChat.Client.Services.UserServices.Chat
             OnMessageReceived -= onMessageReceived;
             OnMessageReceived += onMessageReceived;
         }
+        public void RegisterOnMessageEdited(Func<EditMessageRt, Task> onMessageEdited)
+        {
+            OnMessageEdited -= onMessageEdited;
+            OnMessageEdited += onMessageEdited;
+        }
+        public void ResigterOnMessageDeleted(Func<DeleteMessageRt, Task> onMessageDeleted)
+        {
+            OnMessageDeleted -= onMessageDeleted;
+            OnMessageDeleted += onMessageDeleted;
+        }
+        public async Task HandleDeleteMessage(DeleteMessageRt delete)
+        {
+            var channelId = long.Parse(delete.ChannelId);
+            var messageId = long.Parse(delete.MessageId);
+
+            if (_messageCache.TryGetValue(channelId, out var buckets))
+            {
+               
+                if (_latestBucketMap[channelId]<delete.BucketId)
+                delete.BucketId= int.MaxValue;
+                if (buckets.TryGetValue(delete.BucketId, out var bucket))
+                {
+                    var target = bucket.ChatMessageDtos.FirstOrDefault(m => long.Parse(m.Id) == messageId);
+                    if (target != null)
+                    {
+                        target.isDeleted = true;
+                        target.Content = string.Empty;
+                        target.ContentMedia = string.Empty;
+
+                        await OnMessageDeleted?.Invoke(delete);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Message {messageId} not found in bucket {delete.BucketId} for channel {channelId}");
+                    }
+                }
+                else
+                    Console.WriteLine($"Bucket {delete.BucketId} not found for channel {channelId}");
+            }
+        }
+        public async Task HandleEditMessage(EditMessageRt rq)
+        {
+            var channelId = long.Parse(rq.ChannelId);
+            if (_messageCache.TryGetValue(channelId, out var buckets))
+            {
+                if (buckets.TryGetValue(int.MaxValue, out var bucket))
+                {
+                    var target = bucket.ChatMessageDtos.FirstOrDefault(m => m.Id == rq.MessageId);
+                    if (target != null && !target.isDeleted)
+                    {
+                        target.isEdited = true;
+                        target.Content = rq.NewContent;
+                        await OnMessageEdited?.Invoke(rq);
+                    }
+                }
+            }
+        }
+
         public async Task AddLatestMessage(ChatMessageDtoSafe message )
         {
             await OnMessageReceived.Invoke(message);
@@ -198,24 +258,18 @@ namespace iChat.Client.Services.UserServices.Chat
                     list[bucket.BucketId] = bucket;
                 }
 
-                //if (list.Count > 0)
-                //{
-                //    int last = list.Keys.Max();
-                //    _latestBucketMap[chatChannelId] = last;
-
-                //    if (last >= 0)
-                //    {
-                //        if (!list.ContainsKey(last + 1))
-                //        {
-                //            await TryLoadBucket(chatChannelId, last + 1, list);
-                //        }
-                //        if (!list.ContainsKey(int.MaxValue))
-                //        {
-                //            await TryLoadBucket(chatChannelId, int.MaxValue, list);
-                //        }
-                //    }
-                //}
-
+                switch(buckets.Count)
+                {
+                    case 0:
+                        _latestBucketMap[chatChannelId] = 0;
+                        break;
+                    case 1:
+                        _latestBucketMap[chatChannelId] =0;
+                        break;
+                    default:
+                        _latestBucketMap[chatChannelId] = buckets[^2].BucketId;
+                        break;
+                }
                 _messageCache[chatChannelId] = list;
             }
             else

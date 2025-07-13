@@ -8,7 +8,7 @@ namespace iChat.Client.Services.UserServices.Chat
 
         public static RenderedMessage RenderMessage(ChatMessageDtoSafe message, string currentUserId)
         {
-            return new RenderedMessage
+            var result = new RenderedMessage
             {
                 Message = message,
                 CssClass = message.SenderId == currentUserId ? "message-self" : "message-other",
@@ -16,6 +16,11 @@ namespace iChat.Client.Services.UserServices.Chat
                 Content = message.Content,
                 ShowTimestamp = true
             };
+            if(message.isDeleted)
+            {
+                result.ToggleDelete();
+            }
+            return result;
         }
     }
 }

@@ -23,12 +23,9 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _queueService = queueService;
         }
 
-        public async Task DeleteMessageAsync(DeleteMessageRq rq, bool hasAdminRight = false)
+        public async Task<int> DeleteMessageAsync(DeleteMessageRq rq, bool hasAdminRight = false)
         {
             var message = await _context.Messages
-                .Include(m => m.ChatChannel)
-                .Include(m => m.User)
-                .Include(m=>m.MessageType)
                 .FirstOrDefaultAsync(m => m.Id == rq.MessageId);
             if (message == null)
                 throw new InvalidOperationException("Message not found");
@@ -68,13 +65,12 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             };
             _context.MessageAuditLogs.Add(log);
             await _context.SaveChangesAsync();
+            return message.BucketId;
         }
 
-        public async Task EditMessageAsync(EditMessageRq rq)
+        public async Task<int> EditMessageAsync(EditMessageRq rq)
         {
             var message = await _context.Messages
-                .Include(m => m.ChatChannel)
-                .Include(m => m.User)
                 .FirstOrDefaultAsync(m => m.Id == rq.MessageId);
             if (message == null)
                 throw new InvalidOperationException("Message not found");
@@ -100,6 +96,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 
             _context.MessageAuditLogs.Add(log);
             await _context.SaveChangesAsync();
+            return message.BucketId;
         }
 
         public async Task UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId)

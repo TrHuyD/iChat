@@ -9,7 +9,8 @@ namespace iChat.DTOs.Users.Messages
 {
     public class UserEditMessageRq
     {
-
+        [Required]
+        public string ServerId { get; set; }
         [Required]
       public  string ChannelId { get; set; }
         [Required]
