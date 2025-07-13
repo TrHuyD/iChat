@@ -89,7 +89,7 @@ namespace iChat.Client.Pages.Chat
                 _messages.Clear();
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
                 MessageManager.RegisterOnMessageEdited(HandleEditMessage);
-                MessageManager.ResigterOnMessageDeleted(HandleDeleteMessage);
+                MessageManager.RegisterOnMessageDeleted(HandleDeleteMessage);
                 Console.WriteLine("Registered message handler for ChatService.");
                 foreach (var bucket in latest)
                     await AddMessages(bucket);

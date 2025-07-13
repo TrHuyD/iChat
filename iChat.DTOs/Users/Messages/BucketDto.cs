@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace iChat.DTOs.Users.Messages
@@ -14,6 +15,15 @@ namespace iChat.DTOs.Users.Messages
         public int MessageCount { get; set; }
         public string FirstSequence { get; set; }
         public string LastSequence { get; set; }
+        [JsonIgnore]
+        private long? _firstSequenceLong;
+        [JsonIgnore]
+        public long FirstSequenceLong => _firstSequenceLong ??=
+            long.TryParse(FirstSequence, out var result)
+                ? result
+                : throw new Exception("unexpected value");
+        [JsonIgnore]
+        public long LastSequenceLong => long.TryParse(LastSequence, out var result) ? result : throw new Exception("unexpected value");
         public List<ChatMessageDtoSafe> ChatMessageDtos { get; set; } = new List<ChatMessageDtoSafe>();
         public BucketDto()
         {

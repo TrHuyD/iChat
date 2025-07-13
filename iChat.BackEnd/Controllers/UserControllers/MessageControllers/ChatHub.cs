@@ -15,7 +15,7 @@ using System.Security.Claims;
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 {
     [Authorize]
-    public class ChatHub : Hub
+    public partial class ChatHub : Hub
     {
         private readonly ILogger<ChatHub> _logger;
         private readonly IMessageWriteService _sendMessageService;
@@ -23,6 +23,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 
     //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
          static string FocusKey(string roomId)=> $"{roomId}_focus";
+         static string PersonalKey(string userId) => $"{userId}_personal";
         private readonly IUserPresenceCacheService _presenceService;
         public ChatHub(
             ILogger<ChatHub> logger,
@@ -46,6 +47,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, list.ToString());
             }
+            await Groups.AddToGroupAsync(Context.ConnectionId, PersonalKey(userId));
             _presenceService.SetUserOnline(userId,serverList);
             _logger.LogInformation($"Client joining finished: {Context.ConnectionId}");
             await base.OnConnectedAsync();

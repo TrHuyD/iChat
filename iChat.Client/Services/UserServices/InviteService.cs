@@ -37,7 +37,7 @@ namespace iChat.Client.Services.UserServices
                 return null;
             }
         }
-        public async Task<string?> UseInvite(string inviteId)
+        public async Task UseInvite(string inviteId)
         {
             try
             {
@@ -47,16 +47,13 @@ namespace iChat.Client.Services.UserServices
                 {
                     var error = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("Failed to join server via invite: {Response}", error);
-                    return null;
                 }
-                var result = await response.Content.ReadFromJsonAsync<InviteJoinResult>();
-                return result?.ServerId;
+              //  return result?.ServerId;
 
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError("Error joining server with invite: {Message}", ex.Message);
-                return null;
             }
         }
 

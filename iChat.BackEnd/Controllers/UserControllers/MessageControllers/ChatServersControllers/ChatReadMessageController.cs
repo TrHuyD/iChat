@@ -31,17 +31,17 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             return Ok(buckets);
         }
         [HttpGet("{channelId}/latest")]
-        public async Task<IActionResult> test([FromServices] IMessageDbReadService readService, string channelId)
+        public async Task<IActionResult> test([FromServices] IMessageReadService readService, string channelId)
         {
             if (long.TryParse(channelId, out long channelIdLong) == false || (channelIdLong <= 1000000000000000l))
             {
                 return BadRequest("Invalid channel ID format.");
             }
-            return Ok(await readService.GetLatestBucketsByChannelAsync(channelIdLong));
+            return Ok(await readService.GetLatestBucketsAsync(channelIdLong));
         }
         [HttpGet("{channelId:long}/bucketsingle")]
         public async Task<IActionResult> GetBucketById(
-            [FromServices] IMessageDbReadService readService,
+            [FromServices] IMessageReadService readService,
             long channelId,
             [FromQuery(Name = "id")] int bucketId)
         {
@@ -51,7 +51,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
                 return BadRequest("Invalid bucket ID.");
             try
             {
-                var bucket = await readService.GetBucketById(channelId, bucketId);
+                var bucket = await readService.GetBucketByIdAsync(channelId, bucketId);
                 return Ok(bucket);
             }
             catch (Exception ex)

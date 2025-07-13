@@ -38,15 +38,8 @@
 
     private async Task Continue()
     {
-        var serverId = await InviteService.UseInvite(InviteId);
-        if (serverId != null)
-        {
-            Navigation.NavigateTo($"/chat/{serverId}");
-        }
-        else
-        {
-            _failed = true;
-        }
+         await InviteService.UseInvite(InviteId);
+        Navigation.NavigateTo($"/", forceLoad: true);
     }
 
     private void ExitToMainMenu() => Navigation.NavigateTo("/");
