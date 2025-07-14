@@ -6,6 +6,16 @@ html, body {
     width: 100%;
     overflow: hidden;
 }
+.generic-background {
+    min-height: 100vh;
+    background: radial-gradient( circle, #2f3136 0%, /* dark center */
+    #36393f 40%, /* slightly lighter */
+    #40444b 70%, /* lighter towards edges */
+    #4f545c 100% /* lightest at far edge */
+    );
+    padding: 2rem;
+}
+
 
 h1:focus {
     outline: none;
@@ -116,4 +126,126 @@ code {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+/* === Base Form Container === */
+form {
+    background-color: #2b2d31;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    max-width: 400px;
+    margin: 2rem auto;
+    color: #ffffff;
+    font-family: "Segoe UI", sans-serif;
+}
+
+    /* === Labels === */
+    form label {
+        color: #b9bbbe;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    /* === Inputs === */
+    form input.form-control {
+        background-color: #1e1f22;
+        border: 1px solid #4f545c;
+        color: #dcddde;
+        border-radius: 4px;
+        transition: border-color 0.2s ease;
+    }
+
+        form input.form-control:focus {
+            border-color: #5865f2;
+            box-shadow: 0 0 0 1px #5865f2;
+            background-color: #1e1f22;
+            color: #ffffff;
+        }
+
+/* === Validation Messages === */
+.validation-message,
+.text-danger,
+.validation-summary-errors {
+    color: #f04747;
+    font-size: 0.85rem;
+}
+
+/* === Submit Buttons === */
+form button[type="submit"] {
+    background-color: #5865f2;
+    border: none;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+    margin-top: 1rem;
+}
+
+    form button[type="submit"]:hover {
+        background-color: #4752c4;
+    }
+
+/* === Link Text === */
+form + p, p.mt-3 {
+    text-align: center;
+    color: #b9bbbe;
+    font-size: 0.9rem;
+}
+
+    form + p a, p.mt-3 a {
+        color: #00b0f4;
+        text-decoration: none;
+    }
+
+        form + p a:hover {
+            text-decoration: underline;
+        }
+
+/* === Toasts === */
+.toast-container {
+    z-index: 1055;
+}
+
+.toast {
+    border-radius: 6px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    font-family: "Segoe UI", sans-serif;
+    min-width: 280px;
+    padding: 0.75rem;
+    animation: fadein 0.3s ease-in-out;
+}
+
+    .toast .toast-body {
+        font-size: 0.9rem;
+        color: white;
+    }
+
+    .toast .btn-close {
+        filter: invert(1);
+    }
+
+.bg-success {
+    background-color: #43b581 !important;
+}
+
+.bg-danger {
+    background-color: #f04747 !important;
+}
+
+.bg-warning {
+    background-color: #faa61a !important;
+}
+
+@keyframes fadein {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

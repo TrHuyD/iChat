@@ -8,6 +8,14 @@
         {
             OnShow?.Invoke(message, level);
         }
+        public void ShowError(string message)
+        {
+            ShowToast(message, "error");
+        }
+        public void ShowSuccess(string message)
+        {
+            ShowToast(message, "success");
+        }
     }
 
 }

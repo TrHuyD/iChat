@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components.Web;
+﻿using iChat.DTOs.Users.Messages;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
 namespace iChat.Client.Pages.Chat
@@ -8,10 +9,10 @@ namespace iChat.Client.Pages.Chat
         // Context menu fields
         private bool _showContextMenu = false;
         private string _contextMenuStyle = "";
-        private string _contextMenuMessageId = "";
-        private void ShowContextMenu(MouseEventArgs e, string messageId)
+        private ChatMessageDtoSafe _contextMenuMessage =null;
+        private void ShowContextMenu(MouseEventArgs e, ChatMessageDtoSafe messageId)
         {
-            _contextMenuMessageId = messageId;
+            _contextMenuMessage = messageId;
             _contextMenuStyle = $"top: {e.ClientY}px; left: {e.ClientX}px;";
             _showContextMenu = true;
         }
@@ -23,13 +24,23 @@ namespace iChat.Client.Pages.Chat
         private void HandleEscapeKey(KeyboardEventArgs e)
         {
             if (e.Key == "Escape")
-                _showContextMenu = false;
+                HideContextMenu();
         }
 
         private async Task CopyMessageId()
         {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _contextMenuMessageId);
-            _showContextMenu = false;
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _contextMenuMessage.Id);
+            HideContextMenu();
+        }
+        private async Task DeleteMessage()
+        {
+            HideContextMenu();
+            await    _messageHandleService.DeleteMessageAsync(new UserDeleteMessageRq
+            {
+                ChannelId = _currentChannel.Id,
+                MessageId = _contextMenuMessage.Id,
+                ServerId = _currentServer.Id,
+            });
         }
     }
 }

@@ -19,7 +19,6 @@ namespace iChat.Client.Services.Auth
             _navigation = navigation;
             _configService = configService;
         } 
- 
 
         public async Task<HttpResponseMessage> SendAuthAsync(
             HttpRequestMessage request,

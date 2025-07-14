@@ -9,6 +9,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace iChat.BackEnd.Services.Users.ChatServers
 {
+    [Obsolete("This service is deprecated and will be removed in future versions. Use the new ChatServerService instead.")]
     public class ServerListService
     {
 
@@ -29,7 +30,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         public async Task<List<ChatServerDtoUser>> GetServerList(long userId)
         {
             var result= await _chatListingService.GetUserChatServersAsync(userId);
-            _localCache.SetServerListAsync(userId, result);
+           // _localCache.SetServerListAsync(userId, result);
             return result;
         }
         public async Task<List<string>> GetChannelList(long serverId)

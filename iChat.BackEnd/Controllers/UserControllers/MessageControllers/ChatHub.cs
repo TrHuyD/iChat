@@ -15,27 +15,25 @@ using System.Security.Claims;
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 {
     [Authorize]
-    public class ChatHub : Hub
+    public partial class ChatHub : Hub
     {
         private readonly ILogger<ChatHub> _logger;
-        private readonly IChatSendMessageService _sendMessageService;
-        private readonly IChatReadMessageService _readMessageService;
+        private readonly IMessageWriteService _sendMessageService;
         private readonly MemCacheUserChatService _localCache; 
 
     //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
-         static string FocusKey(string roomId)=> $"{roomId}_focus";
+        public static string FocusKey(string roomId)=> $"{roomId}_focus";
+     //    public static string PersonalKey(string userId) => $"{userId}_personal";
         private readonly IUserPresenceCacheService _presenceService;
         public ChatHub(
             ILogger<ChatHub> logger,
-            IChatSendMessageService sendMessageService,
-            IChatReadMessageService readMessageService,
+            IMessageWriteService sendMessageService,
             MemCacheUserChatService memCacheUserChatService,
              IUserPresenceCacheService presenceService
             )
         {
             _logger = logger;
             _sendMessageService = sendMessageService;
-            _readMessageService = readMessageService;
             _localCache = memCacheUserChatService;
             _presenceService = presenceService;
         }
@@ -44,7 +42,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         {
             _logger.LogInformation($"Client connected: {Context.ConnectionId}");
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
-            var serverList = _localCache.GetServerListAsync(userId, true);
+            var serverList = _localCache.GetUserServerList(userId, true);
             foreach (var list in serverList)
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, list.ToString());
@@ -56,14 +54,14 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         public async Task HeartBeat()
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
-            var serverList = _localCache.GetServerListAsync(userId, true);
+            var serverList = _localCache.GetUserServerList(userId, true);
             _presenceService.SetUserOnline(userId, serverList);
         }
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             _logger.LogInformation($"Client disconnected: {Context.ConnectionId}");
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
-            var serverList = _localCache.GetServerListAsync(userId, true);
+            var serverList = _localCache.GetUserServerList(userId, true);
             _presenceService.SetUserOffline(userId, serverList);
             await base.OnDisconnectedAsync(exception);
         }
@@ -104,11 +102,11 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
                 messageType = MessageType.Text
             };
 
-            var result = await _sendMessageService.SendTextMessageAsync(request);
+            var result = await _sendMessageService.SendTextMessageAsync(request,roomId);
             _logger.LogInformation($"Message sent to room {roomId} by user {userId}");
 
             // Broadcast to all members in room
-            await Clients.Group(roomId).SendAsync("ReceiveMessage", new ChatMessageDtoSafe(result.Value));
+            await Clients.Group(roomId).SendAsync("ReceiveMessage", result.Value);
         }
 
         //public async Task<List<ChatMessageDtoSafe>> GetMessageHistory(string roomId, string? beforeMessageId = null)

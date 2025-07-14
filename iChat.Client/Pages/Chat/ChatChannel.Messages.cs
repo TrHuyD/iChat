@@ -107,7 +107,8 @@ namespace iChat.Client.Pages.Chat
                 {
                     UserId = userId,
                     User = user,
-                    Messages = new List<RenderedMessage> { message }
+                    Messages = new List<RenderedMessage> { message },
+                    Timestamp= message.Message.CreatedAt
                 });
             }
         }

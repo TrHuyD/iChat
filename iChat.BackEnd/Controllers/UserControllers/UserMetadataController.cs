@@ -1,5 +1,5 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers;
-
+using iChat.DTOs.Users.personal;
 using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers.UserControllers
@@ -8,8 +8,8 @@ namespace iChat.BackEnd.Controllers.UserControllers
     public class UserMetadataController:ControllerBase
  
     {
-        private readonly UserMetadataService _userMetadataService;
-        public UserMetadataController(UserMetadataService userMetadataService)
+        private readonly UserApplicationService _userMetadataService;
+        public UserMetadataController(UserApplicationService userMetadataService)
         {
             _userMetadataService = userMetadataService;
         }
@@ -32,6 +32,15 @@ namespace iChat.BackEnd.Controllers.UserControllers
             if (metadataList == null || metadataList.Count == 0)
                 return NotFound();
             return Ok(metadataList);
+        }
+        [HttpPost("UpdateUserName")]
+        public async Task<IActionResult> UpdateUserName([FromBody] UpdateNicknameRequest request)
+        {
+            if(ModelState.IsValid == false)
+                return BadRequest(ModelState);
+            var userId = new UserClaimHelper(User).GetUserIdStr();
+            var updatedMetadata = await _userMetadataService.UpdateUserName(userId, request.NewNickName);
+            return Ok(updatedMetadata);
         }
 
     }

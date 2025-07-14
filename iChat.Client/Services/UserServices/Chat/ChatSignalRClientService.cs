@@ -33,11 +33,12 @@ namespace iChat.Client.Services.UserServices.Chat
             _hubConnection.On<ChatMessageDtoSafe>("ReceiveMessage", async message =>
             {
                 Console.WriteLine($"Recieved message for {message.Id}");
-                _MessageCacheService.AddLatestMessage(message);
+                await  _MessageCacheService.AddLatestMessage(message);
 
             });
             _hubConnection.On<ChatChannelDto>("ChannelCreate", HandleChannelCreate);
-
+            _hubConnection.On<DeleteMessageRt>("MessageDelete", HandleDeleteMessage);
+            _hubConnection.On<EditMessageRt>("MessageEdit",  HandleEditMessage);
             _hubConnection.Closed += async (error) =>
             {
                 Console.WriteLine("Disconnected from ChatHub");
@@ -82,7 +83,16 @@ namespace iChat.Client.Services.UserServices.Chat
         {
             await DisconnectAsync();
         }
+        private async Task HandleDeleteMessage(DeleteMessageRt rt)
+        {
 
+         await   _MessageCacheService.HandleDeleteMessage(rt); 
+
+        }
+        private async Task HandleEditMessage(EditMessageRt editMessage)
+        {
+            await _MessageCacheService.HandleEditMessage(editMessage);
+        }
         private void HandleChannelCreate(ChatChannelDto channel)
         {
             _chatNavigationService.AddChannel(channel);

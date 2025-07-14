@@ -23,6 +23,7 @@ namespace iChat.Client.Layout
         {
             ChatNavService.ServerChanged += OnServerChange;
             ChatNavService.ChannelChanged += OnChannelChange;
+            userProfileDto = LoadingService.GetUserProfile();
         }
         private void Reset()
         {

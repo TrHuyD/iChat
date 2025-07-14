@@ -127,6 +127,47 @@ namespace iChat.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("iChat.Data.Entities.Logs.MessageAuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<short>("ActionType")
+                        .HasColumnType("smallint");
+
+                    b.Property<long>("ActorUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ChannelId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("MessageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("PreviousContent")
+                        .IsRequired()
+                        .HasMaxLength(40000)
+                        .HasColumnType("character varying(40000)");
+
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChannelId");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("ActorUserId", "Timestamp");
+
+                    b.HasIndex("ChannelId", "ActionType");
+
+                    b.ToTable("MessageAuditLogs");
+                });
+
             modelBuilder.Entity("iChat.Data.Entities.Servers.ChatChannel", b =>
                 {
                     b.Property<long>("Id")
@@ -282,10 +323,15 @@ namespace iChat.Data.Migrations
                     b.Property<DateTimeOffset>("BannedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<long>("BannedById")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Reason")
                         .HasColumnType("text");
 
                     b.HasKey("UserId", "ChatServerId");
+
+                    b.HasIndex("BannedById");
 
                     b.HasIndex("ChatServerId");
 
@@ -461,6 +507,9 @@ namespace iChat.Data.Migrations
                     b.Property<long>("ChannelId")
                         .HasColumnType("bigint");
 
+                    b.Property<DateTimeOffset?>("LastEditedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("MediaContent")
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
@@ -472,8 +521,7 @@ namespace iChat.Data.Migrations
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("tsvector")
-                        .HasAnnotation("Npgsql:TsVectorConfig", "english")
-                        .HasAnnotation("Npgsql:TsVectorProperties", new[] { "TextContent" });
+                        .HasComputedColumnSql("CASE WHEN NOT \"isDeleted\" THEN to_tsvector('english', coalesce(\"TextContent\", '')) ELSE NULL END", true);
 
                     b.Property<long>("SenderId")
                         .HasColumnType("bigint");
@@ -484,6 +532,9 @@ namespace iChat.Data.Migrations
 
                     b.Property<DateTimeOffset>("Timestamp")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("isDeleted")
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
@@ -588,6 +639,33 @@ namespace iChat.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("iChat.Data.Entities.Logs.MessageAuditLog", b =>
+                {
+                    b.HasOne("iChat.Data.Entities.Users.AppUser", "ActorUser")
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("iChat.Data.Entities.Servers.ChatChannel", "ChatChannel")
+                        .WithMany()
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("iChat.Data.Entities.Users.Messages.Message", "Message")
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ActorUser");
+
+                    b.Navigation("ChatChannel");
+
+                    b.Navigation("Message");
+                });
+
             modelBuilder.Entity("iChat.Data.Entities.Servers.ChatChannel", b =>
                 {
                     b.HasOne("iChat.Data.Entities.Servers.ChatServer", "Server")
@@ -661,6 +739,12 @@ namespace iChat.Data.Migrations
 
             modelBuilder.Entity("iChat.Data.Entities.Servers.ServerBan", b =>
                 {
+                    b.HasOne("iChat.Data.Entities.Users.AppUser", "BannedBy")
+                        .WithMany()
+                        .HasForeignKey("BannedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("iChat.Data.Entities.Servers.ChatServer", "ChatServer")
                         .WithMany("Bans")
                         .HasForeignKey("ChatServerId")
@@ -672,6 +756,8 @@ namespace iChat.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("BannedBy");
 
                     b.Navigation("ChatServer");
 

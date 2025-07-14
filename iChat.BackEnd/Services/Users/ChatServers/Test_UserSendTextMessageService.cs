@@ -10,42 +10,92 @@ using iChat.ViewModels.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.ChatServers
 {
-    public class Test_UserSendTextMessageService  : IChatSendMessageService
+    public class Test_UserSendTextMessageService  : IMessageWriteService
 
     {
         readonly IMessageDbWriteService _chatWriteService;
-        readonly RedisChatCache _redis_dbservice;
+       // readonly RedisChatCache _redis_dbservice;
         readonly SnowflakeService _idGen;
-        public Test_UserSendTextMessageService(IMessageDbWriteService dbservice
-            ,RedisChatCache rWService
-            ,SnowflakeService snowflakeService)
+        IMessageCacheService _cache;
+        readonly IChatServerMetadataCacheService _serverMetaDataCacheService;
+        public Test_UserSendTextMessageService(IMessageDbWriteService dbservice,
+            IMessageCacheService cache
+        //    ,RedisChatCache rWService
+            ,SnowflakeService snowflakeService,
+            IChatServerMetadataCacheService ServerMetaDataCache)
         {
+             _serverMetaDataCacheService = ServerMetaDataCache;
+            _cache = cache;
             _chatWriteService = dbservice;
-            _redis_dbservice = rWService;
+       //     _redis_dbservice = rWService;
             _idGen = snowflakeService;
         }
 
-        public async Task<OperationResultT<ChatMessageDto>> SendTextMessageAsync(MessageRequest request)
+        public async Task<DeleteMessageRt> DeleteMessageAsync(UserDeleteMessageRq rq,string UserId)
         {
-            var messageIdResult = _idGen.GenerateId();
-
-            // Faf Cassandra upload
-            _ = Task.Run(() => _chatWriteService.UploadMessageAsync(request, messageIdResult));
-
-            var rt = new ChatMessageDto
+            var longrq= new DeleteMessageRq
             {
-                Id = messageIdResult.Id,
+                ChannelId =long.Parse( rq.ChannelId),
+                MessageId =long.Parse( rq.MessageId),
+                UserId =long.Parse(UserId),
+                ServerId=long.Parse(rq.ServerId)
+            };
+            var isAdmin = await  _serverMetaDataCacheService.IsAdmin(longrq.ServerId,longrq.ChannelId,longrq.UserId);
+            var cacheResult =await _cache.DeleteMessageAsync(longrq, isAdmin);
+            var bucketId=await _chatWriteService.DeleteMessageAsync(longrq, isAdmin);
+            return new DeleteMessageRt
+            {
+                ChannelId = rq.ChannelId,
+                MessageId = rq.MessageId,
+                ServerId = rq.ServerId,
+                BucketId =bucketId
+            };
+
+        }
+
+        public async Task<EditMessageRt> EditMessageAsync(UserEditMessageRq rq, string UserId)
+        {
+            var longrq= new EditMessageRq
+            {
+                ChannelId = long.Parse(rq.ChannelId),
+                MessageId = long.Parse(rq.MessageId),
+                UserId = long.Parse(UserId),
+                NewContent = rq.NewContent
+            };
+            await _serverMetaDataCacheService.IsInServerWithCorrectStruct(longrq.UserId, longrq.UserId, longrq.ChannelId);
+            var cacheResult= await _cache.EditMessageAsync(longrq);
+            var bucketID =await _chatWriteService.EditMessageAsync(longrq);
+            return new EditMessageRt
+            {
+                ChannelId = rq.ChannelId,
+                MessageId = rq.MessageId,
+                NewContent = rq.NewContent,
+                ServerId = rq.ServerId,
+                BucketId = bucketID
+            };
+        }
+
+        public async Task<OperationResultT<NewMessage>> SendTextMessageAsync(MessageRequest request,string serverId)
+        {
+            var channelId = long.Parse(request.ReceiveChannelId);
+            var serverIdLong = long.Parse(serverId);
+            var userId = long.Parse(request.SenderId);
+            await _serverMetaDataCacheService.IsInServerWithCorrectStruct(userId, serverIdLong, channelId);
+            var messageIdResult = _idGen.GenerateId();
+            _ = Task.Run(() => _chatWriteService.UploadMessageAsync(request, messageIdResult));
+            var rt = new NewMessage
+            {
+                Id = messageIdResult.Id.ToString(),
                 Content = request.TextContent,
                 ContentMedia = request.MediaContent,
                 MessageType = (int)MessageType.Text,
-                SenderId = long.Parse(request.SenderId),
-                RoomId = long.Parse(request.ReceiveChannelId),
-                CreatedAt = messageIdResult.CreatedAt
+                SenderId = request.SenderId,
+                ChannelId = request.ReceiveChannelId,
+                CreatedAt = messageIdResult.CreatedAt,
+                UserMetadataVersion=""
             };
-    
-            await _redis_dbservice.UploadMessageAsync(rt);
-
-            return OperationResultT<ChatMessageDto>.Ok(rt);
+            await _cache.AddMessageToLatestBucketAsync(channelId, rt);
+            return OperationResultT<NewMessage>.Ok(rt);
         }
 
     }

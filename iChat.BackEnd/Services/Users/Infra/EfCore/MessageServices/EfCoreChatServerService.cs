@@ -2,103 +2,136 @@
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.Data.EF;
 using iChat.Data.Entities.Servers;
-using iChat.DTOs.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 {
-    public class EfCoreChatServerService:IChatServerService
+    public class EfCoreChatServerService : IChatServerDbService
     {
         private readonly iChatDbContext _db;
+
         public EfCoreChatServerService(iChatDbContext db)
         {
-                       _db = db;
-        }
-        public async Task<bool> CheckIfUserInServer(long userId, long serverId)
-        {
-            return await _db.UserChatServers.AnyAsync(us => us.UserId == userId && us.ChatServerId == serverId);
-        }
-        public async Task<bool> CheckIfUserBanned(long userId, long serverId)
-        {
-            return await _db.ServerBans.AnyAsync(bu => bu.UserId == userId && bu.ChatServerId == serverId);
-        }
-        private async Task<MembershipCheckDto> CheckMembershipStatusAsync(long userId, long serverId)
-        {
-            var sql = @"
-                WITH vars AS (
-                    SELECT {0}::BIGINT AS user_id, {1}::BIGINT AS server_id
-                )
-                SELECT
-                    EXISTS (
-                        SELECT 1 FROM ""UserChatServers"" ucs
-                        JOIN vars v ON true
-                        WHERE ucs.""UserId"" = v.user_id AND ucs.""ChatServerId"" = v.server_id
-                    ) AS is_member,
-                    EXISTS (
-                        SELECT 1 FROM ""ServerBans"" sb
-                        JOIN vars v ON true
-                        WHERE sb.""UserId"" = v.user_id AND sb.""ChatServerId"" = v.server_id
-                    ) AS is_banned;
-            ";
-            return await _db.Set<MembershipCheckDto>()
-                .FromSqlRaw(sql, userId, serverId)
-                .AsNoTracking()
-                .FirstAsync();
+            _db = db;
         }
 
-        public async Task BanUser(long userId, long serverId, long adminUserId)
+        public Task<bool> CheckIfUserInServer(long userId, long serverId)
         {
+            return _db.UserChatServers
+                .AnyAsync(us => us.UserId == userId && us.ChatServerId == serverId);
+        }
 
-            var result = await CheckMembershipStatusAsync(userId, serverId);
-            if (result.Is_Member == false)
-                throw new Exception($"User {userId} is not a member of the server.");
-            if (result.Is_Banned)
-                throw new Exception($"User {userId} is already banned from the server.");
-            var ban = new ServerBan
+        public Task<bool> CheckIfUserBanned(long userId, long serverId)
+        {
+            return _db.ServerBans
+                .AnyAsync(bu => bu.UserId == userId && bu.ChatServerId == serverId);
+        }
+
+        public async Task BanUserAsync(long userId, long serverId, long adminUserId)
+        {
+            // Start a transaction
+            using var transaction = await _db.Database.BeginTransactionAsync();
+
+            try
             {
-                UserId = userId,
-                ChatServerId = serverId,
-                BannedById = adminUserId,
-                BannedAt = DateTimeOffset.UtcNow
-            };
-            _db.ServerBans.Add(ban);
-            await _db.SaveChangeAsyncSafe();
+                var status = await _db.UserChatServers
+                    .Where(ucs => ucs.UserId == userId && ucs.ChatServerId == serverId)
+                    .Select(ucs => new
+                    {
+                        IsBanned = _db.ServerBans
+                            .Any(sb => sb.UserId == userId && sb.ChatServerId == serverId)
+                    })
+                    .FirstOrDefaultAsync();
+                if (status == null)
+                    throw new InvalidOperationException($"User {userId} is not a member of server {serverId}.");
+                if (status.IsBanned)
+                    throw new InvalidOperationException($"User {userId} is already banned from server {serverId}.");
+                // Remove all user memberships
+                await _db.UserChatServers
+                    .Where(ucs => ucs.UserId == userId && ucs.ChatServerId == serverId)
+                    .ExecuteDeleteAsync();
+                // Add ban record
+                _db.ServerBans.Add(new ServerBan
+                {
+                    UserId = userId,
+                    ChatServerId = serverId,
+                    BannedById = adminUserId,
+                    BannedAt = DateTime.UtcNow
+                });
+
+                await _db.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
         public async Task UnbanUser(long userId, long serverId, long adminUserId)
         {
-            var result = await CheckMembershipStatusAsync(userId, serverId);
-            if (result.Is_Member == false)
-                throw new Exception($"User {userId} is not a member of the server.");
-            if (result.Is_Banned == false)
-                throw new Exception($"User {userId} is not banned from the server.");
             var ban = await _db.ServerBans
                 .FirstOrDefaultAsync(b => b.UserId == userId && b.ChatServerId == serverId);
-            if (ban != null)
-            {
-                
-                _db.ServerBans.Remove(ban);
-                await _db.SaveChangeAsyncSafe();
-            }
+            if (ban == null)
+                return; 
+            _db.ServerBans.Remove(ban);
+            await _db.SaveChangeAsyncSafe();
         }
         public async Task Join(long userId, long serverId)
         {
+            var isBanned = await CheckIfUserBanned(userId, serverId);
+            if (isBanned)
+                throw new Exception($"User {userId} is banned from server {serverId}.");
 
-            if (await CheckIfUserBanned(userId,serverId))
-                throw new Exception($"User {userId} is banned from the server.");
-            var userServer = new UserChatServer
+            var alreadyMember = await CheckIfUserInServer(userId, serverId);
+            if (alreadyMember)
+                return; // Idempotent
+
+            _db.UserChatServers.Add(new UserChatServer
             {
                 UserId = userId,
                 ChatServerId = serverId,
-                JoinedAt = DateTimeOffset.UtcNow
-            };
-            _db.UserChatServers.Add(userServer);
+                JoinedAt = DateTime.UtcNow
+            });
+
             await _db.SaveChangeAsyncSafe();
         }
-        private class MembershipCheckDto
+
+        public async Task Left(long userId, long serverId)
         {
-            public bool Is_Member { get; set; }
-            public bool Is_Banned { get; set; }
+            // Idempotent delete
+            var entry = await _db.UserChatServers
+                .FirstOrDefaultAsync(ucs => ucs.UserId == userId && ucs.ChatServerId == serverId);
+
+            if (entry != null)
+            {
+                _db.UserChatServers.Remove(entry);
+                await _db.SaveChangeAsyncSafe();
+            }
         }
 
+        public async Task UpdateChatServerNameAsync(long serverId, string newName, long adminUserId)
+        {
+            var server = await _db.ChatServers
+                .FirstOrDefaultAsync(cs => cs.Id == serverId && cs.AdminId == adminUserId);
+
+            if (server == null)
+                throw new UnauthorizedAccessException("You do not have permission to update this server.");
+
+            server.Name = newName;
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task TaskDeleteChatServerAsync(long serverId, long adminUserId)
+        {
+            var server = await _db.ChatServers
+                .FirstOrDefaultAsync(cs => cs.Id == serverId && cs.AdminId == adminUserId);
+
+            if (server == null)
+                throw new UnauthorizedAccessException("You do not have permission to delete this server.");
+
+            _db.ChatServers.Remove(server);
+            await _db.SaveChangesAsync();
+        }
     }
 }

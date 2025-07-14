@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace iChat.DTOs.Users.Messages
@@ -9,16 +10,30 @@ namespace iChat.DTOs.Users.Messages
     public class ChatMessageDtoSafe
     {
         public string Id { get; set; }
+        [JsonIgnore]
+        private long? _idLong;  
+        [JsonIgnore]
+        public long IdLong =>_idLong??= long.TryParse(Id, out var result) ? result : throw new Exception("unexpected value");
         public string Content { get; set; } = string.Empty;
         public string ContentMedia { get; set; } = string.Empty;
         public int MessageType { get; set; }
         //   [JsonConverter(typeof(DateTimeOffsetJsonConverter))]
         public DateTimeOffset CreatedAt { get; set; }
         public string SenderId { get; set; }
+        [JsonIgnore]
+        private long? _senderIdLong;
+        [JsonIgnore]
+        public long SenderIdLong =>_senderIdLong??= long.TryParse(SenderId, out var result) ? result : throw new Exception("unexpected value");
         public string ChannelId { get; set; }
+        [JsonIgnore]
+        private long? _channelIdLong;
+        [JsonIgnore]
+        public long ChannelIdLong =>_channelIdLong??= long.TryParse(ChannelId, out var result) ? result : throw new Exception("unexpected value");
         //     public string? SenderName { get; set; } = string.Empty;
         //   public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
-       public ChatMessageDtoSafe(ChatMessageDto chatMessageDto)
+        public  bool isEdited { get; set; }
+        public  bool isDeleted { get; set; }
+        public ChatMessageDtoSafe(ChatMessageDto chatMessageDto)
         {
             Id = chatMessageDto.Id.ToString();
             Content = chatMessageDto.Content;
@@ -27,6 +42,9 @@ namespace iChat.DTOs.Users.Messages
             CreatedAt = chatMessageDto.CreatedAt;
             SenderId = chatMessageDto.SenderId.ToString();
             ChannelId = chatMessageDto.RoomId.ToString();
+            isDeleted= chatMessageDto.IsDeleted; 
+            isEdited= chatMessageDto.IsEdited; 
+
         }
         public ChatMessageDtoSafe()
         {
@@ -42,7 +60,9 @@ namespace iChat.DTOs.Users.Messages
                 MessageType = MessageType,
                 CreatedAt = CreatedAt,
                 SenderId = long.Parse(SenderId),
-                RoomId = long.Parse(ChannelId)
+                RoomId = long.Parse(ChannelId),
+                IsEdited = isEdited,
+                IsDeleted = isDeleted
             };
         }
     }
@@ -54,9 +74,20 @@ namespace iChat.DTOs.Users.Messages
             return x.CreatedAt.CompareTo(y.CreatedAt);
         }
     }
+    public class NewMessage : ChatMessageDtoSafe
+    {
+        public required string UserMetadataVersion { get; init; }
+        public NewMessage(ChatMessageDto chatMessageDto, long userMetadataVersion) : base(chatMessageDto)
+        {
+            UserMetadataVersion = userMetadataVersion.ToString();
+        }
+        public NewMessage()
+        {
+        }
+    }
     public class ChatMessageDtoSafeSearchExtended : ChatMessageDtoSafe
     {
-        public int BucketId { get; set; } = int.MaxValue; // Default to MaxValue for search purposes
+        public int BucketId { get; set; } = int.MaxValue;
 
         public ChatMessageDtoSafeSearchExtended()
         {

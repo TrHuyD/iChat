@@ -47,6 +47,7 @@ public class EfcoreUserService : IUserService
             user.AvatarUrl ?? $"https://cdn.discordapp.com/embed/avatars/0.png"
         );
     }
+    
     public async Task<List<UserMetadata>> GetUserMetadataBatchAsync(List<string> userIds)
     {
         if(userIds.Count>50)
@@ -62,5 +63,54 @@ public class EfcoreUserService : IUserService
             .ToListAsync();
 
         return users;
+    }
+
+    public async Task<UserMetadata> EditUserNickNameAsync(string userId, string newNickName)
+    {
+        if(newNickName.Length > 50||string.IsNullOrWhiteSpace(newNickName))
+            throw new ArgumentException("Nickname cannot exceed 50 characters.");
+        var user = await _userManager.FindByIdAsync(userId);
+        if(user == null)
+            throw new Exception("User not found");
+        user.UserName = newNickName;
+        try
+        {
+            var result = await _userManager.UpdateAsync(user);
+
+        }
+        catch(Exception ex)
+        {
+            throw new Exception("Failed to update user nickname", ex);
+        }
+        return new UserMetadata
+        (
+            user.Id.ToString(),
+            newNickName,
+            user.AvatarUrl ?? $"https://cdn.discordapp.com/embed/avatars/0.png"
+        );
+    }
+    public async Task<UserMetadata> EditAvatarAsync(string userId, string avatarUrl)
+    {
+        if (string.IsNullOrWhiteSpace(avatarUrl) || !Uri.IsWellFormedUriString(avatarUrl, UriKind.Absolute))
+            throw new ArgumentException("Invalid avatar URL.");
+        var user =await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            throw new Exception("User not found");
+        user.AvatarUrl = avatarUrl;
+        try
+        {
+            var result = await _userManager.UpdateAsync(user);
+
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to update user avatar url", ex);
+        }
+    return new UserMetadata
+        (
+            user.Id.ToString(),
+            user.UserName,
+            avatarUrl
+        );
     }
 }

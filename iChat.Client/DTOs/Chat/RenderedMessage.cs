@@ -9,7 +9,26 @@ namespace iChat.Client.DTOs.Chat
         public string? Icon { get; set; }
         public string Content { get; set; } = "";
         public bool ShowTimestamp { get; set; }
-    
+        public bool isEdited { get; set; } = false;
+        public static string DeleteMessage = "[This message has been deleted.]";
+        public void ToggleDelete()
+        {
+            Message.Content = DeleteMessage;
+            Message.isDeleted = true;
+        //    CssClass = "deleted-message";
+            Content =DeleteMessage;
+        }   
+        public void HandleEdit(string newContent)
+        {
+            if(Message.isDeleted)
+            {
+                return; // Cannot edit a deleted message
+            }
+            isEdited = true;
+          //  CssClass = "edited-message";
+            Content = newContent;
+            Message.Content = newContent;
+        }
     }
 
 }

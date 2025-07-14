@@ -1,16 +1,18 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.DTOs.Users.Messages;
 using Microsoft.Extensions.Caching.Memory;
+using System.Threading.Channels;
 
 namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 {
     public class MemCacheChatServerMetadataService : IChatServerMetadataCacheService
     {
         private readonly IMemoryCache _cache;
-
-        public MemCacheChatServerMetadataService(IMemoryCache cache)
+        private MemCacheUserChatService _userChatService ;
+        public MemCacheChatServerMetadataService(IMemoryCache cache, MemCacheUserChatService userChatService)
         {
             _cache = cache;
+            _userChatService = userChatService;
         }
 
         public Task<bool> UploadServersAsync(List<ChatServerMetadata> servers)
@@ -33,11 +35,20 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
             return Task.FromResult(true);
         }
-        public Task<bool> IsAdmin(string serverId,string userId)
+        public Task<bool> IsAdmin(long serverId,long userId)
         {
             if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
                 throw new KeyNotFoundException($"Server {serverId} not found in cache.");
-            return Task.FromResult(server.AdminId == userId);
+            return Task.FromResult(server.AdminId == userId.ToString());
+        }
+        public Task<bool> IsAdmin(long ServerId,long ChannelId,long UserId)
+        {
+            if (!_cache.TryGetValue(GetServerKey(ServerId), out ChatServerMetadata? server))
+                throw new KeyNotFoundException($"Server {ServerId} not found in cache.");
+            var channel = ChannelId.ToString();
+            if (!_userChatService.IsUserInServer(UserId.ToString(), ServerId))
+                throw new KeyNotFoundException($"Member {UserId} not in {ServerId}");
+            return Task.FromResult(server.AdminId == UserId.ToString()&&server.Channels.Any(c=>c.Id==channel));
         }
         public Task<ChatServerMetadata?> GetServerAsync(string serverId, bool includeChannels = true)
         {
@@ -101,7 +112,21 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             return _cache.GetOrCreate(key, entry => new Dictionary<long, long>());
         }
 
+        private string GetServerKey(long serverId) => $"server:{serverId}:meta";
         private string GetServerKey(string serverId) => $"server:{serverId}:meta";
-        private string GetChannelKey(string serverId) => $"server:{serverId}:channels";
+        private string GetChannelKey(long serverId) => $"server:{serverId}:channels";
+    private string GetChannelKey(string serverId) => $"server:{serverId}:channels";
+
+        public async Task IsInServerWithCorrectStruct(long userId, long serverId, long channelId)
+        {
+            if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
+                throw new KeyNotFoundException($"Server {serverId} not found in cache.");
+            var channel = channelId.ToString();
+            if (!server.Channels.Any(c => c.Id == channel))
+                throw new KeyNotFoundException($"Channel {channel} not found in server {serverId}.");
+            if (!_userChatService.IsUserInServer(userId.ToString(), serverId))
+                throw new KeyNotFoundException($"Member {userId} not in {serverId}");
+
+        }
     }
 }

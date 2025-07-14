@@ -10,7 +10,8 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
         public Task SetManyAsync(IEnumerable<UserMetadata> users);
         public Task SetPlaceholderAsync(string userId);
         public Task SetPlaceholdersAsync(IEnumerable<string> userIds);
-        
+        public Task<long> GetMetadataVersion(string userId);
+        public Task ExpandExpire(string userId);
 
     }
 }

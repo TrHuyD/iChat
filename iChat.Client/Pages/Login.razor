@@ -9,6 +9,7 @@
 @layout BaseLayout
 @inject ConfigService _configService
 @inject TokenProvider tokenProvider
+<div class="generic-background">
 <h3>Login</h3>
 
 <EditForm Model="login" OnValidSubmit="HandleLogin">
@@ -34,7 +35,7 @@
     Don't have an account?
     <NavLink href="/register">Register here</NavLink>
 </p>
-
+</div>
 @code {
     protected override async Task OnInitializedAsync()
     {

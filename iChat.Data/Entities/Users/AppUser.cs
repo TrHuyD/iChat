@@ -18,8 +18,9 @@ namespace iChat.Data.Entities.Users
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public DateTimeOffset LastSeen { get; set; }
         public ICollection<UserChatServer> UserChatServers { get; set; } = new List<UserChatServer>();
-
         public ICollection<UserChatRole> UserRoles { get; set; } = new HashSet<UserChatRole>();
+        //public ICollection<AppUser> Friends { get; set; } = new HashSet<AppUser>();
+        //public ICollection<AppUser> FriendRequests { get; set; } = new HashSet<AppUser>();
 
     }
 }

@@ -83,7 +83,7 @@ namespace iChat.Client.Pages.Chat
 
         private async Task ScrollToContextMessage()
         {
-            await ScrollToMessage(_contextMenuMessageId);
+            await ScrollToMessage(_contextMenuMessage.Id);
         }
     }
 }

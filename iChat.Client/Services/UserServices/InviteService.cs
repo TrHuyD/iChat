@@ -9,8 +9,10 @@ namespace iChat.Client.Services.UserServices
         private readonly JwtAuthHandler _http;
         private readonly ILogger<InviteService> _logger;
         private readonly Dictionary<string, string> _inviteCache = new();
-        public InviteService(JwtAuthHandler http, ILogger<InviteService> logger)
+        private readonly ConfigService _configService;
+        public InviteService(JwtAuthHandler http,ConfigService configService, ILogger<InviteService> logger)
         {
+            _configService = configService;
             _http = http;
             _logger = logger;
         }
@@ -37,7 +39,7 @@ namespace iChat.Client.Services.UserServices
                 return null;
             }
         }
-        public async Task<string?> UseInvite(string inviteId)
+        public async Task UseInvite(string inviteId)
         {
             try
             {
@@ -47,16 +49,13 @@ namespace iChat.Client.Services.UserServices
                 {
                     var error = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("Failed to join server via invite: {Response}", error);
-                    return null;
                 }
-                var result = await response.Content.ReadFromJsonAsync<InviteJoinResult>();
-                return result?.ServerId;
+              //  return result?.ServerId;
 
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError("Error joining server with invite: {Message}", ex.Message);
-                return null;
             }
         }
 
@@ -77,7 +76,7 @@ namespace iChat.Client.Services.UserServices
                     value = await response.Content.ReadAsStringAsync();
                     _inviteCache[serverId] = value;
                 }
-                return "https://localhost:7156/inv/" + value;
+                return _configService.baseurl+"/inv/" + value;
             }
             catch (HttpRequestException ex)
             {
