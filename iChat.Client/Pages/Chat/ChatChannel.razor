@@ -1,4 +1,4 @@
-﻿@page "/chat/{ServerId}/{RoomId}"
+﻿@page "/chat/{ServerId}/{ChannelId}"
 @using System.Threading.Channels
 @using iChat.Client.DTOs.Chat
 @using iChat.Client.Services.UserServices
@@ -35,7 +35,7 @@
    
 
         <div class="messages-container" @ref="_messagesContainer" @onscroll="HandleScroll">
-            <Virtualize Items="@_groupedMessages" Context="group" ItemSize="100">
+            <Virtualize Items="@_groupedMessages" Context="group" ItemSize="48">
                 <div class="message-group" @key="group.Messages[0].Message.Id">
                     <div class="message-group-header">
                         <img class="avatar" src="@group.User.AvatarUrl" />

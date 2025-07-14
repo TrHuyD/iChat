@@ -36,7 +36,7 @@ namespace iChat.Client.Pages.Chat
             {
                 Content = messageContent,
                 MessageType = 1,
-                ChannelId = RoomId,
+                ChannelId = ChannelId,
                 SenderId = _currentUserId,
                 CreatedAt = DateTimeOffset.UtcNow
             };
@@ -60,11 +60,31 @@ namespace iChat.Client.Pages.Chat
             {
                 _messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
             }
-            _groupedMessages = await GroupMessagesAsync(_messages);
+            if (_groupedMessages.Count == 0)
+            {
+                _groupedMessages = await GroupMessagesAsync(_messages);
+            }
+            else
+            {
+                var newGroups = await GroupMessagesAsync(bucket);
+                foreach (var group in newGroups.Reverse<MessageGroup>()) // Keep order correct
+                {
+                    _groupedMessages.Insert(0, group);
+                }
+            }
             await InvokeAsync(StateHasChanged);
             await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, previousScroll);
         }
 
+        private async Task<List<MessageGroup>> GroupMessagesAsync(MessageBucket bucket)
+        {
+            SortedList<long, RenderedMessage> messages= new SortedList<long, RenderedMessage>();
+            foreach (var message in bucket.ChatMessageDtos)
+            {
+                messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
+            }
+            return await GroupMessagesAsync(messages);
+        }
         private async Task<List<MessageGroup>> GroupMessagesAsync(SortedList<long, RenderedMessage> messages)
         {
             var groups = new List<MessageGroup>();
@@ -75,7 +95,7 @@ namespace iChat.Client.Pages.Chat
                 UserMetadataReact user = await _userMetadataService.GetUserByIdAsync(msg.Message.SenderId);
                 if (current == null ||
                     current.UserId != msg.Message.SenderId ||
-                    current.Messages.Count >= 5)
+                    !current.CanAppend(msg.Message))
                 {
                     current = new MessageGroup
                     {
@@ -96,21 +116,19 @@ namespace iChat.Client.Pages.Chat
         {
             var userId = message.Message.SenderId;
             var user = await _userMetadataService.GetUserByIdAsync(userId);
-            var group = _groupedMessages.LastOrDefault(g => g.UserId == userId);
+            var group = _groupedMessages[^1];
             if (group != null && group.CanAppend(message.Message))
             {
                 group.Messages.Add(message);
+                return;
             }
-            else
+            _groupedMessages.Add(new MessageGroup
             {
-                _groupedMessages.Add(new MessageGroup
-                {
-                    UserId = userId,
-                    User = user,
-                    Messages = new List<RenderedMessage> { message },
-                    Timestamp= message.Message.CreatedAt
-                });
-            }
+                UserId = userId,
+                User = user,
+                Messages = new List<RenderedMessage> { message },
+                Timestamp = message.Message.CreatedAt
+            });
         }
 
 

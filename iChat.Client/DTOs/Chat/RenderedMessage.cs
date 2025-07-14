@@ -13,6 +13,7 @@ namespace iChat.Client.DTOs.Chat
         public static string DeleteMessage = "[This message has been deleted.]";
         public void ToggleDelete()
         {
+            
             Message.Content = DeleteMessage;
             Message.IsDeleted = true;
         //    CssClass = "deleted-message";

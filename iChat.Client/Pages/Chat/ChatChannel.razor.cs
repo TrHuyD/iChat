@@ -14,7 +14,7 @@ namespace iChat.Client.Pages.Chat
 {
     public partial class ChatChannel : ComponentBase, IDisposable, IAsyncDisposable
     {
-        [Parameter] public string RoomId { get; set; } = string.Empty;
+        [Parameter] public string ChannelId { get; set; } = string.Empty;
         [Parameter] public string ServerId { get; set; } = string.Empty;
         public long RoomIdL;
         public long ServerIdL;
@@ -36,14 +36,14 @@ namespace iChat.Client.Pages.Chat
         bool Init_failed = false;
         protected override async Task OnInitializedAsync()
         {
-            if (!_userInfo.ConfirmServerChannelId(ServerId, RoomId))
+            if (!_userInfo.ConfirmServerChannelId(ServerId, ChannelId))
             {
-                Console.WriteLine($"ServerId {ServerId} does not match the expected server for RoomId {RoomId}.");
+                Console.WriteLine($"ServerId {ServerId} does not match the expected server for RoomId {ChannelId}.");
                 Init_failed = true;
                 _navigation.NavigateTo("/");
                 return;
             }
-            Console.WriteLine($"Initializing ChatChannel for RoomId: {RoomId}");
+            Console.WriteLine($"Initializing ChatChannel for RoomId: {ChannelId}");
            _userMetadataService._onMetadataUpdated += HandleUserMetadataUpdate;
             _sendQueueTask = ProcessSendQueueAsync();
             _currentUserId = _userInfo.GetUserId().ToString();
@@ -71,9 +71,9 @@ namespace iChat.Client.Pages.Chat
         {
             if (Init_failed)
                 return;
-            if (_currentRoomId != RoomId)
+            if (_currentRoomId != ChannelId)
             {
-                RoomIdL= long.Parse(RoomId);
+                RoomIdL= long.Parse(ChannelId);
                 ServerIdL = long.Parse(ServerId);
                 SaveState();
                 if (!string.IsNullOrEmpty(_currentRoomId))
@@ -84,17 +84,18 @@ namespace iChat.Client.Pages.Chat
                     _currentServer = _ServerCacheManager.GetServer(_currentServerId);
                   await  _ServerCacheManager.OnServerChange(ServerId);
                 }
-                await _ServerCacheManager.OnChannelChange(RoomId);
-                _currentChannel =_currentServer.Channels.FirstOrDefault(c => c.Id == RoomId);
-                _currentRoomId = RoomId;
+                await _ServerCacheManager.OnChannelChange(ChannelId);
+                _currentChannel =_currentServer.Channels.FirstOrDefault(c => c.Id == ChannelId);
+                _currentRoomId = ChannelId;
                 LoadState();
                 checkScrollToBotoom = false;
-                var (latest, loc) = await MessageManager.GetLatestMessage(RoomId);
+                var (latest, loc) = await MessageManager.GetLatestMessage(ChannelId);
                 _messages.Clear();
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
                 MessageManager.RegisterOnMessageEdited(HandleEditMessage);
                 MessageManager.RegisterOnMessageDeleted(HandleDeleteMessage);
                 Console.WriteLine("Registered message handler for ChatService.");
+                _groupedMessages.Clear();
                 foreach (var bucket in latest)
                     await AddMessages(bucket);
                 _currentBucketIndex = latest[0].BucketId;
@@ -116,7 +117,7 @@ namespace iChat.Client.Pages.Chat
         }
         private async Task HandleDeleteMessage( DeleteMessageRt rq)
         {
-            if(rq.ChannelId != RoomId) return;
+            if(rq.ChannelId != ChannelId) return;
             try
             {
                 var messageId = long.Parse(rq.MessageId);
@@ -124,6 +125,7 @@ namespace iChat.Client.Pages.Chat
                 if(rendered != null)
                 {
                 rendered.ToggleDelete();
+                    await Task.Delay(250);
                 await InvokeAsync(StateHasChanged);
 
                 }
@@ -135,7 +137,7 @@ namespace iChat.Client.Pages.Chat
         }
         private async Task HandleEditMessage(EditMessageRt rq)
         {
-            if (rq.ChannelId != RoomId) return;
+            if (rq.ChannelId != ChannelId) return;
             try
             {
                 var messageId = long.Parse(rq.MessageId);
@@ -161,7 +163,7 @@ namespace iChat.Client.Pages.Chat
                 _messages.TryAdd(messageId, rendered);
 
                 await TryAddNewMessageToGroupAsync(rendered);
-                _shouldScrollToBottom = true;
+              //  _shouldScrollToBottom = true;
 
                 await InvokeAsync(StateHasChanged);
             }

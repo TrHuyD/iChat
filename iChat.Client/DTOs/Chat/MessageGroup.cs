@@ -16,9 +16,9 @@ namespace iChat.Client.DTOs.Chat
             if (Messages.Count == 0) return false;
             if (nextMessage.SenderId != UserId)
                 return false;
-            var lastMessage = Messages[^1].Message;
+            var lastMessage = Messages[0].Message;
             var timeGap = nextMessage.CreatedAt - lastMessage.CreatedAt;
-            if (timeGap.TotalMinutes > 5||Messages.Count>5)
+            if (timeGap.TotalMinutes > 5||Messages.Count>=2)
                 return false;
 
             return true;

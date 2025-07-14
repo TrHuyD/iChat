@@ -19,7 +19,7 @@
             _isLoading = true;
             try
             {
-                var result = await MessageManager.GetPreviousBucket(RoomId, _currentBucketIndex);
+                var result = await MessageManager.GetPreviousBucket(ChannelId, _currentBucketIndex);
                 try
                 {
                     await AddMessages(result);
@@ -36,8 +36,6 @@
                 {
                     DisableSpecialButtonPermanently();
                 }
-
-                Console.WriteLine("Special request completed.");
             }
             catch (Exception ex)
             {
