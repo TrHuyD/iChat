@@ -15,9 +15,6 @@ jobs:
       EC2_USER: ubuntu
       CLIENT_OUTPUT: client-publish
       BACKEND_OUTPUT: backend-publish
-      CLIENT_REMOTE_PATH: /home/ubuntu/client
-      BACKEND_REMOTE_PATH: /home/ubuntu/backend
-      BACKEND_SERVICE_NAME: ichat-backend.service
 
     steps:
     - name: Checkout code
@@ -66,28 +63,34 @@ jobs:
         username: ${{ env.EC2_USER }}
         key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
         script: |
-          echo "Detecting whether sudo is required..."
-          SUDO=""
-          if ! systemctl status >/dev/null 2>&1; then
+          echo "🧠 Setting deployment variables..."
+          BACKEND_REMOTE_PATH="/home/ubuntu/backend"
+          CLIENT_REMOTE_PATH="/home/ubuntu/client"
+          BACKEND_SERVICE_NAME="ichat-backend.service"
+
+          echo "🔍 Detecting whether sudo is required..."
+          if systemctl status >/dev/null 2>&1; then
+            SUDO=""
+          else
             SUDO="sudo"
           fi
 
-          echo "Stopping backend service..."
+          echo "🛑 Stopping backend service..."
           $SUDO systemctl stop $BACKEND_SERVICE_NAME || true
 
-          echo "Extracting backend..."
-          rm -rf $BACKEND_REMOTE_PATH
-          mkdir -p $BACKEND_REMOTE_PATH
-          unzip -q ~/backend-static.zip -d $BACKEND_REMOTE_PATH
+          echo "📦 Extracting backend..."
+          rm -rf "$BACKEND_REMOTE_PATH"
+          mkdir -p "$BACKEND_REMOTE_PATH"
+          unzip -q ~/backend-static.zip -d "$BACKEND_REMOTE_PATH"
           rm ~/backend-static.zip
 
-          echo "Extracting client..."
-          rm -rf $CLIENT_REMOTE_PATH
-          mkdir -p $CLIENT_REMOTE_PATH
-          unzip -q ~/client-static.zip -d $CLIENT_REMOTE_PATH
+          echo "🌐 Extracting client..."
+          rm -rf "$CLIENT_REMOTE_PATH"
+          mkdir -p "$CLIENT_REMOTE_PATH"
+          unzip -q ~/client-static.zip -d "$CLIENT_REMOTE_PATH"
           rm ~/client-static.zip
 
-          echo "Restarting backend service..."
+          echo "🚀 Restarting backend service..."
           $SUDO systemctl start $BACKEND_SERVICE_NAME
 
           echo "✅ Deployment complete!"
