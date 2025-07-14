@@ -59,11 +59,12 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         public async Task<IActionResult> UseInviteLink(string inviteId, [FromServices] AppChatServerService _joinService, [FromServices] ChatHubResponer hub)
         {
             var userId = new UserClaimHelper(User).GetUserIdStr();
+            var uId= long.Parse(userId);    
             try
             {
-                var serverId = await _service.ParseInviteLink(inviteId);
-                await _joinService.Join(long.Parse(userId), long.Parse(serverId));
-                await hub.JoinNewServer(userId, long.Parse(serverId));
+                var serverId = long.Parse(await _service.ParseInviteLink(inviteId));
+                await _joinService.Join(uId, serverId);
+                await hub.JoinNewServer(userId, serverId);
                 return Ok();
             }
             catch (InvalidOperationException ex)
