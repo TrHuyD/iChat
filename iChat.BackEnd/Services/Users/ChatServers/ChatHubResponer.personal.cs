@@ -9,15 +9,15 @@ namespace iChat.BackEnd.Services.Users.ChatServers
     {
         public async Task MetadataUpdateAsync(string userId, UserMetadata metadata)
         {
-            await _chatHub.Clients.Group(ChatHub.PersonalKey(userId)).SendAsync("UserMetadataUpdate", userId, metadata);
+            await _chatHub.Clients.User(userId).SendAsync("UserMetadataUpdate", userId, metadata);
         }
         public async Task JoinNewServer(string userId, long serverId)
         {
-            await _chatHub.Clients.Group(ChatHub.PersonalKey(userId)).SendAsync("JoinNewServer", serverId);
+            await _chatHub.Clients.User(userId).SendAsync("JoinNewServer", serverId);
         }
         public async Task LeaveServer(string userId, long serverId)
         {
-            await _chatHub.Clients.Group(ChatHub.PersonalKey(userId)).SendAsync("LeaveServer", serverId);
+            await _chatHub.Clients.User(userId).SendAsync("LeaveServer", serverId);
         }
     }
 }

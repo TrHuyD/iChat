@@ -9,6 +9,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace iChat.BackEnd.Services.Users.ChatServers
 {
+    [Obsolete("This service is deprecated and will be removed in future versions. Use the new ChatServerService instead.")]
     public class ServerListService
     {
 

@@ -23,7 +23,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 
     //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
         public static string FocusKey(string roomId)=> $"{roomId}_focus";
-         public static string PersonalKey(string userId) => $"{userId}_personal";
+     //    public static string PersonalKey(string userId) => $"{userId}_personal";
         private readonly IUserPresenceCacheService _presenceService;
         public ChatHub(
             ILogger<ChatHub> logger,
@@ -47,7 +47,6 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, list.ToString());
             }
-            await Groups.AddToGroupAsync(Context.ConnectionId, PersonalKey(userId));
             _presenceService.SetUserOnline(userId,serverList);
             _logger.LogInformation($"Client joining finished: {Context.ConnectionId}");
             await base.OnConnectedAsync();

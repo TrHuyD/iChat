@@ -19,6 +19,7 @@ using iChat.BackEnd.Services.Validators;
 using iChat.Data.EF;
 using iChat.Data.Entities.Users;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
@@ -87,7 +88,6 @@ new IdBuilderHelper().AddService(builder, WorkerIdConfig);
 new ValidatorsHelper(builder);
 
 // Add business services
-builder.Services.AddTransient<IChatServerEditService, EfCoreChatServerEditService>();
 builder.Services.AddScoped<IChatListingService, EfCoreChatListingService>();
 builder.Services.AddScoped<IMessageDbReadService, EfCoreMessageReadService>();
 builder.Services.AddScoped<IMessageDbWriteService, EfCoreMessageWriteService>();
@@ -95,7 +95,7 @@ builder.Services.AddSingleton<MessageTimeLogger>();
 builder.Services.AddSingleton<MessageWriteQueueService>();
 builder.Services.AddHostedService<BucketingPrediodicService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<MessageWriteQueueService>());
-
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 // Add Redis services
 builder.Services.AddTransient<RedisUserServerService>();
 builder.Services.AddTransient<RedisChatCache>();
@@ -104,6 +104,7 @@ builder.Services.AddTransient<MemCacheUserChatService>();
 
 // Add server services
 builder.Services.AddTransient<ServerListService>();
+builder.Services.AddTransient<AppChatServerService>();
 builder.Services.AddTransient<IMessageWriteService, Test_UserSendTextMessageService>();
 builder.Services.AddTransient<IChatReadMessageService, Test_UserChatReadMessageService>();
 
@@ -133,7 +134,7 @@ builder.Services.AddTransient<IUserService, EfcoreUserService>();
 builder.Services.AddScoped<IPublicUserService, PublicUserService>();
 builder.Services.AddScoped<IMessageLastSeenService, RedisMessageLastSeenService>();
 builder.Services.AddScoped<IUserPresenceCacheService, MemCacheUserPresence>();
-builder.Services.AddScoped<IChatServerService, EfCoreChatServerService>();
+builder.Services.AddScoped<IChatServerDbService, EfCoreChatServerService>();
 builder.Services.AddScoped<RedisCSInviteLinkService>();
 builder.Services.AddScoped<UserApplicationService>();
 builder.Services.AddScoped<IUserMetaDataCacheService, UserMetadataMemoryCacheService>();

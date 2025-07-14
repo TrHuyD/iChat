@@ -21,6 +21,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
         // Primary cache key for combined data (hot path)
         private string CombinedKey(string userId) => $"user:{userId}:combined";
+        private string CombinedKey(long userId) => $"user:{userId}:combined";
         // Secondary cache key for metadata-only (for offline users)
         private string MetadataOnlyKey(string userId) => $"user:{userId}:metadata";
 
@@ -155,7 +156,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         /// <summary>
         /// Add a server to user's server list (when user joins a new server)
         /// </summary>
-        public bool AddServerToUser(string userId, long serverId)
+        public bool AddServerToUser(long userId, long serverId)
         {
             var key = CombinedKey(userId);
 
