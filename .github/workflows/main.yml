@@ -35,7 +35,7 @@ jobs:
 
     - name: Create zip archives
       run: |
-        zip -r client-static.zip $CLIENT_OUTPUT/wwwroot
+        zip -r client-static.zip $CLIENT_OUTPUT
         zip -r backend-static.zip $BACKEND_OUTPUT
 
     - name: Upload Client zip to EC2
@@ -66,6 +66,7 @@ jobs:
           echo "🧠 Setting deployment variables..."
           BACKEND_REMOTE_PATH="/home/ubuntu/backend"
           CLIENT_REMOTE_PATH="/home/ubuntu/client"
+          CLIENT_TEMP_UNZIP="/home/ubuntu/client-temp"
           BACKEND_SERVICE_NAME="ichat-backend.service"
 
           echo "🛑 Stopping backend service..."
@@ -78,10 +79,15 @@ jobs:
           sudo rm ~/backend-static.zip
 
           echo "🌐 Extracting client..."
-          sudo rm -rf "$CLIENT_REMOTE_PATH"
-          sudo mkdir -p "$CLIENT_REMOTE_PATH"
-          sudo unzip -q ~/client-static.zip -d "$CLIENT_REMOTE_PATH"
+          sudo rm -rf "$CLIENT_REMOTE_PATH" "$CLIENT_TEMP_UNZIP"
+          sudo mkdir -p "$CLIENT_TEMP_UNZIP"
+          sudo unzip -q ~/client-static.zip -d "$CLIENT_TEMP_UNZIP"
           sudo rm ~/client-static.zip
+
+          echo "📁 Moving wwwroot to final client directory..."
+          sudo mkdir -p "$CLIENT_REMOTE_PATH"
+          sudo mv "$CLIENT_TEMP_UNZIP/client-publish/wwwroot/"* "$CLIENT_REMOTE_PATH"
+          sudo rm -rf "$CLIENT_TEMP_UNZIP"
 
           echo "👷 Fixing ownership..."
           sudo chown -R ubuntu:ubuntu "$BACKEND_REMOTE_PATH"
