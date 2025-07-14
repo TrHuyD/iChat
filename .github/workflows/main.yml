@@ -1,0 +1,92 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      EC2_HOST: ec2-54-169-55-224.ap-southeast-1.compute.amazonaws.com
+      EC2_USER: ubuntu
+      CLIENT_OUTPUT: client-publish
+      BACKEND_OUTPUT: backend-publish
+      CLIENT_REMOTE_PATH: /home/ubuntu/client
+      BACKEND_REMOTE_PATH: /home/ubuntu/backend
+      BACKEND_SERVICE_NAME: ichat-backend.service
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Publish Client
+      run: |
+        dotnet publish ./iChat.Client -c Release -o $CLIENT_OUTPUT
+
+    - name: Publish Backend
+      run: |
+        dotnet publish ./iChat.BackEnd -c Release -r linux-x64 --self-contained true -o $BACKEND_OUTPUT
+
+    - name: Create zip archives
+      run: |
+        zip -r client-static.zip $CLIENT_OUTPUT/wwwroot
+        zip -r backend-static.zip $BACKEND_OUTPUT
+
+    - name: Upload Client zip to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ${{ env.EC2_USER }}
+        key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
+        source: client-static.zip
+        target: /home/ubuntu/
+
+    - name: Upload Backend zip to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ${{ env.EC2_USER }}
+        key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
+        source: backend-static.zip
+        target: /home/ubuntu/
+
+    - name: SSH into EC2 and deploy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ${{ env.EC2_USER }}
+        key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
+        script: |
+          echo "Detecting whether sudo is required..."
+          SUDO=""
+          if ! systemctl status >/dev/null 2>&1; then
+            SUDO="sudo"
+          fi
+
+          echo "Stopping backend service..."
+          $SUDO systemctl stop $BACKEND_SERVICE_NAME || true
+
+          echo "Extracting backend..."
+          rm -rf $BACKEND_REMOTE_PATH
+          mkdir -p $BACKEND_REMOTE_PATH
+          unzip -q ~/backend-static.zip -d $BACKEND_REMOTE_PATH
+          rm ~/backend-static.zip
+
+          echo "Extracting client..."
+          rm -rf $CLIENT_REMOTE_PATH
+          mkdir -p $CLIENT_REMOTE_PATH
+          unzip -q ~/client-static.zip -d $CLIENT_REMOTE_PATH
+          rm ~/client-static.zip
+
+          echo "Restarting backend service..."
+          $SUDO systemctl start $BACKEND_SERVICE_NAME
+
+          echo "✅ Deployment complete!"
