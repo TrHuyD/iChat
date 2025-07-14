@@ -75,15 +75,19 @@ namespace iChat.Client.Pages.Chat
                 return null;
             }
         }
-        private async Task ScrollToMessage(string id)
+        private async Task ScrollToMessage(string id,bool isSmooth=true)
         {
+           if(isSmooth)
             await JS.InvokeVoidAsync("scrollToMessage", id);
+            else
+                await JS.InvokeVoidAsync("scrollToMessageAuto", id);
+
             _showContextMenu = false;
         }
 
         private async Task ScrollToContextMessage()
         {
-            await ScrollToMessage(_contextMenuMessage.Id);
+            await ScrollToMessage(_contextMenuMessage.Id.ToString());
         }
     }
 }

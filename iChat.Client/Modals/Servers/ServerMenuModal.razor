@@ -29,13 +29,15 @@
                 <span>Edit Server Profile</span>
             </div>
         }
-
-        <div class="context-menu-separator"></div>
+        @if (!Server.isadmin)
+        {
+            <div class="context-menu-separator"></div>
 
         <div class="context-menu-item danger" @onclick="LeaveServer">
             <i class="fas fa-sign-out-alt"></i>
             <span>Leave Server</span>
         </div>
+        }
     </div>
 }
 

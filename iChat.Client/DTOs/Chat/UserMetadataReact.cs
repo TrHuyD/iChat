@@ -5,7 +5,7 @@
     {
         public class UserMetadataReact : INotifyPropertyChanged
         {
-            public string UserId { get; }
+            public long UserId { get; }
 
             private string _displayName;
             public string DisplayName
@@ -36,7 +36,7 @@
             public event PropertyChangedEventHandler? PropertyChanged;
             protected void OnPropertyChanged([CallerMemberName] string? name = null)
                 => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-            public UserMetadataReact(string userId, string displayName, string avatarUrl)
+            public UserMetadataReact(long userId, string displayName, string avatarUrl)
             {
                 UserId = userId;
                 _displayName = displayName;

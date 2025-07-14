@@ -40,7 +40,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         //        Data = new IndexedMessage
         //        {
         //            Id = $"{roomId}_{message.Id}",
-        //            RoomId = roomId,
+        //            ChannelId = roomId,
         //            MessageId = message.Id,
         //            Content = message.Content,
         //            ContentMedia = message.ContentMedia,
@@ -164,7 +164,7 @@ namespace iChat.Client.Services.UserServices.ChatService
         //    public string Id { get; set; }
 
         //    [JsonPropertyName("roomId")]
-        //    public string RoomId { get; set; }
+        //    public string ChannelId { get; set; }
 
         //    [JsonPropertyName("messageId")]
         //    public string MessageId { get; set; }

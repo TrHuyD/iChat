@@ -43,7 +43,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
                 return false;
             }
             var db = _service.GetDatabase();
-            var channelKey = (RedisKey)$"c:{message.RoomId}:m";
+            var channelKey = (RedisKey)$"c:{message.ChannelId}:m";
             var json = JsonConvert.SerializeObject(message);
             var ttlSeconds = 1200;
             var script = @"
