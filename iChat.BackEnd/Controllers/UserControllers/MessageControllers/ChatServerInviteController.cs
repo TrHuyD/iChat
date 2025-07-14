@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -62,9 +63,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             var uId= long.Parse(userId);    
             try
             {
-                var serverId = long.Parse(await _service.ParseInviteLink(inviteId));
+                var serverIdstr = await _service.ParseInviteLink(inviteId);
+                var serverId = long.Parse(serverIdstr);
                 await _joinService.Join(uId, serverId);
-                await hub.JoinNewServer(userId, serverId);
+                await hub.JoinNewServer(userId, serverIdstr);
                 return Ok();
             }
             catch (InvalidOperationException ex)

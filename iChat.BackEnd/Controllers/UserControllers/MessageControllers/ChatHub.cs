@@ -2,6 +2,7 @@
 using iChat.BackEnd.Models.Helpers;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
@@ -25,24 +26,30 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         public static string FocusKey(string roomId)=> $"{roomId}_focus";
      //    public static string PersonalKey(string userId) => $"{userId}_personal";
         private readonly IUserPresenceCacheService _presenceService;
+        private readonly IUserConnectionTracker _connectionTracker;
+
         public ChatHub(
             ILogger<ChatHub> logger,
             IMessageWriteService sendMessageService,
             MemCacheUserChatService memCacheUserChatService,
-             IUserPresenceCacheService presenceService
+             IUserPresenceCacheService presenceService,
+             IUserConnectionTracker connectionTracker
             )
         {
             _logger = logger;
             _sendMessageService = sendMessageService;
             _localCache = memCacheUserChatService;
             _presenceService = presenceService;
+            _connectionTracker = connectionTracker;
         }
 
         public override async Task OnConnectedAsync()
         {
             _logger.LogInformation($"Client connected: {Context.ConnectionId}");
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
+            var connectionId = Context.ConnectionId;
             var serverList = _localCache.GetUserServerList(userId, true);
+            _connectionTracker.AddConnection(long.Parse(userId), connectionId);
             foreach (var list in serverList)
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, list.ToString());
@@ -63,6 +70,9 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
             var serverList = _localCache.GetUserServerList(userId, true);
             _presenceService.SetUserOffline(userId, serverList);
+            var connectionId = Context.ConnectionId;
+            var userIdLong = long.Parse(userId);
+            _connectionTracker.RemoveConnection(userIdLong, connectionId);
             await base.OnDisconnectedAsync(exception);
         }
 

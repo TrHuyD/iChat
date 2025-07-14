@@ -1,5 +1,5 @@
 ﻿using iChat.BackEnd.Models.Infrastructures;
-using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.Data.EF;
 using iChat.Data.Entities.Servers;
 using Microsoft.EntityFrameworkCore;

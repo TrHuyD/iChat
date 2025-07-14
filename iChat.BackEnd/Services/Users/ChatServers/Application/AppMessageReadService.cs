@@ -2,14 +2,14 @@
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.DTOs.Users.Messages;
 
-namespace iChat.BackEnd.Services.Users.ChatServers
+namespace iChat.BackEnd.Services.Users.ChatServers.Application
 {
-    public class MessageReadApplicationService : IMessageReadService
+    public class AppMessageReadService : IMessageReadService
     {
         private readonly IMessageCacheService _cacheService;
         private readonly IMessageDbReadService _dbService;
 
-        public MessageReadApplicationService(IMessageCacheService cacheService, IMessageDbReadService dbService)
+        public AppMessageReadService(IMessageCacheService cacheService, IMessageDbReadService dbService)
         {
             _cacheService = cacheService;
             _dbService = dbService;

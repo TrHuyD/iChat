@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+
 //using iChat.BackEnd.Services.Users.Infra.CassandraDB;
 using iChat.BackEnd.Services.Users.Infra.Helpers;
 using iChat.BackEnd.Services.Users.Infra.Redis.Enums;
@@ -7,15 +8,17 @@ using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.DTOs.Users.Messages;
 using System.Threading.Channels;
 
-namespace iChat.BackEnd.Services.Users.ChatServers
+namespace iChat.BackEnd.Services.Users.ChatServers.Application
 {
-    public class Test_UserChatReadMessageService : IChatReadMessageService
+
+    [Obsolete("This service is deprecated and will be removed in future versions. Use the new ChatReadMessageService instead.")]
+    public class _AppMessageReadService : IChatReadMessageService
     {
         private readonly RedisChatCache _redisService;
         private readonly IMessageDbReadService _chatReadService;
         private readonly ThreadSafeCacheService _lockService;
         private readonly RedisSegmentCache _redisSegmentCache;
-        public Test_UserChatReadMessageService(
+        public _AppMessageReadService(
             RedisChatCache redisService,
             IMessageDbReadService readservice,
             ThreadSafeCacheService lockService,

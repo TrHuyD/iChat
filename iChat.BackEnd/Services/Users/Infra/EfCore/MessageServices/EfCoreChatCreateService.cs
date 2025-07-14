@@ -1,4 +1,4 @@
-﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.Data.EF;
 using iChat.Data.Entities.Servers;
@@ -11,7 +11,7 @@ using System.Threading.Channels;
 namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 {
 
-    public class EfCoreChatCreateService : IChatCreateService
+    public class EfCoreChatCreateService : IChatCreateDBService
     {
         private readonly iChatDbContext _db;
         private readonly ChannelIdService _channelIdGen;
@@ -76,7 +76,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             };
         }
 
-        public async Task<ChatServerDtoUser> CreateServerAsync(string serverName, long adminUserId)
+        public async Task<ChatServerMetadata> CreateServerAsync(string serverName, long adminUserId)
         {
             var serverId = _serverIdGen.GenerateId();
             var generalChannelId = _channelIdGen.GenerateId();
@@ -88,7 +88,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 CreatedAt = serverId.CreatedAt,
                 ChatChannels = new List<ChatChannel>(),
                 AdminId = adminUserId,
-                Avatar= "https://cdn.discordapp.com/embed/avatars/0.png",
+                Avatar = "https://cdn.discordapp.com/embed/avatars/0.png",
             };
 
             var generalChannel = new ChatChannel
@@ -107,29 +107,28 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 ChatServerId = serverId.Id
             });
 
-
-
             _db.ChatServers.Add(server);
             await _db.SaveChangesAsync();
 
-            return new ChatServerDtoUser
+            return new ChatServerMetadata
             {
-                AvatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png",
                 Id = serverId.Id.ToString(),
                 Name = serverName,
-             //   CreatedAt = serverId.CreatedAt,
+                AvatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png",
+                CreatedAt = serverId.CreatedAt,
+                AdminId = adminUserId.ToString(),
                 Channels = new List<ChatChannelDtoLite>
-                {
-                    new ChatChannelDtoLite
-                    {
-                        Id = generalChannelId.Id.ToString(),
-                        Name = "general",
-                        Order = 0,
-                        last_bucket_id = 0
-                    }
-                }
-
+        {
+            new ChatChannelDtoLite
+            {
+                Id = generalChannelId.Id.ToString(),
+                Name = "general",
+                Order = 0,
+                last_bucket_id = 0
+            }
+        }
             };
         }
+
     }
 }

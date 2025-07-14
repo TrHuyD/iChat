@@ -1,6 +1,5 @@
 ﻿using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
-
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.BackEnd.Services.Validators.TextMessageValidators;
@@ -8,9 +7,9 @@ using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
 
-namespace iChat.BackEnd.Services.Users.ChatServers
+namespace iChat.BackEnd.Services.Users.ChatServers.Application
 {
-    public class Test_UserSendTextMessageService  : IMessageWriteService
+    public class AppMessageWriteService  : IMessageWriteService
 
     {
         readonly IMessageDbWriteService _chatWriteService;
@@ -18,7 +17,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         readonly SnowflakeService _idGen;
         IMessageCacheService _cache;
         readonly IChatServerMetadataCacheService _serverMetaDataCacheService;
-        public Test_UserSendTextMessageService(IMessageDbWriteService dbservice,
+        public AppMessageWriteService(IMessageDbWriteService dbservice,
             IMessageCacheService cache
         //    ,RedisChatCache rWService
             ,SnowflakeService snowflakeService,

@@ -1,7 +1,7 @@
-﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 
-namespace iChat.BackEnd.Services.Users.ChatServers
+namespace iChat.BackEnd.Services.Users.ChatServers.Application
 {
     public class AppChatServerService
     {

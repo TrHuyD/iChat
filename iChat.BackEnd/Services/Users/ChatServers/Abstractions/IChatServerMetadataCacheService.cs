@@ -5,6 +5,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
     public interface IChatServerMetadataCacheService
     {
         Task<bool> UploadServersAsync(List<ChatServerMetadata> servers);
+        void UploadServerAsync(ChatServerMetadata server);
         Task<ChatServerMetadata?> GetServerAsync(string serverId, bool includeChannels = true);
 
         Task<long?> GetUserPermissionAsync(long userId, long serverId, long channelId);

@@ -1,4 +1,4 @@
-﻿namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
+﻿namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB
 {
     public interface IChatServerDbService
     {

@@ -1,4 +1,4 @@
-﻿using iChat.BackEnd.Services.Users.ChatServers;
+﻿using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.DTOs.Users.personal;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,8 +8,8 @@ namespace iChat.BackEnd.Controllers.UserControllers
     public class UserMetadataController:ControllerBase
  
     {
-        private readonly UserApplicationService _userMetadataService;
-        public UserMetadataController(UserApplicationService userMetadataService)
+        private readonly AppUserService _userMetadataService;
+        public UserMetadataController(AppUserService userMetadataService)
         {
             _userMetadataService = userMetadataService;
         }

@@ -6,6 +6,9 @@ using iChat.BackEnd.Services.Users.Auth;
 using iChat.BackEnd.Services.Users.Auth.Sql;
 using iChat.BackEnd.Services.Users.ChatServers;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
+using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices;
 using iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices;
 using iChat.BackEnd.Services.Users.Infra.Helpers;
@@ -105,8 +108,8 @@ builder.Services.AddTransient<MemCacheUserChatService>();
 // Add server services
 builder.Services.AddTransient<ServerListService>();
 builder.Services.AddTransient<AppChatServerService>();
-builder.Services.AddTransient<IMessageWriteService, Test_UserSendTextMessageService>();
-builder.Services.AddTransient<IChatReadMessageService, Test_UserChatReadMessageService>();
+builder.Services.AddTransient<IMessageWriteService, AppMessageWriteService>();
+builder.Services.AddTransient<IChatReadMessageService, _AppMessageReadService>();
 
 // Database Context
 builder.Services.AddDbContext<iChatDbContext>(
@@ -128,7 +131,7 @@ builder.Services.AddIdentity<AppUser, Role>(options =>
 new SqlAuthBuilderHelper().AddService(builder);
 
 // Add user and chat services
-builder.Services.AddScoped<IChatCreateService, EfCoreChatCreateService>();
+builder.Services.AddScoped<IChatCreateDBService, EfCoreChatCreateService>();
 builder.Services.AddScoped<CreateUserService>();
 builder.Services.AddTransient<IUserService, EfcoreUserService>();
 builder.Services.AddScoped<IPublicUserService, PublicUserService>();
@@ -136,16 +139,17 @@ builder.Services.AddScoped<IMessageLastSeenService, RedisMessageLastSeenService>
 builder.Services.AddScoped<IUserPresenceCacheService, MemCacheUserPresence>();
 builder.Services.AddScoped<IChatServerDbService, EfCoreChatServerService>();
 builder.Services.AddScoped<RedisCSInviteLinkService>();
-builder.Services.AddScoped<UserApplicationService>();
+builder.Services.AddScoped<AppUserService>();
 builder.Services.AddScoped<IUserMetaDataCacheService, UserMetadataMemoryCacheService>();
 builder.Services.AddTransient<Lazy<IUserService>>(provider => new Lazy<IUserService>(() => provider.GetRequiredService<IUserService>()));
 builder.Services.AddSingleton<IChatServerMetadataCacheService, MemCacheChatServerMetadataService>();
-builder.Services.AddScoped<IMessageReadService, MessageReadApplicationService>();
+builder.Services.AddScoped<IMessageReadService, AppMessageReadService>();
 builder.Services.AddScoped<IMessageCacheService,MemCacheMessageService>();
 builder.Services.AddTransient<ChatHubResponer, ChatHubResponer>();
 // Add hosted services
 builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();
 builder.Services.AddScoped<IMessageSearchService, EfCoreMessageSearchService>();
+builder.Services.AddSingleton<IUserConnectionTracker, UserConnectionTracker>();
 
 // Add API documentation
 builder.Services.AddEndpointsApiExplorer();

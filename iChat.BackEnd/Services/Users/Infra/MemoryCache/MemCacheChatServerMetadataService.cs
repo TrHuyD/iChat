@@ -35,6 +35,21 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
             return Task.FromResult(true);
         }
+        public void UploadServerAsync(ChatServerMetadata server)
+        {
+            var serverKey = GetServerKey(server.Id);
+            _cache.Set(serverKey, server);
+            if (server.Channels.Any())
+            {
+                var channelMap = new Dictionary<string, ChatChannelDtoLite>();
+                foreach (var channel in server.Channels)
+                {
+                    channelMap[channel.Id] = channel;
+                }
+                _cache.Set(GetChannelKey(server.Id), channelMap);
+            }
+           
+        }
         public Task<bool> IsAdmin(long serverId,long userId)
         {
             if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))

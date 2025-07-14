@@ -1,4 +1,6 @@
-﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+﻿using iChat.BackEnd.Services.Users.ChatServers;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Authorization;
@@ -13,28 +15,35 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
     [ApiController]
     public class ChatServerController : ControllerBase
     {
-        private readonly IHubContext<ChatHub> _hubContext;
-        private readonly IChatCreateService _service;
-        public ChatServerController(IChatCreateService service, IHubContext<ChatHub> hubContext)
+        private readonly ChatHubResponer responer;
+        private readonly AppChatServerCreateService createService;
+        public ChatServerController( ChatHubResponer responer, AppChatServerCreateService createService)
         {
-            _hubContext = hubContext;
-            _service = service;
+            this.responer = responer;
+            this.createService= createService;
+           
         }
 
         [HttpPost("Create")]
         public async Task<IActionResult> CreateServer([FromBody] ChatServerCreateRq rq)
         {
-            var name = rq.Name;
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                ModelState.AddModelError("Name", "Server name is required.");
-                return BadRequest(ModelState);
-            }
+            try {
+                if (string.IsNullOrWhiteSpace(rq.Name))
+                {
+                    ModelState.AddModelError("Name", "Server name is required.");
+                    return BadRequest(ModelState);
+                }
 
-            var userId = new UserClaimHelper(User).GetUserId();
-            var serverid = await _service.CreateServerAsync(name, userId);
-            return Ok(serverid);
-        }
+                var userId = new UserClaimHelper(User).GetUserId();
+                var serverid = await createService.CreateServerAsync(rq, userId);
+                await responer.JoinNewServer(userId.ToString(), serverid.Id);
+                return Ok();
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            }
         //[HttpGet("{id}/CreateChannel")]
         //public IActionResult CreateChannel(long id)
         //{
@@ -49,8 +58,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             var userId = new UserClaimHelper(User).GetUserId();
             try
             {
-                var channel = await _service.CreateChannelAsync(long.Parse(rq.ServerId), rq.Name, userId);
-                await _hubContext.Clients.Groups(rq.ServerId).SendAsync("ChannelCreate", channel);
+                var channel = await createService.CreateChannelAsync(rq,userId);
+                await responer.NewChannel(channel.ServerId, channel);
                 return Ok();
             }
             catch (Exception ex)

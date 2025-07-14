@@ -2,13 +2,13 @@
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.DTOs.Users;
 
-namespace iChat.BackEnd.Services.Users.ChatServers
+namespace iChat.BackEnd.Services.Users.ChatServers.Application
 {
-    public class UserApplicationService
+    public class AppUserService
     {
         private readonly IUserMetaDataCacheService _userMetaDataCacheService;
         private readonly Lazy<IUserService> _userService;
-        public UserApplicationService(IUserMetaDataCacheService userMetaDataCacheService, Lazy<IUserService> userService)
+        public AppUserService(IUserMetaDataCacheService userMetaDataCacheService, Lazy<IUserService> userService)
         {
             _userMetaDataCacheService = userMetaDataCacheService;
             _userService = userService;
