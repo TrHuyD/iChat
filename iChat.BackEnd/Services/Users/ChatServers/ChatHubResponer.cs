@@ -4,14 +4,14 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace iChat.BackEnd.Services.Users.ChatServers
 {
-    public class ChatHubResponer
+    public partial class ChatHubResponer
     {
         readonly IHubContext<ChatHub> _chatHub;
         public ChatHubResponer(IHubContext<ChatHub> chatHub)
         {
             _chatHub = chatHub;
         }
-        public async Task EditedMessage( EditMessageRt rt)
+        public async Task EditedMessage(EditMessageRt rt)
         {
             await _chatHub.Clients.Group(rt.ServerId).SendAsync("MessageEdit", rt);
         }

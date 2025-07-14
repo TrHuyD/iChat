@@ -11,11 +11,13 @@ namespace iChat.DTOs.Users
         public string UserId { get; set; } 
         public string DisplayName { get; set; }
         public string AvatarUrl { get; set; }
+        public long Version { get; set; }  // Versioning 
         public UserMetadata(string UserId, string DisplayName, string AvatarUrl)
         {
             this.UserId = UserId;
             this.DisplayName = DisplayName;
             this.AvatarUrl = AvatarUrl;
+            this.Version= DateTimeOffset.Now.ToUnixTimeSeconds();
         }
         public UserMetadata()
         {

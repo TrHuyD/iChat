@@ -74,9 +74,20 @@ namespace iChat.DTOs.Users.Messages
             return x.CreatedAt.CompareTo(y.CreatedAt);
         }
     }
+    public class NewMessage : ChatMessageDtoSafe
+    {
+        public required string UserMetadataVersion { get; init; }
+        public NewMessage(ChatMessageDto chatMessageDto, long userMetadataVersion) : base(chatMessageDto)
+        {
+            UserMetadataVersion = userMetadataVersion.ToString();
+        }
+        public NewMessage()
+        {
+        }
+    }
     public class ChatMessageDtoSafeSearchExtended : ChatMessageDtoSafe
     {
-        public int BucketId { get; set; } = int.MaxValue; // Default to MaxValue for search purposes
+        public int BucketId { get; set; } = int.MaxValue;
 
         public ChatMessageDtoSafeSearchExtended()
         {

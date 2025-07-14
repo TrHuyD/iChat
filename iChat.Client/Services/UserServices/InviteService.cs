@@ -9,8 +9,10 @@ namespace iChat.Client.Services.UserServices
         private readonly JwtAuthHandler _http;
         private readonly ILogger<InviteService> _logger;
         private readonly Dictionary<string, string> _inviteCache = new();
-        public InviteService(JwtAuthHandler http, ILogger<InviteService> logger)
+        private readonly ConfigService _configService;
+        public InviteService(JwtAuthHandler http,ConfigService configService, ILogger<InviteService> logger)
         {
+            _configService = configService;
             _http = http;
             _logger = logger;
         }
@@ -74,7 +76,7 @@ namespace iChat.Client.Services.UserServices
                     value = await response.Content.ReadAsStringAsync();
                     _inviteCache[serverId] = value;
                 }
-                return "https://localhost:7156/inv/" + value;
+                return _configService.baseurl+"/inv/" + value;
             }
             catch (HttpRequestException ex)
             {

@@ -40,7 +40,7 @@
                     <div class="message-group-header">
                         <img class="avatar" src="@group.User.AvatarUrl" />
                         <span class="username">@group.User.DisplayName</span>
-                        <span class="timestamp">@group.Timestamp.ToString("g")</span>
+                        <span class="timestamp">@group.Timestamp.LocalDateTime.ToString("g")</span>
                     </div>
 
                     <div class="message-group-body">

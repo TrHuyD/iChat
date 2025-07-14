@@ -21,6 +21,7 @@ namespace iChat.Client.Services.Auth
                     options.AccessTokenProvider = async () => await _tokenProvider.GetToken();
                 })
                 .WithAutomaticReconnect()
+                .AddMessagePackProtocol()
                 .Build();
         }
     }

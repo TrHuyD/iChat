@@ -75,12 +75,15 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             };
         }
 
-        public async Task<OperationResultT<ChatMessageDtoSafe>> SendTextMessageAsync(MessageRequest request)
+        public async Task<OperationResultT<NewMessage>> SendTextMessageAsync(MessageRequest request,string serverId)
         {
+            var channelId = long.Parse(request.ReceiveChannelId);
+            var serverIdLong = long.Parse(serverId);
+            var userId = long.Parse(request.SenderId);
+            await _serverMetaDataCacheService.IsInServerWithCorrectStruct(userId, serverIdLong, channelId);
             var messageIdResult = _idGen.GenerateId();
             _ = Task.Run(() => _chatWriteService.UploadMessageAsync(request, messageIdResult));
-
-            var rt = new ChatMessageDtoSafe
+            var rt = new NewMessage
             {
                 Id = messageIdResult.Id.ToString(),
                 Content = request.TextContent,
@@ -88,10 +91,11 @@ namespace iChat.BackEnd.Services.Users.ChatServers
                 MessageType = (int)MessageType.Text,
                 SenderId = request.SenderId,
                 ChannelId = request.ReceiveChannelId,
-                CreatedAt = messageIdResult.CreatedAt
+                CreatedAt = messageIdResult.CreatedAt,
+                UserMetadataVersion=""
             };
-            await _cache.AddMessageToLatestBucketAsync(long.Parse(request.ReceiveChannelId), rt);
-            return OperationResultT<ChatMessageDtoSafe>.Ok(rt);
+            await _cache.AddMessageToLatestBucketAsync(channelId, rt);
+            return OperationResultT<NewMessage>.Ok(rt);
         }
 
     }

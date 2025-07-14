@@ -41,12 +41,12 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 throw new KeyNotFoundException($"Server {serverId} not found in cache.");
             return Task.FromResult(server.AdminId == userId.ToString());
         }
-        public Task<bool> IsAdmin(long ServerId,long UserId,long ChannelId)
+        public Task<bool> IsAdmin(long ServerId,long ChannelId,long UserId)
         {
             if (!_cache.TryGetValue(GetServerKey(ServerId), out ChatServerMetadata? server))
                 throw new KeyNotFoundException($"Server {ServerId} not found in cache.");
             var channel = ChannelId.ToString();
-            if (_userChatService.IsUserInServer(UserId.ToString(), ServerId))
+            if (!_userChatService.IsUserInServer(UserId.ToString(), ServerId))
                 throw new KeyNotFoundException($"Member {UserId} not in {ServerId}");
             return Task.FromResult(server.AdminId == UserId.ToString()&&server.Channels.Any(c=>c.Id==channel));
         }
@@ -124,7 +124,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             var channel = channelId.ToString();
             if (!server.Channels.Any(c => c.Id == channel))
                 throw new KeyNotFoundException($"Channel {channel} not found in server {serverId}.");
-            if (_userChatService.IsUserInServer(userId.ToString(), serverId))
+            if (!_userChatService.IsUserInServer(userId.ToString(), serverId))
                 throw new KeyNotFoundException($"Member {userId} not in {serverId}");
 
         }
