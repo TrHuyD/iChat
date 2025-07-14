@@ -4,7 +4,7 @@ namespace iChat.Client.DTOs.Chat
 {
     public class RenderedMessage
     {
-        public ChatMessageDtoSafe Message { get; set; }
+        public ChatMessageDto Message { get; set; }
         public string CssClass { get; set; } = "";
         public string? Icon { get; set; }
         public string Content { get; set; } = "";
@@ -14,13 +14,13 @@ namespace iChat.Client.DTOs.Chat
         public void ToggleDelete()
         {
             Message.Content = DeleteMessage;
-            Message.isDeleted = true;
+            Message.IsDeleted = true;
         //    CssClass = "deleted-message";
             Content =DeleteMessage;
         }   
         public void HandleEdit(string newContent)
         {
-            if(Message.isDeleted)
+            if(Message.IsDeleted)
             {
                 return; // Cannot edit a deleted message
             }

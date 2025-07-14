@@ -9,8 +9,8 @@ namespace iChat.Client.Pages.Chat
         // Context menu fields
         private bool _showContextMenu = false;
         private string _contextMenuStyle = "";
-        private ChatMessageDtoSafe _contextMenuMessage =null;
-        private void ShowContextMenu(MouseEventArgs e, ChatMessageDtoSafe messageId)
+        private ChatMessageDto _contextMenuMessage =null;
+        private void ShowContextMenu(MouseEventArgs e, ChatMessageDto messageId)
         {
             _contextMenuMessage = messageId;
             _contextMenuStyle = $"top: {e.ClientY}px; left: {e.ClientX}px;";
@@ -38,7 +38,7 @@ namespace iChat.Client.Pages.Chat
             await    _messageHandleService.DeleteMessageAsync(new UserDeleteMessageRq
             {
                 ChannelId = _currentChannel.Id,
-                MessageId = _contextMenuMessage.Id,
+                MessageId = _contextMenuMessage.Id.ToString(),
                 ServerId = _currentServer.Id,
             });
         }

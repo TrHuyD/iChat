@@ -10,7 +10,7 @@
         }
         public void ShowError(string message)
         {
-            ShowToast(message, "error");
+            ShowToast(message, "danger");
         }
         public void ShowSuccess(string message)
         {

@@ -52,13 +52,13 @@ namespace iChat.Client.Pages.Chat
                 await SendMessage();
             }
         }
-        private async Task AddMessages(BucketDto bucket)
+        private async Task AddMessages(MessageBucket bucket)
         {
             var previousScroll = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
 
             foreach (var message in bucket.ChatMessageDtos)
             {
-                _messages.TryAdd(long.Parse(message.Id), MessageRenderer.RenderMessage(message, _currentUserId));
+                _messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
             }
             _groupedMessages = await GroupMessagesAsync(_messages);
             await InvokeAsync(StateHasChanged);
@@ -70,7 +70,7 @@ namespace iChat.Client.Pages.Chat
             var groups = new List<MessageGroup>();
             MessageGroup? current = null;
 
-            foreach (var msg in messages.Values.OrderBy(m => long.Parse(m.Message.Id)))
+            foreach (var msg in messages.Values.OrderBy(m => m.Message.Id))
             {
                 UserMetadataReact user = await _userMetadataService.GetUserByIdAsync(msg.Message.SenderId);
                 if (current == null ||

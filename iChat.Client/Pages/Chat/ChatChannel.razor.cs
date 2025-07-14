@@ -16,6 +16,8 @@ namespace iChat.Client.Pages.Chat
     {
         [Parameter] public string RoomId { get; set; } = string.Empty;
         [Parameter] public string ServerId { get; set; } = string.Empty;
+        public long RoomIdL;
+        public long ServerIdL;
         private string? _currentRoomId;
         private string?_currentServerId;
         private ChatServerDtoUser? _currentServer=new ChatServerDtoUser();
@@ -71,6 +73,8 @@ namespace iChat.Client.Pages.Chat
                 return;
             if (_currentRoomId != RoomId)
             {
+                RoomIdL= long.Parse(RoomId);
+                ServerIdL = long.Parse(ServerId);
                 SaveState();
                 if (!string.IsNullOrEmpty(_currentRoomId))
                     await ChatService.LeaveRoomAsync(_currentRoomId);
@@ -98,7 +102,7 @@ namespace iChat.Client.Pages.Chat
                 StateHasChanged();
                 checkScrollToBotoom = checkScrollToTop = _isOldHistoryRequestButtonDisabled = checkScrollToTop = _currentBucketIndex == 0;
                 await Task.Delay(125);
-                await ScrollToMessage(loc);
+                await ScrollToMessage(loc.ToString());
             }
         }
 
@@ -147,13 +151,13 @@ namespace iChat.Client.Pages.Chat
                 Console.Error.WriteLine($"Error handling edit message: {ex.Message}");
             }
         }
-        private async Task HandleNewMessage(ChatMessageDtoSafe message)
+        private async Task HandleNewMessage(ChatMessageDto message)
         {
-            if (message.ChannelId != RoomId) return;
+            if (message.ChannelId !=  RoomIdL) return;
             try
             {
-                var messageId = long.Parse(message.Id);
-                var rendered = MessageRenderer.RenderMessage(message, _currentUserId);
+                var messageId = message.Id;
+                var rendered = MessageRenderer.RenderMessage(message);
                 _messages.TryAdd(messageId, rendered);
 
                 await TryAddNewMessageToGroupAsync(rendered);

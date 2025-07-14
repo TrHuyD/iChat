@@ -1,4 +1,5 @@
-﻿using iChat.Client.Services.Auth;
+﻿using iChat.Client.Data;
+using iChat.Client.Services.Auth;
 using iChat.DTOs.Users.Messages;
 using System.Collections.Concurrent;
 using System.Net.Http.Json;
@@ -8,13 +9,12 @@ namespace iChat.Client.Services.UserServices.Chat
 {
     public class ChatMessageCacheService
     {
-        private readonly ConcurrentDictionary<long, SortedList<int, BucketDto>> _messageCache = new();
-        private readonly ConcurrentDictionary<long, string> _lastSeen = new();
+        private readonly ConcurrentDictionary<long, SortedList<int, MessageBucket>> _messageCache = new();
+        private readonly ConcurrentDictionary<long, long> _lastSeen = new();
         private readonly ConcurrentDictionary<long, int> _latestBucketMap = new();
         private readonly JwtAuthHandler _httpClient;
 
-        // Events
-        public event Func<ChatMessageDtoSafe, Task>? OnMessageReceived;
+        public event Func<ChatMessageDto, Task>? OnMessageReceived;
         public event Func<EditMessageRt, Task>? OnMessageEdited;
         public event Func<DeleteMessageRt, Task>? OnMessageDeleted;
 
@@ -24,301 +24,274 @@ namespace iChat.Client.Services.UserServices.Chat
         }
 
         #region Event Registration
-        public void RegisterOnMessageReceived(Func<ChatMessageDtoSafe, Task> onMessageReceived)
-        {
-            OnMessageReceived -= onMessageReceived;
-            OnMessageReceived += onMessageReceived;
-        }
-
-        public void RegisterOnMessageEdited(Func<EditMessageRt, Task> onMessageEdited)
-        {
-            OnMessageEdited -= onMessageEdited;
-            OnMessageEdited += onMessageEdited;
-        }
-
-        public void RegisterOnMessageDeleted(Func<DeleteMessageRt, Task> onMessageDeleted)
-        {
-            OnMessageDeleted -= onMessageDeleted;
-            OnMessageDeleted += onMessageDeleted;
-        }
+        public void RegisterOnMessageReceived(Func<ChatMessageDto, Task> callback) => OnMessageReceived = callback;
+        public void RegisterOnMessageEdited(Func<EditMessageRt, Task> callback) => OnMessageEdited = callback;
+        public void RegisterOnMessageDeleted(Func<DeleteMessageRt, Task> callback) => OnMessageDeleted = callback;
         #endregion
 
         #region Message Operations
         public async Task HandleDeleteMessage(DeleteMessageRt delete)
         {
-            if (delete == null) throw new ArgumentNullException(nameof(delete));
-
             var channelId = long.Parse(delete.ChannelId);
             var messageId = long.Parse(delete.MessageId);
 
             var target = FindSpecificMessageWithFallback(channelId, delete.BucketId, messageId);
             if (target != null)
             {
-                target.isDeleted = true;
+                target.IsDeleted = true;
                 target.Content = string.Empty;
                 target.ContentMedia = string.Empty;
-
-                if (OnMessageDeleted != null)
-                    await OnMessageDeleted.Invoke(delete);
-            }
-            else
-            {
-                Console.WriteLine($"Message {messageId} not found in bucket {delete.BucketId} for channel {channelId}");
+                if (OnMessageDeleted != null) await OnMessageDeleted(delete);
             }
         }
 
-        public async Task HandleEditMessage(EditMessageRt editRequest)
+        public async Task HandleEditMessage(EditMessageRt edit)
         {
-            if (editRequest == null) throw new ArgumentNullException(nameof(editRequest));
+            var channelId = long.Parse(edit.ChannelId);
+            var messageId = long.Parse(edit.MessageId);
 
-            var channelId = long.Parse(editRequest.ChannelId);
-            var messageId = long.Parse(editRequest.MessageId);
-
-            var target = FindSpecificMessageWithFallback(channelId, editRequest.BucketId, messageId);
-            if (target != null && !target.isDeleted)
+            var target = FindSpecificMessageWithFallback(channelId, edit.BucketId, messageId);
+            if (target != null && !target.IsDeleted)
             {
-                target.isEdited = true;
-                target.Content = editRequest.NewContent;
-
-                if (OnMessageEdited != null)
-                    await OnMessageEdited.Invoke(editRequest);
+                target.IsEdited = true;
+                target.Content = edit.NewContent;
+                if (OnMessageEdited != null) await OnMessageEdited(edit);
             }
         }
 
-        public async Task AddLatestMessage(ChatMessageDtoSafe message)
+        public async Task AddLatestMessage(ChatMessageDto message)
         {
-            if (message == null) throw new ArgumentNullException(nameof(message));
-
-            if (OnMessageReceived != null)
-                await OnMessageReceived.Invoke(message);
-
-            var channelId = long.Parse(message.ChannelId);
-            var messageId = long.Parse(message.Id);
-
-            if (_messageCache.TryGetValue(channelId, out var buckets))
+            if (_messageCache.TryGetValue(message.ChannelId, out var buckets) &&
+                buckets.TryGetValue(int.MaxValue, out var latestBucket))
             {
-                var latestBucket = buckets[int.MaxValue];
                 latestBucket.ChatMessageDtos.Add(message);
-
-                UpdateBucketSequence(latestBucket, message.Id, messageId);
-            }
-            else
-            {
-                // Handle case where channel doesn't exist in cache
-                Console.WriteLine($"Channel {channelId} not found in cache when adding latest message");
+                UpdateBucketSequence(latestBucket, message.Id);
+                if (OnMessageReceived != null) await OnMessageReceived(message);
             }
         }
 
-        public void UpdateLastSeen(string chatChannelId)
+        public void UpdateLastSeen(string channelId)
         {
-            if (string.IsNullOrEmpty(chatChannelId)) return;
-
-            var channelId = long.Parse(chatChannelId);
-
-            if (!_messageCache.TryGetValue(channelId, out var buckets)) return;
-
-            var lastSequence = GetLastSequenceFromBuckets(buckets);
-            if (!string.IsNullOrEmpty(lastSequence))
-            {
-                _lastSeen[channelId] = lastSequence;
-            }
+            if (!long.TryParse(channelId, out var id)) return;
+            if (_messageCache.TryGetValue(id, out var buckets))
+                _lastSeen[id] = GetLastSequenceFromBuckets(buckets);
         }
         #endregion
 
         #region Data Retrieval
-        public async Task<(List<BucketDto> buckets, string location)> GetLatestMessage(string chatChannelId)
+        public async Task<(List<MessageBucket>, long)> GetLatestMessage(string channelId)
         {
-            if (string.IsNullOrEmpty(chatChannelId))
-                throw new ArgumentException("Channel ID cannot be null or empty", nameof(chatChannelId));
+            var id = long.Parse(channelId);
 
-            var channelId = long.Parse(chatChannelId);
-
-            if (!_lastSeen.TryGetValue(channelId, out var location))
+            if (!_lastSeen.TryGetValue(id, out var sequence))
             {
-                await LoadLatestBucketsFromServer(channelId);
-                location = _messageCache[channelId].Last().Value.LastSequence;
+                await LoadLatestBucketsFromServer(id);
+                sequence = _messageCache[id].Last().Value.LastSequence;
             }
 
-            return (_messageCache[channelId].Values.ToList(), location);
+            return (_messageCache[id].Values.ToList(), sequence);
         }
 
-        public async Task<List<BucketDto>> GetBucketsInRange(long chatChannelId, int startId, int endId)
+        public async Task<List<MessageBucket>> GetBucketsInRange(long channelId, int startId, int endId)
         {
-            var result = new List<BucketDto>();
-            var bucketList = _messageCache.GetOrAdd(chatChannelId, _ => new SortedList<int, BucketDto>());
+            var buckets = _messageCache.GetOrAdd(channelId, _ => new());
+            await EnsureBucketsLoaded(channelId, startId, endId, buckets);
 
-            // Load missing buckets
-            await EnsureBucketsLoaded(chatChannelId, startId, endId, bucketList);
-
-            // Collect available buckets in range
+            var list = new List<MessageBucket>();
             for (int i = startId; i <= endId; i++)
-            {
-                if (bucketList.TryGetValue(i, out var bucket))
-                {
-                    result.Add(bucket);
-                }
-            }
+                if (buckets.TryGetValue(i, out var bucket))
+                    list.Add(bucket);
 
-            return result;
+            return list;
         }
 
-        public async Task<BucketDto?> GetBucketContainingMessage(long chatChannelId, string messageId)
+        public async Task<MessageBucket?> GetBucketContainingMessage(long channelId, string messageId)
         {
-            if (string.IsNullOrEmpty(messageId)) return null;
+            var buckets = _messageCache.GetOrAdd(channelId, _ => new());
 
-            var bucketList = _messageCache.GetOrAdd(chatChannelId, _ => new SortedList<int, BucketDto>());
-
-            // Check existing buckets first
-            foreach (var bucket in bucketList.Values)
+            foreach (var bucket in buckets.Values)
             {
                 if (IsMessageInBucket(bucket, messageId))
-                {
                     return bucket;
-                }
             }
 
-            // Load from server if not found locally
-            return await LoadBucketFromServer(chatChannelId, messageId, bucketList);
+            return await LoadBucketFromServer(channelId, messageId, buckets);
         }
 
-        public async Task<BucketDto?> GetPreviousBucket(string channelId, int currentBucketId)
+        public async Task<MessageBucket?> GetPreviousBucket(string channelId, int currentBucketId)
         {
-            if (string.IsNullOrEmpty(channelId)) return null;
+            var id = long.Parse(channelId);
+            var target = currentBucketId - 1;
+            if (target < 0) return null;
 
-            var chatChannelId = long.Parse(channelId);
-            var bucketList = _messageCache.GetOrAdd(chatChannelId, _ => new SortedList<int, BucketDto>());
-
-            int targetId = currentBucketId - 1;
-            if (targetId < 0) return null;
-
-            if (!bucketList.TryGetValue(targetId, out var bucket))
+            var buckets = _messageCache.GetOrAdd(id, _ => new());
+            if (!buckets.TryGetValue(target, out var bucket))
             {
-                await TryLoadBucket(chatChannelId, targetId, bucketList);
-                bucketList.TryGetValue(targetId, out bucket);
+                await TryLoadBucket(id, target, buckets);
+                buckets.TryGetValue(target, out bucket);
             }
 
             return bucket;
         }
 
-        public async Task<BucketDto?> GetNewerBucket(long chatChannelId, int currentBucketId)
+        public async Task<MessageBucket?> GetNewerBucket(long channelId, int currentBucketId)
         {
-            var bucketList = _messageCache.GetOrAdd(chatChannelId, _ => new SortedList<int, BucketDto>());
-            int targetId = DetermineTargetBucketId(chatChannelId, currentBucketId);
+            var buckets = _messageCache.GetOrAdd(channelId, _ => new());
+            var targetId = DetermineTargetBucketId(channelId, currentBucketId);
 
-            if (!bucketList.TryGetValue(targetId, out var bucket))
+            if (!buckets.TryGetValue(targetId, out var bucket))
             {
-                await TryLoadBucket(chatChannelId, targetId, bucketList);
-                bucketList.TryGetValue(targetId, out bucket);
+                await TryLoadBucket(channelId, targetId, buckets);
+                buckets.TryGetValue(targetId, out bucket);
             }
 
             return bucket;
         }
         #endregion
 
-        #region Private Helper Methods
-        private ChatMessageDtoSafe? FindMessageInBucket(BucketDto bucket, long messageId)
+        #region Private Helpers
+        private ChatMessageDto? FindSpecificMessageWithFallback(long channelId, int bucketId, long messageId)
         {
-            if (bucket?.ChatMessageDtos == null) return null;
+            if (!_messageCache.TryGetValue(channelId, out var buckets)) return null;
 
-            if (!(bucket.FirstSequenceLong <= messageId && bucket.LastSequenceLong >= messageId))
-                return null;
-
-            return bucket.ChatMessageDtos.FirstOrDefault(m => m.IdLong == messageId);
-        }
-
-        private ChatMessageDtoSafe? FindSpecificMessageWithFallback(long channelId, int bucketId, long messageId)
-        {
-            if (!_messageCache.TryGetValue(channelId, out var buckets))
-            {
-                Console.WriteLine($"Channel {channelId} not found in cache.");
-                return null;
-            }
-
-            // Adjust bucket ID if it's beyond the latest
-            if (_latestBucketMap.TryGetValue(channelId, out var latestBucket) && latestBucket < bucketId)
-            {
+            if (_latestBucketMap.TryGetValue(channelId, out var latest) && bucketId > latest)
                 bucketId = int.MaxValue;
-            }
 
-            // Try specific bucket first
-            if (buckets.TryGetValue(bucketId, out var bucket))
-            {
-                var message = FindMessageInBucket(bucket, messageId);
-                if (message != null) return message;
-            }
-            else
-            {
-                Console.WriteLine($"Bucket {bucketId} not found for channel {channelId} in cache, trying latest bucket.");
-            }
-
-            // Fallback to latest bucket
-            if (buckets.TryGetValue(int.MaxValue, out var latestBucketData))
-            {
-                var message = FindMessageInBucket(latestBucketData, messageId);
-                if (message != null) return message;
-            }
-
-            Console.WriteLine($"Message {messageId} not found in bucket {bucketId} or latest bucket for channel {channelId}.");
-            return null;
+            return buckets.TryGetValue(bucketId, out var bucket) && IsInRange(bucket, messageId)
+                ? bucket.ChatMessageDtos.FirstOrDefault(m => m.Id == messageId)
+                : buckets.TryGetValue(int.MaxValue, out var latestBucket)
+                    ? latestBucket.ChatMessageDtos.FirstOrDefault(m => m.Id == messageId)
+                    : null;
         }
 
-        private void UpdateBucketSequence(BucketDto bucket, string messageId, long messageIdLong)
+        private bool IsMessageInBucket(MessageBucket bucket, string messageId)
+            => string.Compare(bucket.FirstSequence.ToString(), messageId) <= 0 &&
+               string.Compare(bucket.LastSequence.ToString(), messageId) >= 0;
+
+        private bool IsInRange(MessageBucket bucket, long messageId)
+            => bucket.FirstSequence <= messageId && bucket.LastSequence >= messageId;
+
+        private void UpdateBucketSequence(MessageBucket bucket, long messageId)
         {
-            if (long.Parse(bucket.LastSequence) < messageIdLong)
-            {
+            if (bucket.LastSequence < messageId)
                 bucket.LastSequence = messageId;
-            }
-            else if (long.Parse(bucket.FirstSequence) > messageIdLong)
-            {
-                bucket.FirstSequence = messageId;
-            }
         }
 
-        private string GetLastSequenceFromBuckets(SortedList<int, BucketDto> buckets)
+        private long GetLastSequenceFromBuckets(SortedList<int, MessageBucket> buckets)
         {
-            var latestBucket = buckets[int.MaxValue];
-            var lastSequence = latestBucket.LastSequence;
+            if (buckets.TryGetValue(int.MaxValue, out var latest))
+                return latest.LastSequence;
 
-            if (string.IsNullOrEmpty(lastSequence) && buckets.Count > 1)
-            {
-                // Try second-to-last bucket
-                lastSequence = buckets[buckets.Keys[^2]].LastSequence;
-            }
-
-            return lastSequence;
+            return buckets.Count > 0 ? buckets.Values.Last().LastSequence : 0;
         }
 
-        private async Task EnsureBucketsLoaded(long chatChannelId, int startId, int endId, SortedList<int, BucketDto> bucketList)
+        private async Task EnsureBucketsLoaded(long channelId, int startId, int endId, SortedList<int, MessageBucket> list)
         {
             for (int i = startId; i <= endId; i++)
             {
-                if (!bucketList.ContainsKey(i))
+                if (!list.ContainsKey(i))
                 {
-                    await LoadPrevMessageBuckets(chatChannelId, i, endId);
+                    await LoadPrevMessageBuckets(channelId, i, endId);
                     break;
                 }
             }
         }
 
-        private bool IsMessageInBucket(BucketDto bucket, string messageId)
+        private int DetermineTargetBucketId(long channelId, int current)
         {
-            return string.Compare(bucket.FirstSequence, messageId, StringComparison.Ordinal) <= 0 &&
-                   string.Compare(bucket.LastSequence, messageId, StringComparison.Ordinal) >= 0;
+            var next = current >= int.MaxValue ? int.MaxValue : current + 1;
+            if (_latestBucketMap.TryGetValue(channelId, out var latest) && next >= latest)
+                return int.MaxValue;
+            return next;
+        }
+        #endregion
+
+        #region Server Communication
+        private async Task LoadPrevMessageBuckets(long channelId, int startId, int endId)
+        {
+            var limit = Math.Min(endId - startId + 1, 3);
+            var url = $"/api/ChatChannel/{channelId}/buckets?limit={limit}&endid={endId}";
+
+            var response = await _httpClient.SendAuthAsync(new HttpRequestMessage(HttpMethod.Get, url));
+            if (!response.IsSuccessStatusCode)
+                throw new HttpRequestException("Failed to load previous messages", null, response.StatusCode);
+
+            var bucketDtos = await response.Content.ReadFromJsonAsync<List<BucketDto>>();
+            if (bucketDtos == null) return;
+
+            var buckets = _messageCache.GetOrAdd(channelId, _ => new());
+            foreach (var dto in bucketDtos)
+            {
+                var bucket = new MessageBucket(dto);
+                buckets[bucket.BucketId] = bucket;
+            }
         }
 
-        private async Task<BucketDto?> LoadBucketFromServer(long chatChannelId, string messageId, SortedList<int, BucketDto> bucketList)
+        private async Task LoadLatestBucketsFromServer(long channelId)
+        {
+            var response = await _httpClient.SendAuthAsync(
+                new HttpRequestMessage(HttpMethod.Get, $"/api/ChatChannel/{channelId}/latest"));
+
+            if (!response.IsSuccessStatusCode)
+                throw new HttpRequestException("Failed to load latest messages", null, response.StatusCode);
+
+            var dtos = await response.Content.ReadFromJsonAsync<List<BucketDto>>();
+            if (dtos == null) return;
+
+            var list = new SortedList<int, MessageBucket>();
+            foreach (var dto in dtos)
+            {
+                var bucket = new MessageBucket(dto);
+                list[bucket.BucketId] = bucket;
+            }
+
+            UpdateLatestBucketMap(channelId, list);
+            _messageCache[channelId] = list;
+        }
+
+        private void UpdateLatestBucketMap(long channelId, SortedList<int, MessageBucket> list)
+        {
+            _latestBucketMap[channelId] = list.Count switch
+            {
+                0 or 1 => 0,
+                _ => list.Values[^2].BucketId
+            };
+        }
+
+        private async Task TryLoadBucket(long channelId, int bucketId, SortedList<int, MessageBucket> list)
         {
             try
             {
                 var response = await _httpClient.SendAuthAsync(
-                    new HttpRequestMessage(HttpMethod.Get, $"/api/ChatChannel/{chatChannelId}/messagejump?id={messageId}"));
+                    new HttpRequestMessage(HttpMethod.Get, $"/api/ChatChannel/{channelId}/bucketsingle?id={bucketId}"));
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var bucket = await response.Content.ReadFromJsonAsync<BucketDto>();
-                    if (bucket != null)
+                    var dto = await response.Content.ReadFromJsonAsync<BucketDto>();
+                    if (dto != null)
+                        list[dto.BucketId] = new MessageBucket(dto);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading bucket {bucketId}: {ex.Message}");
+            }
+        }
+
+        private async Task<MessageBucket?> LoadBucketFromServer(long channelId, string messageId, SortedList<int, MessageBucket> list)
+        {
+            try
+            {
+                var response = await _httpClient.SendAuthAsync(
+                    new HttpRequestMessage(HttpMethod.Get, $"/api/ChatChannel/{channelId}/messagejump?id={messageId}"));
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var dto = await response.Content.ReadFromJsonAsync<BucketDto>();
+                    if (dto != null)
                     {
-                        bucketList[bucket.BucketId] = bucket;
+                        var bucket = new MessageBucket(dto);
+                        list[bucket.BucketId] = bucket;
                         return bucket;
                     }
                 }
@@ -329,124 +302,6 @@ namespace iChat.Client.Services.UserServices.Chat
             }
 
             return null;
-        }
-
-        private int DetermineTargetBucketId(long chatChannelId, int currentBucketId)
-        {
-            int targetId = currentBucketId >= int.MaxValue ? int.MaxValue : currentBucketId + 1;
-
-            if (_latestBucketMap.TryGetValue(chatChannelId, out var latest) && targetId >= latest)
-            {
-                targetId = int.MaxValue;
-            }
-
-            return targetId;
-        }
-        #endregion
-
-        #region Server Communication
-        private async Task LoadPrevMessageBuckets(long chatChannelId, int startId, int endId)
-        {
-            if (startId < 0) startId = 0;
-
-            var limit = Math.Min(endId - startId + 1, 3);
-
-            try
-            {
-                var response = await _httpClient.SendAuthAsync(
-                    new HttpRequestMessage(HttpMethod.Get, $"/api/ChatChannel/{chatChannelId}/buckets?limit={limit}&endid={endId}"));
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var buckets = await response.Content.ReadFromJsonAsync<List<BucketDto>>();
-                    if (buckets?.Count > 0)
-                    {
-                        var bucketList = _messageCache.GetOrAdd(chatChannelId, _ => new SortedList<int, BucketDto>());
-                        foreach (var bucket in buckets)
-                        {
-                            bucketList[bucket.BucketId] = bucket;
-                        }
-                    }
-                }
-                else
-                {
-                    throw new HttpRequestException("Failed to load previous messages", null, response.StatusCode);
-                }
-            }
-            catch (HttpRequestException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new HttpRequestException($"Error loading previous messages: {ex.Message}", ex);
-            }
-        }
-
-        private async Task LoadLatestBucketsFromServer(long chatChannelId)
-        {
-            try
-            {
-                var response = await _httpClient.SendAuthAsync(
-                    new HttpRequestMessage(HttpMethod.Get, $"/api/ChatChannel/{chatChannelId}/latest"));
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var buckets = await response.Content.ReadFromJsonAsync<List<BucketDto>>();
-                    if (buckets != null)
-                    {
-                        var bucketList = new SortedList<int, BucketDto>();
-                        foreach (var bucket in buckets)
-                        {
-                            bucketList[bucket.BucketId] = bucket;
-                        }
-
-                        UpdateLatestBucketMap(chatChannelId, buckets);
-                        _messageCache[chatChannelId] = bucketList;
-                    }
-                }
-                else
-                {
-                    throw new HttpRequestException("Failed to load latest messages", null, response.StatusCode);
-                }
-            }
-            catch (HttpRequestException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new HttpRequestException($"Error loading latest messages: {ex.Message}", ex);
-            }
-        }
-        private void UpdateLatestBucketMap(long chatChannelId, List<BucketDto> buckets)
-        {
-            _latestBucketMap[chatChannelId] = buckets.Count switch
-            {
-                0 or 1 => 0,
-                _ => buckets[^2].BucketId
-            };
-        }
-        private async Task TryLoadBucket(long chatChannelId, int bucketId, SortedList<int, BucketDto> bucketList)
-        {
-            try
-            {
-                var response = await _httpClient.SendAuthAsync(
-                    new HttpRequestMessage(HttpMethod.Get, $"/api/ChatChannel/{chatChannelId}/bucketsingle?id={bucketId}"));
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var bucket = await response.Content.ReadFromJsonAsync<BucketDto>();
-                    if (bucket != null)
-                    {
-                        bucketList[bucket.BucketId] = bucket;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to load bucket {bucketId} for channel {chatChannelId}: {ex.Message}");
-            }
         }
         #endregion
     }

@@ -32,19 +32,43 @@ namespace iChat.Client.Services.UserServices.Chat
             Console.WriteLine("Registering ReceiveMessage on Signalr Client");
             _hubConnection.On<ChatMessageDtoSafe>("ReceiveMessage", async message =>
             {
-                Console.WriteLine($"Recieved message for {message.Id}");
-                await  _MessageCacheService.AddLatestMessage(message);
-
+                try
+                {
+                    Console.WriteLine($"Recieved message for {message.Id}");
+                    await _MessageCacheService.AddLatestMessage(new ChatMessageDto(message));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error handling new message: {ex.Message}");
+                }
             });
             _hubConnection.On<ChatChannelDto>("ChannelCreate", HandleChannelCreate);
-            _hubConnection.On<DeleteMessageRt>("MessageDelete", HandleDeleteMessage);
+            _hubConnection.On<DeleteMessageRt>("MessageDelete",async rt =>
+            {
+                try
+                {
+                   await HandleDeleteMessage(rt);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error handling delete message: {ex.Message}");
+                }
+            });
             _hubConnection.On<EditMessageRt>("MessageEdit",  HandleEditMessage);
             _hubConnection.Closed += async (error) =>
             {
-                Console.WriteLine("Disconnected from ChatHub");
-                await Task.Delay(50); 
-                await ConnectAsync();   
-            };
+                try
+                {
+                    Console.WriteLine("Disconnected from ChatHub");
+                    await Task.Delay(50);
+                    await ConnectAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error editing channel: {ex.Message}");
+                }
+            }
+                ;
 
             await _hubConnection.StartAsync();
             Console.WriteLine("Connected to ChatHub");

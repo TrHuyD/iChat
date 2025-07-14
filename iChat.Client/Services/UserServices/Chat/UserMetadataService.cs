@@ -11,9 +11,9 @@ namespace iChat.Client.Services.UserServices.Chat
 {
     public class UserMetadataService
     {
-        private readonly ConcurrentDictionary<string, UserMetadataReact> _cache = new();
-        private readonly ConcurrentQueue<string> _pendingIds = new();
-        private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<long, UserMetadataReact> _cache = new();
+        private readonly ConcurrentQueue<long> _pendingIds = new();
+        private readonly HashSet<long> _inFlight = new();
         private readonly System.Timers.Timer _timer;
         public event Action<List<UserMetadataReact>>? _onMetadataUpdated;
         JwtAuthHandler _https;
@@ -29,11 +29,11 @@ namespace iChat.Client.Services.UserServices.Chat
             _timer.Start();
         }
 
-        public Task<UserMetadataReact> GetUserByIdAsync(string userId)
+        public Task<UserMetadataReact> GetUserByIdAsync(long userId)
         {
             if (_cache.TryGetValue(userId, out var cached))
                 return Task.FromResult(cached);
-            var placeholder = new UserMetadataReact(userId, userId, "https://cdn.discordapp.com/embed/avatars/1.png");
+            var placeholder = new UserMetadataReact(userId, $"{userId}", "https://cdn.discordapp.com/embed/avatars/1.png");
             _cache[userId] = placeholder;
 
             lock (_inFlight)
@@ -46,7 +46,7 @@ namespace iChat.Client.Services.UserServices.Chat
         }
         private async Task ProcessQueueAsync()
         {
-            var batch = new List<string>();
+            var batch = new List<long>();
             while (batch.Count < 10 && _pendingIds.TryDequeue(out var uid))
                 batch.Add(uid);
             if (batch.Count == 0) return;
@@ -75,7 +75,7 @@ namespace iChat.Client.Services.UserServices.Chat
             }
             _onMetadataUpdated?.Invoke(updatedList);
         }
-        private async Task<List<UserMetadataReact>> FetchMetadataBatchAsync(List<string> ids)
+        private async Task<List<UserMetadataReact>> FetchMetadataBatchAsync(List<long> ids)
         {
             if (ids.Count < 5)
             {
@@ -83,7 +83,7 @@ namespace iChat.Client.Services.UserServices.Chat
                 {
                     try
                     {
-                        using var response = await _https.SendAuthAsync(new HttpRequestMessage(HttpMethod.Get, $"/api/users/GetUserById?userId={Uri.EscapeDataString(id)}"));
+                        using var response = await _https.SendAuthAsync(new HttpRequestMessage(HttpMethod.Get, $"/api/users/GetUserById?userId={Uri.EscapeDataString(id.ToString())}"));
                         if (!response.IsSuccessStatusCode)
                             return null;
                         var json = await response.Content.ReadFromJsonAsync<UserMetadataReact>();

@@ -6,17 +6,16 @@ namespace iChat.Client.Services.UserServices.Chat
     public class MessageRenderer
     {
 
-        public static RenderedMessage RenderMessage(ChatMessageDtoSafe message, string currentUserId)
+        public static RenderedMessage RenderMessage(ChatMessageDto message)
         {
             var result = new RenderedMessage
             {
                 Message = message,
-                CssClass = message.SenderId == currentUserId ? "message-self" : "message-other",
                 Icon = "",
                 Content = message.Content,
                 ShowTimestamp = true
             };
-            if(message.isDeleted)
+            if(message.IsDeleted)
             {
                 result.ToggleDelete();
             }
