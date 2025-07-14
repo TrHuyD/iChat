@@ -26,9 +26,24 @@ namespace iChat.DTOs.Users.Messages
      //   [JsonConverter(typeof(DateTimeOffsetJsonConverter))]
         public DateTimeOffset CreatedAt { get; set; }
         public long SenderId { get; set; }
-        public long RoomId { get; set; }
+        public long ChannelId { get; set; }
         public bool IsEdited { get; set; } 
         public bool IsDeleted { get; set; } 
+        public ChatMessageDto()
+        {
+        }
+        public ChatMessageDto(ChatMessageDtoSafe chatMessageDtoSafe)
+        {
+            Id = long.Parse(chatMessageDtoSafe.Id);
+            Content = chatMessageDtoSafe.Content;
+            ContentMedia = chatMessageDtoSafe.ContentMedia;
+            MessageType = chatMessageDtoSafe.MessageType;
+            CreatedAt = chatMessageDtoSafe.CreatedAt;
+            SenderId =long.Parse( chatMessageDtoSafe.SenderId);
+            ChannelId = long.Parse(chatMessageDtoSafe.ChannelId);
+            IsEdited = chatMessageDtoSafe.isEdited;
+            IsDeleted = chatMessageDtoSafe.isDeleted;
+        }
         //     public string? SenderName { get; set; } = string.Empty;
         //   public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
 

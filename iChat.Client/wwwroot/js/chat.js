@@ -4,6 +4,12 @@
         element.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 };
+window.scrollToMessageAuto = function (messageId) {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+        element.scrollIntoView({ behavior: "auto", block: "center" });
+    }
+};
 
 window.scrollToBottom = function (container) {
     if (container instanceof HTMLElement) {

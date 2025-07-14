@@ -70,8 +70,9 @@ namespace iChat.Client.Layout
             Reset();
             Navigation.NavigateTo("/");
         }
-        private async Task HandleInviteUser(string userId)
+        private async Task HandleInviteUser(long userId)
         {
+
         }
 
         private void ClearServerSelection()

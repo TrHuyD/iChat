@@ -6,19 +6,19 @@ namespace iChat.Client.DTOs.Chat
 {
     public class MessageGroup
     {
-        public string UserId { get; set; }
+        public long UserId { get; set; }
         public UserMetadataReact User { get; set; }
         public List<RenderedMessage> Messages { get; set; } = new();
         public DateTimeOffset Timestamp { get; set; }
 
-        public bool CanAppend(ChatMessageDtoSafe nextMessage)
+        public bool CanAppend(ChatMessageDto nextMessage)
         {
             if (Messages.Count == 0) return false;
             if (nextMessage.SenderId != UserId)
                 return false;
-            var lastMessage = Messages[^1].Message;
+            var lastMessage = Messages[0].Message;
             var timeGap = nextMessage.CreatedAt - lastMessage.CreatedAt;
-            if (timeGap.TotalMinutes > 5||Messages.Count>5)
+            if (timeGap.TotalMinutes > 5||Messages.Count>=2)
                 return false;
 
             return true;

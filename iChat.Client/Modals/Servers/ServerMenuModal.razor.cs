@@ -14,7 +14,7 @@ namespace iChat.Client.Modals.Servers
         [Parameter] public int ContextMenuX { get; set; }
         [Parameter] public int ContextMenuY { get; set; }
         [Parameter] public EventCallback OnLeaveServer { get; set; }
-        [Parameter] public EventCallback<string> OnInviteUser { get; set; }
+        [Parameter] public EventCallback<long> OnInviteUser { get; set; }
         [Inject] private UserMetadataService _userMetadataService { get; set; } = null!;
 
         private bool _inviteSectionVisible = false;
@@ -62,7 +62,7 @@ namespace iChat.Client.Modals.Servers
             await OnLeaveServer.InvokeAsync();
         }
 
-        private async Task InviteUser(string userId)
+        private async Task InviteUser(long userId)
         {
             await OnInviteUser.InvokeAsync(userId);
         }

@@ -225,6 +225,23 @@ form + p, p.mt-3 {
     .toast .btn-close {
         filter: invert(1);
     }
+    .toast.bg-danger {
+        background-color: #dc3545;
+        border: 1px solid #b02a37;
+    }
+
+    .toast.bg-warning {
+        background-color: #ffc107;
+        color: black;
+    }
+
+    .toast.bg-success {
+        background-color: #198754;
+    }
+
+    .toast.bg-info {
+        background-color: #0dcaf0;
+    }
 
 .bg-success {
     background-color: #43b581 !important;
