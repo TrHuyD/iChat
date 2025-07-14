@@ -12,10 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="secrets\chatgptquerry.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css" />
     <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css.map" />
     <Content Include=".wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css" />
