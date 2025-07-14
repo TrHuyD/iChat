@@ -33,6 +33,10 @@ jobs:
       run: |
         dotnet publish ./iChat.BackEnd -c Release -r linux-x64 --self-contained true -o $BACKEND_OUTPUT
 
+    - name: Inject appsettings.secrets.json
+      run: |
+        echo "${{ secrets.APPSETTINGS_SECRETS_JSON }}" > $BACKEND_OUTPUT/appsettings.secrets.json
+
     - name: Create zip archives
       run: |
         zip -r client-static.zip $CLIENT_OUTPUT
@@ -65,9 +69,9 @@ jobs:
         script: |
           echo "🧠 Setting deployment variables..."
           BACKEND_REMOTE_PATH="/home/ubuntu/backend"
-          BACKEND_TEMP_UNZIP="/home/ubuntu/backend-temp"
           CLIENT_REMOTE_PATH="/home/ubuntu/client"
           CLIENT_TEMP_UNZIP="/home/ubuntu/client-temp"
+          BACKEND_TEMP_UNZIP="/home/ubuntu/backend-temp"
           BACKEND_SERVICE_NAME="ichat-backend.service"
 
           echo "🛑 Stopping backend service..."
@@ -78,7 +82,6 @@ jobs:
           sudo mkdir -p "$BACKEND_TEMP_UNZIP"
           sudo unzip -q ~/backend-static.zip -d "$BACKEND_TEMP_UNZIP"
           sudo rm ~/backend-static.zip
-          sudo mkdir -p "$BACKEND_REMOTE_PATH"
           sudo mv "$BACKEND_TEMP_UNZIP/backend-publish/"* "$BACKEND_REMOTE_PATH"
           sudo rm -rf "$BACKEND_TEMP_UNZIP"
 
@@ -87,7 +90,6 @@ jobs:
           sudo mkdir -p "$CLIENT_TEMP_UNZIP"
           sudo unzip -q ~/client-static.zip -d "$CLIENT_TEMP_UNZIP"
           sudo rm ~/client-static.zip
-          sudo mkdir -p "$CLIENT_REMOTE_PATH"
           sudo mv "$CLIENT_TEMP_UNZIP/client-publish/wwwroot/"* "$CLIENT_REMOTE_PATH"
           sudo rm -rf "$CLIENT_TEMP_UNZIP"
 
