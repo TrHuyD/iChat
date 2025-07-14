@@ -9,107 +9,116 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     env:
       EC2_HOST: ec2-54-169-55-224.ap-southeast-1.compute.amazonaws.com
       EC2_USER: ubuntu
       CLIENT_OUTPUT: client-publish
       BACKEND_OUTPUT: backend-publish
-
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
-
-    - name: Publish Client
-      run: |
-        dotnet publish ./iChat.Client -c Release -o $CLIENT_OUTPUT
-
-    - name: Publish Backend
-      run: |
-        dotnet publish ./iChat.BackEnd -c Release -r linux-x64 --self-contained true -o $BACKEND_OUTPUT
-
-    - name: Create zip archives
-      run: |
-        zip -r client-static.zip $CLIENT_OUTPUT
-        zip -r backend-static.zip $BACKEND_OUTPUT
-
-    - name: Upload Client zip to EC2
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ env.EC2_HOST }}
-        username: ${{ env.EC2_USER }}
-        key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
-        source: client-static.zip
-        target: /home/ubuntu/
-
-    - name: Upload Backend zip to EC2
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ env.EC2_HOST }}
-        username: ${{ env.EC2_USER }}
-        key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
-        source: backend-static.zip
-        target: /home/ubuntu/
-
-    - name: SSH into EC2 and deploy
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ env.EC2_HOST }}
-        username: ${{ env.EC2_USER }}
-        key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
-        script: |
-          echo "🧠 Setting deployment variables..."
-          BACKEND_REMOTE_PATH="/home/ubuntu/backend"
-          BACKEND_TEMP_UNZIP="/home/ubuntu/backend-temp"
-          CLIENT_REMOTE_PATH="/home/ubuntu/client"
-          CLIENT_TEMP_UNZIP="/home/ubuntu/client-temp"
-          BACKEND_SERVICE_NAME="ichat-backend.service"
-
-          echo "🛑 Stopping backend service..."
-          sudo systemctl stop $BACKEND_SERVICE_NAME || true
-
-          echo "📦 Extracting backend..."
-          sudo rm -rf "$BACKEND_REMOTE_PATH" "$BACKEND_TEMP_UNZIP"
-          sudo mkdir -p "$BACKEND_TEMP_UNZIP"
-          sudo unzip -q ~/backend-static.zip -d "$BACKEND_TEMP_UNZIP"
-          sudo rm ~/backend-static.zip
-          echo "Contents of backend-temp:"
-          ls -la "$BACKEND_TEMP_UNZIP"
-          sudo mkdir -p "$BACKEND_REMOTE_PATH"
-          if [ -d "$BACKEND_TEMP_UNZIP/backend-publish" ]; then
-            sudo mv "$BACKEND_TEMP_UNZIP/backend-publish/"* "$BACKEND_REMOTE_PATH"
-          else
-            echo "⚠️ backend-publish directory not found!"
-            sudo mv "$BACKEND_TEMP_UNZIP/"* "$BACKEND_REMOTE_PATH"
-          fi
-          sudo rm -rf "$BACKEND_TEMP_UNZIP"
-
-          echo "🌐 Extracting client..."
-          sudo rm -rf "$CLIENT_REMOTE_PATH" "$CLIENT_TEMP_UNZIP"
-          sudo mkdir -p "$CLIENT_TEMP_UNZIP"
-          sudo unzip -q ~/client-static.zip -d "$CLIENT_TEMP_UNZIP"
-          sudo rm ~/client-static.zip
-          echo "Contents of client-temp:"
-          ls -la "$CLIENT_TEMP_UNZIP"
-          sudo mkdir -p "$CLIENT_REMOTE_PATH"
-          if [ -d "$CLIENT_TEMP_UNZIP/client-publish/wwwroot" ]; then
-            sudo mv "$CLIENT_TEMP_UNZIP/client-publish/wwwroot/"* "$CLIENT_REMOTE_PATH"
-          else
-            echo "⚠️ client-publish/wwwroot not found!"
-            sudo mv "$CLIENT_TEMP_UNZIP/"* "$CLIENT_REMOTE_PATH"
-          fi
-          sudo rm -rf "$CLIENT_TEMP_UNZIP"
-
-          echo "👷 Fixing ownership..."
-          sudo chown -R ubuntu:ubuntu "$BACKEND_REMOTE_PATH"
-          sudo chown -R ubuntu:ubuntu "$CLIENT_REMOTE_PATH"
-
-          echo "🚀 Restarting backend service..."
-          sudo systemctl start $BACKEND_SERVICE_NAME
-
-          echo "✅ Deployment complete!"
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      
+      - name: Publish Client
+        run: |
+          dotnet publish ./iChat.Client -c Release -o $CLIENT_OUTPUT
+      
+      - name: Publish Backend
+        run: |
+          dotnet publish ./iChat.BackEnd -c Release -r linux-x64 --self-contained true -o $BACKEND_OUTPUT
+      
+      - name: Create zip archives
+        run: |
+          zip -r client-static.zip $CLIENT_OUTPUT
+          zip -r backend-static.zip $BACKEND_OUTPUT
+      
+      - name: Upload Client zip to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
+          source: client-static.zip
+          target: /home/ubuntu/
+      
+      - name: Upload Backend zip to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
+          source: backend-static.zip
+          target: /home/ubuntu/
+      
+      - name: SSH into EC2 and deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ secrets.AWS_EC2_PRIVATE_KEY }}
+          script: |
+            echo "🧠 Setting deployment variables..."
+            BACKEND_REMOTE_PATH="/home/ubuntu/backend"
+            BACKEND_TEMP_UNZIP="/home/ubuntu/backend-temp"
+            CLIENT_REMOTE_PATH="/home/ubuntu/client"
+            CLIENT_TEMP_UNZIP="/home/ubuntu/client-temp"
+            BACKEND_SERVICE_NAME="ichat-backend.service"
+            
+            echo "🛑 Stopping backend service..."
+            sudo systemctl stop $BACKEND_SERVICE_NAME || true
+            
+            echo "📦 Extracting backend..."
+            sudo rm -rf "$BACKEND_REMOTE_PATH" "$BACKEND_TEMP_UNZIP"
+            sudo mkdir -p "$BACKEND_TEMP_UNZIP"
+            sudo unzip -q ~/backend-static.zip -d "$BACKEND_TEMP_UNZIP"
+            sudo rm ~/backend-static.zip
+            
+            echo "Contents of backend-temp:"
+            ls -la "$BACKEND_TEMP_UNZIP"
+            
+            sudo mkdir -p "$BACKEND_REMOTE_PATH"
+            if [ -d "$BACKEND_TEMP_UNZIP/backend-publish" ]; then
+              sudo mv "$BACKEND_TEMP_UNZIP/backend-publish/"* "$BACKEND_REMOTE_PATH"
+            else
+              echo "⚠️ backend-publish directory not found!"
+              sudo mv "$BACKEND_TEMP_UNZIP/"* "$BACKEND_REMOTE_PATH"
+            fi
+            sudo rm -rf "$BACKEND_TEMP_UNZIP"
+            
+            echo "🔐 Creating appsettings.secrets.json..."
+            sudo tee "$BACKEND_REMOTE_PATH/appsettings.secrets.json" > /dev/null <<EOF
+            ${{ secrets.APPSETTINGS_SECRETS_JSON }}
+            EOF
+            
+            echo "🌐 Extracting client..."
+            sudo rm -rf "$CLIENT_REMOTE_PATH" "$CLIENT_TEMP_UNZIP"
+            sudo mkdir -p "$CLIENT_TEMP_UNZIP"
+            sudo unzip -q ~/client-static.zip -d "$CLIENT_TEMP_UNZIP"
+            sudo rm ~/client-static.zip
+            
+            echo "Contents of client-temp:"
+            ls -la "$CLIENT_TEMP_UNZIP"
+            
+            sudo mkdir -p "$CLIENT_REMOTE_PATH"
+            if [ -d "$CLIENT_TEMP_UNZIP/client-publish/wwwroot" ]; then
+              sudo mv "$CLIENT_TEMP_UNZIP/client-publish/wwwroot/"* "$CLIENT_REMOTE_PATH"
+            else
+              echo "⚠️ client-publish/wwwroot not found!"
+              sudo mv "$CLIENT_TEMP_UNZIP/"* "$CLIENT_REMOTE_PATH"
+            fi
+            sudo rm -rf "$CLIENT_TEMP_UNZIP"
+            
+            echo "👷 Fixing ownership..."
+            sudo chown -R ubuntu:ubuntu "$BACKEND_REMOTE_PATH"
+            sudo chown -R ubuntu:ubuntu "$CLIENT_REMOTE_PATH"
+            
+            echo "🚀 Restarting backend service..."
+            sudo systemctl start $BACKEND_SERVICE_NAME
+            
+            echo "✅ Deployment complete!"
