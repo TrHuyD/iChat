@@ -36,6 +36,7 @@
 
   <ItemGroup>
     <Folder Include="Entities\Servers\NewFolder\" />
+    <Folder Include="functions\" />
   </ItemGroup>
 
 </Project>

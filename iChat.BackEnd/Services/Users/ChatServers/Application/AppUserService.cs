@@ -59,5 +59,9 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             _ = _userMetaDataCacheService.SetAsync(userMetadata);
             return userMetadata;
         }
+        //public async Task<UserMetadata>UpdateUserNameAndAvatar(string UserId,string UserName,string AvatarUrl)
+        //{
+
+        //}
     }
 }

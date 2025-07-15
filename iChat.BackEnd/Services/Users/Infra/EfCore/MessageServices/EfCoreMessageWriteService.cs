@@ -1,10 +1,14 @@
-﻿using iChat.BackEnd.Models.User.CassandraResults;
+﻿using iChat.BackEnd.Models.Helpers;
+using iChat.BackEnd.Models.User;
+using iChat.BackEnd.Models.User.CassandraResults;
 using iChat.BackEnd.Models.User.MessageRequests;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.Data.EF;
 using iChat.Data.Entities.Logs;
 using iChat.Data.Entities.Users.Messages;
+using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
 using Microsoft.EntityFrameworkCore;
@@ -17,8 +21,12 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
         private readonly MessageWriteQueueService _queueService;
 
         iChatDbContext _context ;
-        public EfCoreMessageWriteService(MessageWriteQueueService queueService,iChatDbContext context)
+        Lazy<IMediaUploadService> _mediaUploadService ;
+        public EfCoreMessageWriteService(MessageWriteQueueService queueService,
+            iChatDbContext context,
+            Lazy<IMediaUploadService> uploadService)
         {
+            _mediaUploadService = uploadService ;
             _context = context;
             _queueService = queueService;
         }
@@ -39,8 +47,9 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             var tempo = "";
             if (message.MessageType == (short)MessageType.Media)
             {
-                tempo = message.MediaContent;
-                message.MediaContent = null;
+                tempo = message.MediaId.ToString();
+                message.MediaId = null;
+                message.MediaFile = null;
 
             }
             else
@@ -98,7 +107,18 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             await _context.SaveChangesAsync();
             return message.BucketId;
         }
+        public async Task<MediaFileDto> UploadImage(MessageUploadRequest request, SnowflakeIdDto messageId,long userId)
+        {
+            var result = (await _mediaUploadService.Value.SaveImageAsync(request.File, userId)).ToDto();
+            _queueService.Enqueue(new MessageRequest
+            {
+                SenderId = userId.ToString(),
+                ReceiveChannelId = request.ChannelId,
+                MediaFileMetaData = result
 
+            }, messageId);
+            return result;
+        }
         public async Task UploadMessageAsync(MessageRequest request, SnowflakeIdDto messageId)
         {
             if (string.IsNullOrEmpty(request.SenderId))

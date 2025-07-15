@@ -1,5 +1,5 @@
 ﻿/* Profile Modal Styles - Optimized */
-/*.discord-modal-backdrop {
+.discord-modal-backdrop {
     position: fixed;
     inset: 0;
     background-color: rgba(0, 0, 0, 0.85);
@@ -240,6 +240,7 @@
     }
 }
 
+/* Mobile Responsive */
 @media (max-width: 768px) {
     .discord-modal-dialog {
         width: 90vw;
@@ -277,4 +278,4 @@
     .user-info {
         text-align: left;
     }
-}*/
+}

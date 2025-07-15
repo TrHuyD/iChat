@@ -1,0 +1,78 @@
+CREATE OR REPLACE FUNCTION get_latest_buckets_by_channel(
+    p_channel_id BIGINT,
+    p_bucket_count INTEGER DEFAULT 3
+)
+RETURNS TABLE(
+    bucket_id INTEGER,
+    channel_id BIGINT,
+    message_count BIGINT,
+    created_at TIMESTAMPTZ,
+    messages JSONB
+) AS $func$
+DECLARE
+    last_assigned_bucket_id INTEGER;
+    min_bucket_id INTEGER;
+BEGIN
+    -- Get the LastAssignedBucketId for the channel
+    SELECT c."LastAssignedBucketId" INTO last_assigned_bucket_id
+    FROM "ChatChannels" c
+    WHERE c."Id" = p_channel_id;
+
+    -- Handle case where LastAssignedBucketId might be NULL
+    IF last_assigned_bucket_id IS NULL THEN
+        last_assigned_bucket_id := 0;
+    END IF;
+
+    -- Calculate minimum bucket ID
+    min_bucket_id := GREATEST(last_assigned_bucket_id - p_bucket_count + 2, 0);
+
+    RETURN QUERY
+    SELECT 
+        b."BucketId",
+        b."ChannelId",
+        COUNT(m."Id")::BIGINT as message_count,
+        b."CreatedAt",
+        COALESCE(
+            jsonb_agg(
+                jsonb_build_object(
+                    'Id', m."Id",
+                    'SenderId', m."SenderId",
+                    'ChannelId', m."ChannelId",
+                    'MessageType', m."MessageType",
+                    'Content', COALESCE(m."TextContent", ''),
+                    'ContentMedia', CASE
+                        WHEN mf."Id" IS NOT NULL THEN jsonb_build_object(
+                            'Id', mf."Id",
+                            'Hash', mf."Hash",
+                            'Url', mf."Url",
+                            'ContentType', mf."ContentType",
+                            'Width', mf."Width",
+                            'Height', mf."Height",
+                            'SizeBytes', mf."SizeBytes",
+                            'UploadedAt', mf."UploadedAt",
+                            'IsDeleted', mf."IsDeleted"
+                        )
+                        ELSE NULL
+                    END,
+                    'CreatedAt', m."Timestamp",
+                    'IsDeleted', m."isDeleted",
+                    'IsEdited', (m."LastEditedAt" IS NOT NULL)
+                ) ORDER BY m."Id"
+            ) FILTER (WHERE m."Id" IS NOT NULL),
+            '[]'::jsonb
+        ) as messages
+    FROM "Buckets" b
+    LEFT JOIN "Messages" m ON b."BucketId" = m."BucketId" AND b."ChannelId" = m."ChannelId"
+    LEFT JOIN "MediaFiles" mf ON m."MediaId" = mf."Id"
+    WHERE b."ChannelId" = p_channel_id 
+      AND (
+          (p_bucket_count = 1 AND b."BucketId" = 2147483647) OR
+          (p_bucket_count > 1 AND (
+              b."BucketId" = 2147483647 OR 
+              (b."BucketId" <= last_assigned_bucket_id AND b."BucketId" >= min_bucket_id)
+          ))
+      )
+    GROUP BY b."BucketId", b."ChannelId", b."CreatedAt"
+    ORDER BY CASE WHEN b."BucketId" = 2147483647 THEN 2147483647 ELSE b."BucketId" END DESC;
+END;
+$func$ LANGUAGE plpgsql;

@@ -1,0 +1,54 @@
+CREATE OR REPLACE FUNCTION get_bucket_by_id(
+    p_channel_id BIGINT,
+    p_bucket_id INTEGER
+)
+RETURNS TABLE(
+    bucket_id INTEGER,
+    channel_id BIGINT,
+    message_count BIGINT,
+    created_at TIMESTAMPTZ,
+    messages JSONB
+) AS $func$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        b."BucketId",
+        b."ChannelId",
+        COUNT(m."Id")::BIGINT AS message_count,
+        b."CreatedAt",
+        COALESCE(
+            jsonb_agg(
+                jsonb_build_object(
+                    'Id', m."Id",
+                    'SenderId', m."SenderId",
+                    'ChannelId', m."ChannelId",
+                    'MessageType', m."MessageType",
+                    'Content', COALESCE(m."TextContent", ''),
+                    'ContentMedia', CASE
+                        WHEN mf."Id" IS NOT NULL THEN jsonb_build_object(
+                            'Id', mf."Id",
+                            'Hash', mf."Hash",
+                            'Url', mf."Url",
+                            'ContentType', mf."ContentType",
+                            'Width', mf."Width",
+                            'Height', mf."Height",
+                            'SizeBytes', mf."SizeBytes",
+                            'UploadedAt', mf."UploadedAt",
+                            'IsDeleted', mf."IsDeleted"
+                        )
+                        ELSE NULL
+                    END,
+                    'CreatedAt', m."Timestamp",
+                    'IsDeleted', m."isDeleted",
+                    'IsEdited', (m."LastEditedAt" IS NOT NULL)
+                ) ORDER BY m."Id"
+            ) FILTER (WHERE m."Id" IS NOT NULL),
+            '[]'::jsonb
+        ) AS messages
+    FROM "Buckets" b
+    LEFT JOIN "Messages" m ON b."BucketId" = m."BucketId" AND b."ChannelId" = m."ChannelId"
+    LEFT JOIN "MediaFiles" mf ON m."MediaId" = mf."Id"
+    WHERE b."ChannelId" = p_channel_id AND b."BucketId" = p_bucket_id
+    GROUP BY b."BucketId", b."ChannelId", b."CreatedAt";
+END;
+$func$ LANGUAGE plpgsql;

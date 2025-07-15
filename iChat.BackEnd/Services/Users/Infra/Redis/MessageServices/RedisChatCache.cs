@@ -74,40 +74,40 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
                 return false;
             }
         }
-        public async Task<bool> UploadMessage_Bulk(long channelId, List<ChatMessageDto> messages)
-        {
-            var db = _service.GetDatabase();
-            var zsetKey = RedisVariableKey.GetRecentChatMessageKey(channelId);
-            var batch = db.CreateBatch();
-            var tasks = new List<Task>();
-            if (messages.Count == 0)
-            {
-                var padding = new ChatMessageDto
-                {
-                    Id = -1,
-                    Content = string.Empty,
-                    ContentMedia = string.Empty,
-                    MessageType = -1,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    SenderId = -1,
-                };
-                var json = JsonConvert.SerializeObject(padding);
-                tasks.Add(batch.SortedSetAddAsync(zsetKey, json, padding.Id));
-            }
-            else
-            {
-                foreach (var msg in messages)
-                {
-                    var json = JsonConvert.SerializeObject(msg);
-                    tasks.Add(batch.SortedSetAddAsync(zsetKey, json, msg.Id));
-                }
-            }
-           // tasks.Add(batch.SortedSetRemoveRangeByRankAsync(zsetKey, 0, -41));
-            tasks.Add(batch.KeyExpireAsync(zsetKey, TimeSpan.FromMinutes(20)));
-            batch.Execute();
-            await Task.WhenAll(tasks);
-            return true;
-        }
+        //public async Task<bool> UploadMessage_Bulk(long channelId, List<ChatMessageDto> messages)
+        //{
+        //    var db = _service.GetDatabase();
+        //    var zsetKey = RedisVariableKey.GetRecentChatMessageKey(channelId);
+        //    var batch = db.CreateBatch();
+        //    var tasks = new List<Task>();
+        //    if (messages.Count == 0)
+        //    {
+        //        var padding = new ChatMessageDto
+        //        {
+        //            Id = -1,
+        //            Content = string.Empty,
+        //            ContentMedia = string.Empty,
+        //            MessageType = -1,
+        //            CreatedAt = DateTimeOffset.UtcNow,
+        //            SenderId = -1,
+        //        };
+        //        var json = JsonConvert.SerializeObject(padding);
+        //        tasks.Add(batch.SortedSetAddAsync(zsetKey, json, padding.Id));
+        //    }
+        //    else
+        //    {
+        //        foreach (var msg in messages)
+        //        {
+        //            var json = JsonConvert.SerializeObject(msg);
+        //            tasks.Add(batch.SortedSetAddAsync(zsetKey, json, msg.Id));
+        //        }
+        //    }
+        //   // tasks.Add(batch.SortedSetRemoveRangeByRankAsync(zsetKey, 0, -41));
+        //    tasks.Add(batch.KeyExpireAsync(zsetKey, TimeSpan.FromMinutes(20)));
+        //    batch.Execute();
+        //    await Task.WhenAll(tasks);
+        //    return true;
+        //}
 
 
         public async Task<List<ChatMessageDto>> GetRecentMessage(long channelId,long? lastMessageId)

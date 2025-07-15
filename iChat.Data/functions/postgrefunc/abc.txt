@@ -1,0 +1,312 @@
+-- Function to get the latest buckets for a channel
+CREATE OR REPLACE FUNCTION get_latest_buckets_by_channel(
+    p_channel_id BIGINT,
+    p_bucket_count INTEGER DEFAULT 3
+)
+RETURNS TABLE(
+    bucket_id INTEGER,
+    channel_id BIGINT,
+    message_count BIGINT,
+    created_at TIMESTAMPTZ,
+    messages JSONB
+) AS $func$
+DECLARE
+    last_assigned_bucket_id INTEGER;
+    bucket_ids INTEGER[];
+BEGIN
+    -- Get the LastAssignedBucketId for the channel
+    SELECT c."LastAssignedBucketId" INTO last_assigned_bucket_id
+    FROM "ChatChannels" c
+    WHERE c."Id" = p_channel_id;
+    
+    -- Build array of bucket IDs to fetch
+    bucket_ids := ARRAY[2147483647]; -- int.MaxValue
+    
+    IF last_assigned_bucket_id > 0 THEN
+        bucket_ids := bucket_ids || last_assigned_bucket_id;
+        
+        IF p_bucket_count > 2 AND last_assigned_bucket_id > 1 THEN
+            bucket_ids := bucket_ids || (last_assigned_bucket_id - 1);
+        END IF;
+    END IF;
+    
+    -- Limit to requested bucket count
+    bucket_ids := bucket_ids[1:p_bucket_count];
+    
+    RETURN QUERY
+    SELECT 
+        b."BucketId",
+        b."ChannelId",
+        COUNT(m."Id")::BIGINT as message_count,
+        b."CreatedAt",
+        COALESCE(
+            jsonb_agg(
+                jsonb_build_object(
+                    'Id', m."Id",
+                    'SenderId', m."SenderId",
+                    'MessageType', m."MessageType",
+                    'Content', COALESCE(m."TextContent", ''),
+                    'ContentMedia', COALESCE(m."MediaContent", ''),
+                    'CreatedAt', m."Timestamp"
+                ) ORDER BY m."Id"
+            ) FILTER (WHERE m."Id" IS NOT NULL),
+            '[]'::jsonb
+        ) as messages
+    FROM "Buckets" b
+    LEFT JOIN "Messages" m ON b."BucketId" = m."BucketId" AND b."ChannelId" = m."ChannelId"
+    WHERE b."ChannelId" = p_channel_id 
+      AND b."BucketId" = ANY(bucket_ids)
+    GROUP BY b."BucketId", b."ChannelId", b."CreatedAt"
+    ORDER BY CASE WHEN b."BucketId" = 2147483647 THEN 2147483647 ELSE b."BucketId" END DESC;
+END;
+$func$ LANGUAGE plpgsql;
+
+-- Function to get messages by channel (flattened from latest buckets)
+CREATE OR REPLACE FUNCTION get_messages_by_channel(
+    p_channel_id BIGINT,
+    p_limit INTEGER DEFAULT 40
+)
+RETURNS TABLE(
+    id BIGINT,
+    sender_id BIGINT,
+    message_type SMALLINT,
+    content TEXT,
+    content_media TEXT,
+    created_at TIMESTAMPTZ
+) AS $func$
+DECLARE
+    last_assigned_bucket_id INTEGER;
+    bucket_ids INTEGER[];
+BEGIN
+    -- Get the LastAssignedBucketId for the channel
+    SELECT c."LastAssignedBucketId" INTO last_assigned_bucket_id
+    FROM "ChatChannels" c
+    WHERE c."Id" = p_channel_id;
+    
+    -- Build array of the 3 newest bucket IDs
+    bucket_ids := ARRAY[2147483647]; -- int.MaxValue
+    
+    IF last_assigned_bucket_id > 0 THEN
+        bucket_ids := bucket_ids || last_assigned_bucket_id;
+        
+        IF last_assigned_bucket_id > 1 THEN
+            bucket_ids := bucket_ids || (last_assigned_bucket_id - 1);
+        END IF;
+    END IF;
+    
+    RETURN QUERY
+    SELECT 
+        m."Id",
+        m."SenderId",
+        m."MessageType",
+        COALESCE(m."TextContent", '') as content,
+        COALESCE(m."MediaContent", '') as content_media,
+        m."Timestamp" as created_at
+    FROM "Messages" m
+    WHERE m."ChannelId" = p_channel_id 
+      AND m."BucketId" = ANY(bucket_ids)
+    ORDER BY m."Id" DESC
+    LIMIT p_limit;
+END;
+$func$ LANGUAGE plpgsql;
+
+-- Function to get messages around a specific message ID
+CREATE OR REPLACE FUNCTION get_messages_around_message_id(
+    p_channel_id BIGINT,
+    p_message_id BIGINT,
+    p_before_index INTEGER DEFAULT 20,
+    p_after_index INTEGER DEFAULT 22
+)
+RETURNS TABLE(
+    id BIGINT,
+    sender_id BIGINT,
+    message_type SMALLINT,
+    content TEXT,
+    content_media TEXT,
+    created_at TIMESTAMPTZ
+) AS $func$
+DECLARE
+    target_bucket_id INTEGER;
+    bucket_ids INTEGER[];
+BEGIN
+    -- Find the bucket containing the target message
+    SELECT m."BucketId" INTO target_bucket_id
+    FROM "Messages" m
+    WHERE m."Id" = p_message_id AND m."ChannelId" = p_channel_id;
+    
+    IF target_bucket_id IS NULL THEN
+        RETURN;
+    END IF;
+    
+    -- Get adjacent buckets for context
+    bucket_ids := ARRAY[target_bucket_id];
+    
+    IF target_bucket_id < 2147483647 THEN
+        bucket_ids := bucket_ids || (target_bucket_id + 1);
+    END IF;
+    
+    IF target_bucket_id > 1 THEN
+        bucket_ids := bucket_ids || (target_bucket_id - 1);
+    END IF;
+    
+    RETURN QUERY
+    WITH before_messages AS (
+        SELECT 
+            m."Id", m."SenderId", m."MessageType", m."TextContent", m."MediaContent", m."Timestamp",
+            ROW_NUMBER() OVER (ORDER BY m."Id" DESC) as rn
+        FROM "Messages" m
+        WHERE m."ChannelId" = p_channel_id 
+          AND m."Id" <= p_message_id 
+          AND m."BucketId" = ANY(bucket_ids)
+        ORDER BY m."Id" DESC
+        LIMIT p_before_index + 1
+    ),
+    after_messages AS (
+        SELECT 
+            m."Id", m."SenderId", m."MessageType", m."TextContent", m."MediaContent", m."Timestamp"
+        FROM "Messages" m
+        WHERE m."ChannelId" = p_channel_id 
+          AND m."Id" > p_message_id 
+          AND m."BucketId" = ANY(bucket_ids)
+        ORDER BY m."Id" ASC
+        LIMIT p_after_index
+    )
+    SELECT 
+        m.id,
+        m.sender_id,
+        m.message_type,
+        COALESCE(m.text_content, '') as content,
+        COALESCE(m.media_content, '') as content_media,
+        m.timestamp as created_at
+    FROM (
+        SELECT "Id" as id, "SenderId" as sender_id, "MessageType" as message_type,
+               "TextContent" as text_content, "MediaContent" as media_content, "Timestamp" as timestamp
+        FROM before_messages
+        
+        UNION ALL
+        
+        SELECT "Id" as id, "SenderId" as sender_id, "MessageType" as message_type,
+               "TextContent" as text_content, "MediaContent" as media_content, "Timestamp" as timestamp
+        FROM after_messages
+    ) m
+    ORDER BY m.id ASC;
+END;
+$func$ LANGUAGE plpgsql;
+
+-- Function to get buckets around a specific message
+CREATE OR REPLACE FUNCTION get_buckets_around_message(
+    p_channel_id BIGINT,
+    p_message_id BIGINT,
+    p_bucket_range INTEGER DEFAULT 2
+)
+RETURNS TABLE(
+    bucket_id INTEGER,
+    channel_id BIGINT,
+    message_count BIGINT,
+    created_at TIMESTAMPTZ,
+    messages JSONB
+) AS $func$
+DECLARE
+    target_bucket_id INTEGER;
+    bucket_ids INTEGER[];
+    i INTEGER;
+BEGIN
+    -- Find the bucket containing the target message
+    SELECT m."BucketId" INTO target_bucket_id
+    FROM "Messages" m
+    WHERE m."Id" = p_message_id AND m."ChannelId" = p_channel_id;
+    
+    IF target_bucket_id IS NULL THEN
+        RETURN;
+    END IF;
+    
+    -- Calculate bucket range around the target bucket
+    bucket_ids := ARRAY[]::INTEGER[];
+    
+    FOR i IN -p_bucket_range..p_bucket_range LOOP
+        IF target_bucket_id + i > 0 THEN
+            bucket_ids := bucket_ids || (target_bucket_id + i);
+        END IF;
+    END LOOP;
+    
+    RETURN QUERY
+    SELECT 
+        b."BucketId",
+        b."ChannelId",
+        COUNT(m."Id")::BIGINT as message_count,
+        b."CreatedAt",
+        COALESCE(
+            jsonb_agg(
+                jsonb_build_object(
+                    'Id', m."Id",
+                    'SenderId', m."SenderId",
+                    'MessageType', m."MessageType",
+                    'Content', COALESCE(m."TextContent", ''),
+                    'ContentMedia', COALESCE(m."MediaContent", ''),
+                    'CreatedAt', m."Timestamp"
+                ) ORDER BY m."Id"
+            ) FILTER (WHERE m."Id" IS NOT NULL),
+            '[]'::jsonb
+        ) as messages
+    FROM "Buckets" b
+    LEFT JOIN "Messages" m ON b."BucketId" = m."BucketId" AND b."ChannelId" = m."ChannelId"
+    WHERE b."ChannelId" = p_channel_id 
+      AND b."BucketId" = ANY(bucket_ids)
+    GROUP BY b."BucketId", b."ChannelId", b."CreatedAt"
+    ORDER BY b."BucketId";
+END;
+$func$ LANGUAGE plpgsql;
+
+-- Function to get buckets in a message range
+CREATE OR REPLACE FUNCTION get_buckets_in_range(
+    p_channel_id BIGINT,
+    p_start_id BIGINT,
+    p_end_id BIGINT,
+    p_limit INTEGER DEFAULT 50
+)
+RETURNS TABLE(
+    bucket_id INTEGER,
+    channel_id BIGINT,
+    message_count BIGINT,
+    created_at TIMESTAMPTZ,
+    messages JSONB
+) AS $func$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        b."BucketId",
+        b."ChannelId",
+        COUNT(m."Id")::BIGINT as message_count,
+        b."CreatedAt",
+        COALESCE(
+            jsonb_agg(
+                jsonb_build_object(
+                    'Id', m."Id",
+                    'SenderId', m."SenderId",
+                    'MessageType', m."MessageType",
+                    'Content', COALESCE(m."TextContent", ''),
+                    'ContentMedia', COALESCE(m."MediaContent", ''),
+                    'CreatedAt', m."Timestamp"
+                ) ORDER BY m."Id"
+            ) FILTER (WHERE m."Id" IS NOT NULL AND m."Id" >= p_start_id AND m."Id" <= p_end_id),
+            '[]'::jsonb
+        ) as messages
+    FROM "Buckets" b
+    LEFT JOIN "Messages" m ON b."BucketId" = m."BucketId" 
+                           AND b."ChannelId" = m."ChannelId"
+                           AND m."Id" >= p_start_id 
+                           AND m."Id" <= p_end_id
+    WHERE b."ChannelId" = p_channel_id 
+    GROUP BY b."BucketId", b."ChannelId", b."CreatedAt"
+    HAVING COUNT(m."Id") > 0
+    ORDER BY b."BucketId"
+    LIMIT p_limit;
+END;
+$func$ LANGUAGE plpgsql;
+
+-- Example usage:
+-- SELECT * FROM get_latest_buckets_by_channel(123, 3);
+-- SELECT * FROM get_messages_by_channel(123, 40);
+-- SELECT * FROM get_messages_around_message_id(123, 456, 20, 22);
+-- SELECT * FROM get_buckets_around_message(123, 456, 2);
+-- SELECT * FROM get_buckets_in_range(123, 100, 200, 50);

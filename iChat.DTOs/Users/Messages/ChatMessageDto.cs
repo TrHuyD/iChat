@@ -17,11 +17,12 @@ namespace iChat.DTOs.Users.Messages
             return x.Id.CompareTo(y.Id);
         }
     }
+    
     public class ChatMessageDto
     {
         public long Id { get; set; }
         public string Content { get; set; } = string.Empty;
-        public string ContentMedia { get; set; } = string.Empty;
+        public MediaFileDto? ContentMedia { get; set; }
         public int MessageType { get; set; }
      //   [JsonConverter(typeof(DateTimeOffsetJsonConverter))]
         public DateTimeOffset CreatedAt { get; set; }
@@ -46,6 +47,10 @@ namespace iChat.DTOs.Users.Messages
         }
         //     public string? SenderName { get; set; } = string.Empty;
         //   public string? SenderAvatarUrl { get; set; } = "https://cdn.discordapp.com/embed/avatars/0.png";
-
+        public void HandleDeleteMedia()
+        {
+            if (ContentMedia == null)
+                return;
+        }
     }
 }

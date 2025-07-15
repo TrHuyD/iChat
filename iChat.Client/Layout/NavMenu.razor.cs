@@ -115,7 +115,7 @@ namespace iChat.Client.Layout
         private Task OnSave() => Task.CompletedTask;
         private void OpenProfileModal()
         {
-            //profileChanger.ShowDefaultModal(OnSave);
+            profileChanger.ShowDefaultModal(OnSave);
         }
     }
 }

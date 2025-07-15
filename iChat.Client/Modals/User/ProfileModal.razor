@@ -1,6 +1,6 @@
-﻿@* @using Microsoft.AspNetCore.Components.Forms
+﻿@using Microsoft.AspNetCore.Components.Forms
 @inject ToastService ToastService
-
+@inject UserStateService userState
 
 <div class="discord-modal-backdrop" @onclick="CloseModal"></div>
 
@@ -88,9 +88,10 @@
     [Parameter] public EventCallback<(string?, IBrowserFile?)> OnSave { get; set; }
 
     private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+
     private string? _nicknameTemp;
-    private string? OriginalNickname = "a333";
-    private string? AvatarUrl = "/images/default-avatar.png"; 
+    private string? OriginalNickname;
+    private string? AvatarUrl;
     private IBrowserFile? SelectedAvatarFile;
     private string? AvatarPreviewUrl;
     private bool IsSaving = false;
@@ -111,9 +112,34 @@
         && !string.IsNullOrWhiteSpace(PreviewNickname)
         && (PreviewNickname != OriginalNickname || SelectedAvatarFile != null);
 
-    protected override void OnInitialized()
+    // 🔄 Load profile on modal open
+    protected override async Task OnInitializedAsync()
     {
-        PreviewNickname = OriginalNickname;
+        try
+        {
+            var profile = userState.GetUserProfile();
+
+            if (profile is not null)
+            {
+                OriginalNickname = profile.Name;
+                AvatarUrl = profile.AvatarUrl ?? "/images/default-avatar.png";
+                PreviewNickname = OriginalNickname;
+            }
+            else
+            {
+                ToastService.ShowError("Failed to load user profile.");
+                OriginalNickname = "";
+                AvatarUrl = "/images/default-avatar.png";
+                PreviewNickname = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error loading profile: " + ex.Message);
+            OriginalNickname = "";
+            AvatarUrl = "/images/default-avatar.png";
+            PreviewNickname = "";
+        }
     }
 
     private void ValidateNickname()
@@ -206,4 +232,4 @@
     {
         await OnClose.InvokeAsync();
     }
-} *@
+}

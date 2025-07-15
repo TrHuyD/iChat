@@ -35,10 +35,11 @@ namespace iChat.Data.EF
             builder.ApplyConfiguration(new BucketConfiguration());
             builder.ApplyConfiguration(new ServerBanConfiguration());
             builder.ApplyConfiguration(new MessageAuditLogConfiguration());
+            builder.ApplyConfiguration(new MediaFileConfiguration());   
             //builder.seed();
             base.OnModelCreating(builder);
         }
-        
+        public DbSet<MediaFile> MediaFiles { get; set; }
         public DbSet<AppUser> AppUsers { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<ChatChannel> ChatChannels { get; set; }

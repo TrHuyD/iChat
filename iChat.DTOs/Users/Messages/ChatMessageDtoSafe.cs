@@ -12,7 +12,7 @@ namespace iChat.DTOs.Users.Messages
         public string Id { get; set; }
      
         public string Content { get; set; } = string.Empty;
-        public string ContentMedia { get; set; } = string.Empty;
+        public MediaFileDto? ContentMedia { get; set; } 
         public int MessageType { get; set; }
         //   [JsonConverter(typeof(DateTimeOffsetJsonConverter))]
         public DateTimeOffset CreatedAt { get; set; }
