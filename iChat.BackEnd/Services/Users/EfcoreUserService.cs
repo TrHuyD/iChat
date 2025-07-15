@@ -113,4 +113,30 @@ public class EfcoreUserService : IUserService
             avatarUrl
         );
     }
+
+    public async Task<UserMetadata> EditNameAndAvatarAsync(string userId, string newNickName, string avatarUrl)
+    {
+        if (string.IsNullOrWhiteSpace(avatarUrl) || !Uri.IsWellFormedUriString(avatarUrl, UriKind.Absolute))
+            throw new ArgumentException("Invalid avatar URL.");
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            throw new Exception("User not found");
+        user.AvatarUrl = avatarUrl;
+        user.UserName=newNickName;
+        try
+        {
+            var result = await _userManager.UpdateAsync(user);
+
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to update user avatar url", ex);
+        }
+        return new UserMetadata
+            (
+                user.Id.ToString(),
+                user.UserName,
+                avatarUrl
+            );
+    }
 }

@@ -3,6 +3,7 @@ using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.UtilServices;
 using iChat.Data.EF;
 using iChat.Data.Entities.Users.Messages;
+using NRedisStack.DataTypes;
 using System.Collections.Concurrent;
 
 namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
@@ -39,13 +40,21 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                     Id = item.messageId.Id,
                     ChannelId = long.Parse(item.request.ReceiveChannelId),
                     SenderId = long.Parse(item.request.SenderId),
-                    MessageType = (short)item.request.messageType,
                     TextContent = item.request.TextContent,
-                    MediaContent = item.request.MediaContent,
                     Timestamp = item.messageId.CreatedAt
-                };
+                }
+            ;
 
-                entities.Add(entity);
+                if (item.request.MediaFileMetaData == null)
+                {
+                    entity.MessageType = 1;
+                }
+                else
+                {
+                    entity.MessageType = 2;
+                    entity.MediaId = item.request.MediaFileMetaData.Id;
+                }
+                    entities.Add(entity);
             }
 
             if (entities.Count == 0) return;

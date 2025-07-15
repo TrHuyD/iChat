@@ -28,17 +28,18 @@ namespace iChat.Data.Configurations
 
             // Optional fields
             builder.Property(m => m.TextContent).HasMaxLength(40000);
-            builder.Property(m => m.MediaContent).HasMaxLength(2048);
 
             builder.HasOne(m => m.User)
                    .WithMany()
                    .HasForeignKey(m => m.SenderId)
-                   .OnDelete(DeleteBehavior.Restrict); 
-
+                   .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(m => m.MediaFile)
+                .WithOne().HasForeignKey<Message>(m => m.MediaId);
             builder.HasIndex(m => m.ChannelId);
             builder.HasIndex(m => new { m.ChannelId, m.Timestamp });
             builder.HasIndex(m => new { m.ChannelId, m.SenderId, m.Timestamp });
             builder.HasIndex(m => new { m.ChannelId, m.BucketId,m.Id });
+
             builder.Property(m => m.MessageType)
                    .HasColumnType("smallint");
             builder.HasOne(m => m.ChatChannel)

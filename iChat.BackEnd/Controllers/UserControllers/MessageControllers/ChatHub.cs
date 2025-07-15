@@ -112,7 +112,6 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
                 SenderId = userId,
                 TextContent = message.Content,
                 ReceiveChannelId = message.ChannelId,
-                messageType = MessageType.Text
             };
 
             var result = await _sendMessageService.SendTextMessageAsync(request,roomId);

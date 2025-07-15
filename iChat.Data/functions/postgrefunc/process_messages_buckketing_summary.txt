@@ -1,0 +1,113 @@
+CREATE OR REPLACE FUNCTION process_messages_bucketing()
+RETURNS TABLE(
+    channel_id BIGINT,
+    latest_bucket_id INTEGER,
+    last_message_id BIGINT
+) AS $func$
+DECLARE
+    bucket_size INT := 50;
+    channel_updates RECORD;
+BEGIN
+    -- Create a temporary table to batch process channels
+    CREATE TEMP TABLE temp_channel_processing AS
+    WITH messages_to_process AS (
+        SELECT 
+            m."ChannelId",
+            COUNT(*) as message_count,
+            MIN(m."Id") as first_message_id,
+            MAX(m."Id") as last_msg_id  -- Changed to match first version
+        FROM "Messages" m
+        WHERE m."BucketId" = 2147483647
+          AND m."Timestamp" < NOW() - INTERVAL '1 minute'
+        GROUP BY m."ChannelId"
+    ),
+    channel_bucket_info AS (
+        SELECT 
+            mtp."ChannelId",
+            mtp.message_count,
+            mtp.first_message_id,
+            mtp.last_msg_id,  -- Changed to match first version
+            COALESCE(cc."LastAssignedBucketId", 0) as current_last_bucket,
+            COALESCE(bucket_msg_count.msg_count, 0) as current_bucket_msg_count
+        FROM messages_to_process mtp
+        LEFT JOIN "ChatChannels" cc ON cc."Id" = mtp."ChannelId"
+        LEFT JOIN (
+            SELECT 
+                m2."ChannelId",
+                COUNT(*) as msg_count
+            FROM "Messages" m2
+            INNER JOIN "ChatChannels" cc2 ON cc2."Id" = m2."ChannelId"
+            WHERE m2."BucketId" = COALESCE(cc2."LastAssignedBucketId", 0)
+            GROUP BY m2."ChannelId"
+        ) bucket_msg_count ON bucket_msg_count."ChannelId" = mtp."ChannelId"
+    )
+    SELECT 
+        "ChannelId",
+        message_count,
+        first_message_id,
+        last_msg_id,  -- Changed to match first version
+        current_last_bucket,
+        current_bucket_msg_count,
+        -- Calculate how many new buckets we'll need
+        CASE 
+            WHEN current_bucket_msg_count + message_count <= bucket_size THEN current_last_bucket
+            ELSE current_last_bucket + CEIL((current_bucket_msg_count + message_count - bucket_size)::DECIMAL / bucket_size)
+        END as new_last_bucket
+    FROM channel_bucket_info;
+
+    -- Process each channel
+    FOR channel_updates IN 
+        SELECT * FROM temp_channel_processing
+    LOOP
+        -- Create new buckets if needed
+        IF channel_updates.new_last_bucket > channel_updates.current_last_bucket THEN
+            -- Insert new buckets in batch
+            INSERT INTO "Buckets" ("ChannelId", "BucketId", "CreatedAt")
+            SELECT 
+                channel_updates."ChannelId",
+                generate_series(
+                    channel_updates.current_last_bucket + 1, 
+                    channel_updates.new_last_bucket
+                ),
+                NOW()
+            ON CONFLICT DO NOTHING;
+        END IF;
+
+        -- Update messages in batches using a more efficient approach
+        WITH message_bucket_assignment AS (
+            SELECT 
+                m."Id",
+                -- Calculate which bucket each message should go to
+                CASE 
+                    WHEN (ROW_NUMBER() OVER (ORDER BY m."Id") + channel_updates.current_bucket_msg_count - 1) < bucket_size 
+                    THEN channel_updates.current_last_bucket
+                    ELSE channel_updates.current_last_bucket + 
+                         CEIL((ROW_NUMBER() OVER (ORDER BY m."Id") + channel_updates.current_bucket_msg_count - bucket_size)::DECIMAL / bucket_size)
+                END as new_bucket_id
+            FROM "Messages" m
+            WHERE m."ChannelId" = channel_updates."ChannelId"
+              AND m."BucketId" = 2147483647
+              AND m."Timestamp" < NOW() - INTERVAL '1 minute'
+        )
+        UPDATE "Messages" 
+        SET "BucketId" = mba.new_bucket_id
+        FROM message_bucket_assignment mba
+        WHERE "Messages"."Id" = mba."Id";
+
+        -- Update the channel's last assigned bucket
+        UPDATE "ChatChannels"
+        SET "LastAssignedBucketId" = channel_updates.new_last_bucket
+        WHERE "Id" = channel_updates."ChannelId";
+
+        -- Return the report data using the record field
+        RETURN QUERY
+        SELECT 
+            channel_updates."ChannelId"::BIGINT,
+            channel_updates.new_last_bucket::INTEGER,
+            channel_updates.last_msg_id::BIGINT;  -- Changed to match record field
+    END LOOP;
+
+    -- Clean up temp table
+    DROP TABLE temp_channel_processing;
+END;
+$func$ LANGUAGE plpgsql;

@@ -82,7 +82,7 @@ builder.Services.AddIndexedDB(dbStore =>
 builder.Services.AddScoped<MessageStorageService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<UserStateService>();
-//builder.Services.AddScoped<SignalRWorkerService>();
+builder.Services.AddScoped<SignalRWorkerService>();
 builder.Services.AddScoped<SignalRConnectionFactory>();
 builder.Services.AddScoped<ChatSignalRClientService>();
 builder.Services.AddScoped< ChatNavigationService>();
@@ -90,5 +90,6 @@ builder.Services.AddScoped<ChatMessageCacheService>();
 builder.Services.AddScoped<InviteService>();
 builder.Services.AddSingleton<ConfigService>();
 builder.Services.AddScoped<MessageHandleService>();
+builder.Services.AddSingleton<ProfileModalService>();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 await builder.Build().RunAsync();

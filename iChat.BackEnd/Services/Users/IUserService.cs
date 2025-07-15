@@ -15,5 +15,7 @@ namespace iChat.BackEnd.Services.Users.Auth
         Task<UserMetadata> GetUserMetadataAsync(string userId);
         Task<UserMetadata> EditUserNickNameAsync(string userId, string newNickName);
         Task<UserMetadata> EditAvatarAsync(string userId, string avatarUrl);
+        Task<UserMetadata> EditNameAndAvatarAsync(string userId,string newNickName, string avatarUrl);
+
     }
 }

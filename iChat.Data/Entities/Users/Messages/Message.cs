@@ -22,7 +22,9 @@ namespace iChat.Data.Entities.Users.Messages
         public AppUser User { get; set; }
         public short MessageType { get; set; }
         public string? TextContent { get; set; }
-        public string? MediaContent { get; set; }
+     //  public string? MediaContent { get; set; }
+        public int? MediaId { get; set; }
+        public MediaFile? MediaFile { get; set; }
         public DateTimeOffset Timestamp { get; set; }
         public int BucketId { get; set; }
        public Bucket Bucket { get; set; } = null!;

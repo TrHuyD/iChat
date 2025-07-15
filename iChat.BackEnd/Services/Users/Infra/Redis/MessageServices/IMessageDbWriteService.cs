@@ -1,6 +1,8 @@
-﻿using iChat.BackEnd.Models.User.CassandraResults;
+﻿using iChat.BackEnd.Models.User;
+using iChat.BackEnd.Models.User.CassandraResults;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
+using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
@@ -11,6 +13,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.MessageServices
         Task UploadMessagesAsync(IEnumerable<(MessageRequest request, SnowflakeIdDto messageId)> messages);
         Task<int> EditMessageAsync(EditMessageRq rq);
         Task<int>  DeleteMessageAsync(DeleteMessageRq rq ,bool hasAdminRight=false);
+        Task<MediaFileDto> UploadImage(MessageUploadRequest request, SnowflakeIdDto messageId, long userId);
 
     }
 }

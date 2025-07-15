@@ -1,4 +1,5 @@
-﻿using iChat.BackEnd.Models.MessageSearch;
+﻿using iChat.BackEnd.Models.Helpers;
+using iChat.BackEnd.Models.MessageSearch;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.Data.EF;
 using iChat.Data.Entities.Users.Messages;
@@ -115,7 +116,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                     SenderId = i.SenderId.ToString(),
                     Content = i.TextContent,
                     CreatedAt = i.Timestamp,
-                    ContentMedia = i.MediaContent
+                    ContentMedia = i.MediaFile.ToDto()
                 }).ToList(),
                 CurrentPage = options.Page,
                 PageSize = options.PageSize,

@@ -2,6 +2,7 @@
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.Data.EF;
 using iChat.Data.Entities.Users.Messages;
+using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
     public class EfCoreMessageReadService : IMessageDbReadService
     {
         private readonly iChatDbContext _context;
-        
+
 
         private static readonly Expression<Func<Message, ChatMessageDto>> _toDto = m => new ChatMessageDto
         {
@@ -22,11 +23,12 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
             SenderId = m.SenderId,
             MessageType = m.MessageType,
             Content = m.TextContent ?? "",
-            ContentMedia = m.MediaContent ?? "",
+            ContentMedia = m.MediaFile == null ? null :m.MediaFile.ToDto(),
             CreatedAt = m.Timestamp,
-            IsEdited= m.LastEditedAt!=null,
+            IsEdited = m.LastEditedAt != null,
             IsDeleted = m.isDeleted,
         };
+
 
         public EfCoreMessageReadService(iChatDbContext context)
         {
@@ -51,6 +53,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
                 .Where(m => m.ChannelId == channelId)
                 .OrderByDescending(m => m.Id)
                 .Take(limit)
+                .Include(m => m.MediaFile)
                 .Select(_toDto)
                 .ToListAsync();
             AddEnd(result,limit);
@@ -64,6 +67,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
                 .Where(m => m.ChannelId == channelId && m.Id <= messageId)
                 .OrderByDescending(m => m.Id)
                 .Take(beforeIndex + 1)
+                .Include(m => m.MediaFile)
                 .Select(_toDto)
                 .ToListAsync();
 
@@ -72,6 +76,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices
                 .Where(m => m.ChannelId == channelId && m.Id > messageId)
                 .OrderBy(m => m.Id)
                 .Take(AfterIndex)
+                .Include(m => m.MediaFile)
                 .Select(_toDto)
                 .ToListAsync();
 

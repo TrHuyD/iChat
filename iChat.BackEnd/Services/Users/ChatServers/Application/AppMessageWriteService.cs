@@ -1,6 +1,9 @@
-﻿using iChat.BackEnd.Models.User.MessageRequests;
+﻿using Azure.Core;
+using iChat.BackEnd.Models.User;
+using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
+using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.BackEnd.Services.Validators.TextMessageValidators;
 using iChat.DTOs.Shared;
@@ -16,13 +19,16 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
        // readonly RedisChatCache _redis_dbservice;
         readonly SnowflakeService _idGen;
         IMessageCacheService _cache;
+        MemCacheUserChatService _userCacher;
         readonly IChatServerMetadataCacheService _serverMetaDataCacheService;
         public AppMessageWriteService(IMessageDbWriteService dbservice,
             IMessageCacheService cache
         //    ,RedisChatCache rWService
             ,SnowflakeService snowflakeService,
-            IChatServerMetadataCacheService ServerMetaDataCache)
+            IChatServerMetadataCacheService ServerMetaDataCache,
+            MemCacheUserChatService userCacher)
         {
+            _userCacher = userCacher;
              _serverMetaDataCacheService = ServerMetaDataCache;
             _cache = cache;
             _chatWriteService = dbservice;
@@ -73,6 +79,30 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 BucketId = bucketID
             };
         }
+        public async Task<NewMessage> SendMediaMessageAsync(MessageUploadRequest rq,string UserId)
+        {
+            var channelId = long.Parse(rq.ChannelId);
+            var serverId = long.Parse(rq.ServerId);
+            var userId = long.Parse(UserId);
+            await _serverMetaDataCacheService.IsInServerWithCorrectStruct(userId, serverId, channelId);
+            var messageIdResult = _idGen.GenerateId();
+            var uploadResult = await _chatWriteService.UploadImage(rq, messageIdResult, userId);
+            var chatMessage = new ChatMessageDtoSafe
+            {
+                Id = messageIdResult.Id.ToString(),
+                Content="",
+                ContentMedia =uploadResult,
+                MessageType=(int)MessageType.Media,
+                SenderId= UserId,
+                ChannelId= rq.ChannelId,
+                CreatedAt=messageIdResult.CreatedAt,
+            };
+            return new NewMessage
+            {
+                message = chatMessage,
+                UserMetadataVersion = _userCacher.GetMetadataVersion(UserId).ToString()
+            };
+        }
 
         public async Task<OperationResultT<NewMessage>> SendTextMessageAsync(MessageRequest request,string serverId)
         {
@@ -86,7 +116,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             {
                 Id = messageIdResult.Id.ToString(),
                 Content = request.TextContent,
-                ContentMedia = request.MediaContent,
+                ContentMedia = null,
                 MessageType = (int)MessageType.Text,
                 SenderId = request.SenderId,
                 ChannelId = request.ReceiveChannelId,
@@ -94,8 +124,8 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             };
             var rt = new NewMessage
             {
-               message=chatMesssage,
-                UserMetadataVersion=""
+                message = chatMesssage,
+                UserMetadataVersion = _userCacher.GetMetadataVersion(request.SenderId).ToString()
             };
             await _cache.AddMessageToLatestBucketAsync(channelId, chatMesssage);
             return OperationResultT<NewMessage>.Ok(rt);

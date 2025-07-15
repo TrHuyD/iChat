@@ -57,6 +57,9 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             }
                 return Ok("Message deleted successfully.");
         }
+        //[HttpPost("api/upload")]
+        //[RequestSizeLimit(6 * 1024 * 1024)]
+
         //[HttpPost("{channelId}/send")]
         //public async Task<IActionResult> SendMessage(string channelId, [FromBody] UserWeb_MessageRequest request)
         //{

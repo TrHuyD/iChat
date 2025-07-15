@@ -11,6 +11,7 @@ using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices;
 using iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices;
+using iChat.BackEnd.Services.Users.Infra.FileServices;
 using iChat.BackEnd.Services.Users.Infra.Helpers;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.Memory.MessageServices;
@@ -94,6 +95,9 @@ new ValidatorsHelper(builder);
 builder.Services.AddScoped<IChatListingService, EfCoreChatListingService>();
 builder.Services.AddScoped<IMessageDbReadService, EfCoreMessageReadService>();
 builder.Services.AddScoped<IMessageDbWriteService, EfCoreMessageWriteService>();
+builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
+builder.Services.AddTransient<Lazy<IMediaUploadService>>(provider => new Lazy<IMediaUploadService>(() => provider.GetRequiredService<IMediaUploadService>()));
+
 builder.Services.AddSingleton<MessageTimeLogger>();
 builder.Services.AddSingleton<MessageWriteQueueService>();
 builder.Services.AddHostedService<BucketingPrediodicService>();
@@ -109,7 +113,7 @@ builder.Services.AddTransient<MemCacheUserChatService>();
 builder.Services.AddTransient<ServerListService>();
 builder.Services.AddTransient<AppChatServerService>();
 builder.Services.AddTransient<IMessageWriteService, AppMessageWriteService>();
-builder.Services.AddTransient<IChatReadMessageService, _AppMessageReadService>();
+//builder.Services.AddTransient<IChatReadMessageService, _AppMessageReadService>();
 
 // Database Context
 builder.Services.AddDbContext<iChatDbContext>(

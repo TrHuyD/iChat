@@ -40,7 +40,7 @@ namespace iChat.Client.Services.UserServices.Chat
             {
                 target.IsDeleted = true;
                 target.Content = string.Empty;
-                target.ContentMedia = string.Empty;
+                target.ContentMedia =null;
                 if (OnMessageDeleted != null) await OnMessageDeleted(delete);
             }
         }
