@@ -116,11 +116,15 @@ namespace iChat.Client.Pages.Chat
         {
             var userId = message.Message.SenderId;
             var user = await _userMetadataService.GetUserByIdAsync(userId);
-            var group = _groupedMessages[^1];
-            if (group != null && group.CanAppend(message.Message))
+            if (_groupedMessages.Count != 0)
             {
-                group.Messages.Add(message);
-                return;
+                var group = _groupedMessages[^1];
+                if (
+                    group.CanAppend(message.Message))
+                {
+                    group.Messages.Add(message);
+                    return;
+                }
             }
             _groupedMessages.Add(new MessageGroup
             {

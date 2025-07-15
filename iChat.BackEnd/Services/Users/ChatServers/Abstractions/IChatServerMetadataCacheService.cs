@@ -6,6 +6,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
     {
         Task<bool> UploadServersAsync(List<ChatServerMetadata> servers);
         void UploadServerAsync(ChatServerMetadata server);
+        void AddChannelAsync(ChatChannelDto server);
         Task<ChatServerMetadata?> GetServerAsync(string serverId, bool includeChannels = true);
 
         Task<long?> GetUserPermissionAsync(long userId, long serverId, long channelId);

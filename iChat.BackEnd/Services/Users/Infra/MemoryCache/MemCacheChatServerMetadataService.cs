@@ -143,5 +143,13 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 throw new KeyNotFoundException($"Member {userId} not in {serverId}");
 
         }
+
+        public void AddChannelAsync(ChatChannelDto channel)
+        {
+            var serverId = channel.ServerId;
+            if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
+                throw new KeyNotFoundException($"Server {serverId} not found in cache.");
+            server.Channels.Add(channel);
+        }
     }
 }

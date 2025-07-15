@@ -40,6 +40,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 throw new UnauthorizedAccessException("User is not admin in cache");
             }
             var result= await createService.CreateChannelAsync(serverId,request.Name,userId);
+            serverMetaDataCacheService.AddChannelAsync(result);
             return result;
         }
     }

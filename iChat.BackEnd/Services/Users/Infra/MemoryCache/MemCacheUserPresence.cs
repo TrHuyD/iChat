@@ -36,6 +36,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
         public void SetUserOffline(string userId, IEnumerable<long> serverIds)
         {
+
             foreach (var serverId in serverIds)
             {
                 RemoveUserFromServer(userId, serverId);

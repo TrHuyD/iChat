@@ -146,6 +146,7 @@ builder.Services.AddSingleton<IChatServerMetadataCacheService, MemCacheChatServe
 builder.Services.AddScoped<IMessageReadService, AppMessageReadService>();
 builder.Services.AddScoped<IMessageCacheService,MemCacheMessageService>();
 builder.Services.AddTransient<ChatHubResponer, ChatHubResponer>();
+builder.Services.AddTransient<AppChatServerCreateService>();
 // Add hosted services
 builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();
 builder.Services.AddScoped<IMessageSearchService, EfCoreMessageSearchService>();

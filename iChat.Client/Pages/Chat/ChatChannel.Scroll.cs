@@ -28,36 +28,41 @@ namespace iChat.Client.Pages.Chat
                 return;
 
             isthrottled = true;
-            await Task.Delay(150);
-
-            if (!checkScrollToBotoom)
+            try
             {
-                var isAtBottom = await JS.InvokeAsync<bool>("isScrollAtBottom", _messagesContainer);
-                if (isAtBottom)
+                await Task.Delay(150); // debounce-like throttle
+                // Bottom check: for marking messages as seen
+                if (!checkScrollToBotoom)
                 {
-                    Console.WriteLine("Scroll is at the bottom.");
-                    checkScrollToBotoom = true;
-                    MessageManager.UpdateLastSeen(_currentRoomId);
+                    var isAtBottom = await JS.InvokeAsync<bool>("isScrollAtBottom", _messagesContainer);
+                    if (isAtBottom)
+                    {
+                        Console.WriteLine("Scroll is at the bottom.");
+                        checkScrollToBotoom = true;
+                        MessageManager.UpdateLastSeen(_currentRoomId);
+                    }
                 }
+                // Top check: for triggering historical message load
+                if (!checkScrollToTop)
+                {
+                    var isAtTop = await JS.InvokeAsync<bool>("isScrollAtTop", _messagesContainer);
+                    if (isAtTop)
+                    {
+                        Console.WriteLine("Scroll is at the top.");
+                        checkScrollToTop = true;
+                        await TriggerLoadOlderHistoryRequest();
+                        // Only keep checkScrollToTop true if at the beginning
+                        if (_currentBucketIndex != 0)
+                            checkScrollToTop = false;
+                    }
+                }
+            }
+            finally
+            {
                 isthrottled = false;
-                return;
             }
-
-            if (!checkScrollToTop)
-            {
-                var isAtTop = await JS.InvokeAsync<bool>("isScrollAtTop", _messagesContainer);
-                if (isAtTop)
-                {
-                    Console.WriteLine("Scroll is at the top.");
-                    checkScrollToTop = true;
-                    await TriggerLoadOlderHistoryRequest();
-                    if (_currentBucketIndex != 0)
-                        checkScrollToTop = false;
-                }
-            }
-
-            isthrottled = false;
         }
+
         private async Task<string?> GetTopVisibleMessageId()
         {
             try

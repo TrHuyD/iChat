@@ -8,7 +8,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
     public class MemCacheUserChatService
     {
         private readonly IMemoryCache _localCache;
-        private readonly TimeSpan _combinedCacheTime = TimeSpan.FromMinutes(15);
+      //  private readonly TimeSpan _combinedCacheTime = TimeSpan.FromMinutes(15);
         private readonly TimeSpan _metadataOnlyCacheTime = TimeSpan.FromMinutes(30);
 
         // Pool for reusing HashSet instances to reduce GC pressure
@@ -44,11 +44,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
             if (_localCache.TryGetValue(key, out CombinedUserData? data))
             {
-                if (extendExpire)
-                {
-                    RefreshCacheEntry(key, data, _combinedCacheTime);
-                }
-
+    
                 var isInServer = data.ServerSet?.Contains(serverId) == true;
                 var version = data.Metadata?.Version;
                 return (isInServer, version);
@@ -68,10 +64,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
             if (_localCache.TryGetValue(key, out CombinedUserData? data))
             {
-                if (extendExpire)
-                {
-                    RefreshCacheEntry(key, data, _combinedCacheTime);
-                }
 
                 return new MessageProcessingContext
                 {
@@ -118,7 +110,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 ServerSet = serverSet
             };
 
-            SetCacheEntry(key, data, _combinedCacheTime);
+            SetCacheEntry(key, data);
 
             // Remove metadata-only cache since we have combined data now
             _localCache.Remove(MetadataOnlyKey(userId));
@@ -146,8 +138,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 {
                     data.ServerSet.Add(serverId);
                 }
-
-                SetCacheEntry(key, data, _combinedCacheTime);
                 return true;
             }
             return false;
@@ -168,8 +158,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                     {
                         data.ServerList.Add(serverId);
                         data.ServerSet.Add(serverId);
-
-                        SetCacheEntry(key, data, _combinedCacheTime);
                         return true;
                     }
                 }
@@ -192,8 +180,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                     {
                         data.ServerList.Remove(serverId);
                         data.ServerSet.Remove(serverId);
-
-                        SetCacheEntry(key, data, _combinedCacheTime);
                         return true;
                     }
                 }
@@ -211,7 +197,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             if (_localCache.TryGetValue(key, out CombinedUserData? data))
             {
                 data.Metadata = metadata;
-                SetCacheEntry(key, data, _combinedCacheTime);
                 return true;
             }
             return false;
@@ -281,10 +266,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             var key = CombinedKey(userId);
             if (_localCache.TryGetValue(key, out CombinedUserData? data))
             {
-                if (extendExpire)
-                {
-                    RefreshCacheEntry(key, data, _combinedCacheTime);
-                }
                 return data.Metadata;
             }
 
@@ -302,7 +283,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             {
                 return data.ServerList;
             }
-            return null; // Server list is only available for online users
+            return new(); // Server list is only available for online users
         }
 
         /// <summary>
@@ -442,7 +423,13 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         #endregion
 
         #region Helper Methods
-
+        private void SetCacheEntry(string key, CombinedUserData data)
+        {
+            _localCache.Set(key, data, new MemoryCacheEntryOptions
+            {
+                Size = CalculateSize(data)
+            });
+        }
         private void SetCacheEntry(string key, CombinedUserData data, TimeSpan expiration)
         {
             _localCache.Set(key, data, new MemoryCacheEntryOptions
@@ -450,6 +437,18 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 SlidingExpiration = expiration,
                 Size = CalculateSize(data)
             });
+        }
+        public void RefreshOnlineState(string userId)
+        {
+           if( _localCache.TryGetValue(CombinedKey(userId),out var combine))
+            {
+
+            }
+           else
+            {
+
+            }
+           
         }
 
         private void RefreshCacheEntry(string key, CombinedUserData data, TimeSpan expiration)

@@ -13,7 +13,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 (_, set) => { lock (set) { set.Add(connectionId); } return set; });
         }
 
-        public void RemoveConnection(long userId, string connectionId)
+        public bool RemoveConnection(long userId, string connectionId)
         {
             if (_connections.TryGetValue(userId, out var set))
             {
@@ -21,9 +21,14 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 {
                     set.Remove(connectionId);
                     if (set.Count == 0)
+                    {
                         _connections.TryRemove(userId, out _);
+                    return true;
+                    }
+                    return false;
                 }
             }
+            return true;
         }
         public IReadOnlyCollection<string> GetConnections(long userId)
         {

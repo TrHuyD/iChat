@@ -30,12 +30,12 @@ namespace iChat.Client.Services.UserServices.Chat
             _hubConnection = _connectionFactory.CreateHubConnection(ChatHubPath);
 
             Console.WriteLine("Registering ReceiveMessage on Signalr Client");
-            _hubConnection.On<ChatMessageDtoSafe>("ReceiveMessage", async message =>
+            _hubConnection.On<NewMessage>("ReceiveMessage", async message =>
             {
                 try
                 {
-                    Console.WriteLine($"Recieved message for {message.Id}");
-                    await _MessageCacheService.AddLatestMessage(new ChatMessageDto(message));
+                    Console.WriteLine($"Recieved message for {message.message.Id}");
+                    await _MessageCacheService.AddLatestMessage(new ChatMessageDto(message.message));
                 }
                 catch (Exception ex)
                 {

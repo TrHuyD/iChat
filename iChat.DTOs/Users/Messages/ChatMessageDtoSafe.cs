@@ -65,13 +65,16 @@ namespace iChat.DTOs.Users.Messages
             return x.CreatedAt.CompareTo(y.CreatedAt);
         }
     }
-    public class NewMessage : ChatMessageDtoSafe
+    public class NewMessage  
     {
+        public ChatMessageDtoSafe message;
         public required string UserMetadataVersion { get; init; }
-        public NewMessage(ChatMessageDto chatMessageDto, long userMetadataVersion) : base(chatMessageDto)
+        public NewMessage(ChatMessageDto chatMessageDto, long userMetadataVersion) 
         {
+            message = new ChatMessageDtoSafe(chatMessageDto);
             UserMetadataVersion = userMetadataVersion.ToString();
         }
+
         public NewMessage()
         {
         }

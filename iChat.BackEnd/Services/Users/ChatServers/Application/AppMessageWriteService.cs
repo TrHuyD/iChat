@@ -82,7 +82,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             await _serverMetaDataCacheService.IsInServerWithCorrectStruct(userId, serverIdLong, channelId);
             var messageIdResult = _idGen.GenerateId();
             _ = Task.Run(() => _chatWriteService.UploadMessageAsync(request, messageIdResult));
-            var rt = new NewMessage
+            var chatMesssage = new ChatMessageDtoSafe
             {
                 Id = messageIdResult.Id.ToString(),
                 Content = request.TextContent,
@@ -91,9 +91,13 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 SenderId = request.SenderId,
                 ChannelId = request.ReceiveChannelId,
                 CreatedAt = messageIdResult.CreatedAt,
+            };
+            var rt = new NewMessage
+            {
+               message=chatMesssage,
                 UserMetadataVersion=""
             };
-            await _cache.AddMessageToLatestBucketAsync(channelId, rt);
+            await _cache.AddMessageToLatestBucketAsync(channelId, chatMesssage);
             return OperationResultT<NewMessage>.Ok(rt);
         }
 

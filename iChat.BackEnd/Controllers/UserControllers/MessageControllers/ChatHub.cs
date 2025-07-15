@@ -54,25 +54,28 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, list.ToString());
             }
-            _presenceService.SetUserOnline(userId,serverList);
+           // _presenceService.SetUserOnline(userId,serverList);
             _logger.LogInformation($"Client joining finished: {Context.ConnectionId}");
             await base.OnConnectedAsync();
         }
         public async Task HeartBeat()
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
-            var serverList = _localCache.GetUserServerList(userId, true);
-            _presenceService.SetUserOnline(userId, serverList);
+           // var serverList = _localCache.GetUserServerList(userId, true);
+            _localCache.RefreshOnlineState(userId);
+
+         //   _presenceService.SetUserOnline(userId, serverList);
         }
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             _logger.LogInformation($"Client disconnected: {Context.ConnectionId}");
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
-            var serverList = _localCache.GetUserServerList(userId, true);
-            _presenceService.SetUserOffline(userId, serverList);
             var connectionId = Context.ConnectionId;
             var userIdLong = long.Parse(userId);
-            _connectionTracker.RemoveConnection(userIdLong, connectionId);
+            var finally_offline =_connectionTracker.RemoveConnection(userIdLong, connectionId);
+            if(finally_offline)
+            _localCache.MoveUserToOffline(userId);
+           
             await base.OnDisconnectedAsync(exception);
         }
 
