@@ -52,7 +52,7 @@ namespace iChat.Client.Pages.Chat
                 await SendMessage();
             }
         }
-        private async Task AddMessages(MessageBucket bucket)
+        private async Task AddMessagesBehind(MessageBucket bucket)
         {
             var previousScroll = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
 
@@ -71,6 +71,27 @@ namespace iChat.Client.Pages.Chat
                 {
                     _groupedMessages.Insert(0, group);
                 }
+            }
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, previousScroll);
+        }
+        private async Task AddMessagesForward(MessageBucket bucket)
+        {
+            var previousScroll = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
+
+            foreach (var message in bucket.ChatMessageDtos)
+            {
+                _messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
+            }
+            if (_groupedMessages.Count == 0)
+            {
+                _groupedMessages = await GroupMessagesAsync(_messages);
+            }
+            else
+            {
+                var newGroups = await GroupMessagesAsync(bucket);
+                foreach(var group in newGroups)
+                _groupedMessages.Add( group);
             }
             await InvokeAsync(StateHasChanged);
             await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, previousScroll);

@@ -97,7 +97,7 @@ namespace iChat.Client.Pages.Chat
                 Console.WriteLine("Registered message handler for ChatService.");
                 _groupedMessages.Clear();
                 foreach (var bucket in latest)
-                    await AddMessages(bucket);
+                    await AddMessagesForward(bucket);
                 _currentBucketIndex = latest[0].BucketId;
                 await ChatService.JoinRoomAsync(ServerId);
                 StateHasChanged();

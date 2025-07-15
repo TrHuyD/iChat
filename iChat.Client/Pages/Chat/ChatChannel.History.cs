@@ -22,7 +22,7 @@
                 var result = await MessageManager.GetPreviousBucket(ChannelId, _currentBucketIndex);
                 try
                 {
-                    await AddMessages(result);
+                    await AddMessagesBehind(result);
                 }
                 catch (Exception ex)
                 {

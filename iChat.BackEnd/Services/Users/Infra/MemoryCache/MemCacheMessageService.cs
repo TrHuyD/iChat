@@ -23,7 +23,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             var expirationToken = new CancellationTokenSource();
             var bucketOptions = new MemoryCacheEntryOptions
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
+                SlidingExpiration = TimeSpan.FromMinutes(10),
                 PostEvictionCallbacks =
                 {
                     new PostEvictionCallbackRegistration
@@ -65,7 +65,12 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
         public Task SetLatestBucketsAsync(long channelId, List<BucketDto> buckets)
         {
-            _cache.Set(LatestBucketsKey(channelId), buckets, TimeSpan.FromSeconds(20));
+            _cache.Set(LatestBucketsKey(channelId), buckets,
+                new MemoryCacheEntryOptions
+                {
+                  SlidingExpiration=  TimeSpan.FromSeconds(20)
+                })
+                ;
             foreach (var bucket in buckets)
             {
                 SetBucketAsync(channelId, bucket.BucketId, bucket);
@@ -149,7 +154,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 latestBucket.LastSequence = message.Id;
 
                 // Update the bucket in cache
-                SetBucketAsync(channelId, latestBucket.BucketId, latestBucket);
+             //   SetBucketAsync(channelId, latestBucket.BucketId, latestBucket);
             }
 
             return Task.CompletedTask;
