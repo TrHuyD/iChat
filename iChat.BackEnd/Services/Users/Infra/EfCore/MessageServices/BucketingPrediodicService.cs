@@ -23,7 +23,6 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<iChatDbContext>();
             var report= await dbContext.Database.SqlQueryRaw<BucketingReport>("SELECT * FROM process_messages_bucketing();").ToListAsync();
-           // var dbRedis = scope.
         }
     }
 }

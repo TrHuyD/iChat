@@ -1,0 +1,16 @@
+﻿@* @inject ProfileModalService ProfileService
+
+@ProfileService.CurrentModal
+
+@code {
+    protected override void OnInitialized()
+    {
+        ProfileService.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        ProfileService.OnChange -= StateHasChanged;
+    }
+}
+ *@

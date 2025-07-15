@@ -1,42 +1,151 @@
+/* === Global Base === */
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: "Segoe UI", sans-serif;
     margin: 0;
     padding: 0;
     height: 100%;
     width: 100%;
     overflow: hidden;
+    background-color: #2b2d31;
+    color: #ffffff;
 }
+
 .generic-background {
     min-height: 100vh;
-    background: radial-gradient( circle, #2f3136 0%, /* dark center */
-    #36393f 40%, /* slightly lighter */
-    #40444b 70%, /* lighter towards edges */
-    #4f545c 100% /* lightest at far edge */
-    );
+    background: radial-gradient(circle, #2f3136 0%, #36393f 40%, #40444b 70%, #4f545c 100%);
     padding: 2rem;
 }
 
-
-h1:focus {
-    outline: none;
+/* === Modal === */
+.discord-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 9998;
 }
 
-a, .btn-link {
-    color: #0071c1;
+.discord-modal-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 400px;
+    padding: 16px;
 }
 
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+.discord-modal-dialog {
+    background-color: #2f3136;
+    border-radius: 8px;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    box-sizing: border-box;
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+.discord-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
 }
 
-.content {
-    padding-top: 1.1rem;
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #b9bbbe;
+    cursor: pointer;
+}
+
+/* === Input Fields === */
+.discord-input,
+form input.form-control {
+    width: 100%;
+    padding: 10px;
+    background-color: #1e1f22;
+    border: 1px solid #4f545c;
+    color: #dcddde;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+    .discord-input:focus,
+    form input.form-control:focus {
+        border-color: #5865f2;
+        box-shadow: 0 0 0 1px #5865f2;
+        outline: none;
+        color: #ffffff;
+    }
+
+/* === Buttons === */
+.discord-button,
+form button[type="submit"] {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+    .discord-button.primary,
+    form button[type="submit"] {
+        background-color: #5865f2;
+        color: white;
+    }
+
+        .discord-button.primary:hover,
+        form button[type="submit"]:hover {
+            background-color: #4752c4;
+        }
+
+    .discord-button.cancel {
+        background-color: #4f545c;
+        color: #ffffff;
+    }
+
+        .discord-button.cancel:hover {
+            background-color: #5d626b;
+        }
+
+/* === Modal Footer === */
+.discord-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+/* === Form Layout === */
+form {
+    background-color: #2b2d31;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    max-width: 400px;
+    margin: 2rem auto;
+    color: #ffffff;
+}
+
+    form label {
+        color: #b9bbbe;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+/* === Validation === */
+.validation-message,
+.text-danger,
+.validation-summary-errors {
+    color: #f04747;
+    font-size: 0.85rem;
 }
 
 .valid.modified:not([type=checkbox]) {
@@ -47,147 +156,7 @@ a, .btn-link {
     outline: 1px solid red;
 }
 
-.validation-message {
-    color: red;
-}
-
-#blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box;
-    display: none;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
-    position: fixed;
-    width: 100%;
-    z-index: 1000;
-}
-
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
-
-.blazor-error-boundary {
-    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
-    padding: 1rem 1rem 1rem 3.7rem;
-    color: white;
-}
-
-    .blazor-error-boundary::after {
-        content: "An error has occurred."
-    }
-
-.loading-progress {
-    position: relative;
-    display: block;
-    width: 8rem;
-    height: 8rem;
-    margin: 20vh auto 1rem auto;
-}
-
-    .loading-progress circle {
-        fill: none;
-        stroke: #e0e0e0;
-        stroke-width: 0.6rem;
-        transform-origin: 50% 50%;
-        transform: rotate(-90deg);
-    }
-
-        .loading-progress circle:last-child {
-            stroke: #1b6ec2;
-            stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
-            transition: stroke-dasharray 0.05s ease-in-out;
-        }
-
-.loading-progress-text {
-    position: absolute;
-    text-align: center;
-    font-weight: bold;
-    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
-}
-
-    .loading-progress-text:after {
-        content: var(--blazor-load-percentage-text, "Loading");
-    }
-
-code {
-    color: #c02d76;
-}
-
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-    color: var(--bs-secondary-color);
-    text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-    text-align: start;
-}
-
-/* === Base Form Container === */
-form {
-    background-color: #2b2d31;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    max-width: 400px;
-    margin: 2rem auto;
-    color: #ffffff;
-    font-family: "Segoe UI", sans-serif;
-}
-
-    /* === Labels === */
-    form label {
-        color: #b9bbbe;
-        font-weight: 500;
-        margin-bottom: 4px;
-    }
-
-    /* === Inputs === */
-    form input.form-control {
-        background-color: #1e1f22;
-        border: 1px solid #4f545c;
-        color: #dcddde;
-        border-radius: 4px;
-        transition: border-color 0.2s ease;
-    }
-
-        form input.form-control:focus {
-            border-color: #5865f2;
-            box-shadow: 0 0 0 1px #5865f2;
-            background-color: #1e1f22;
-            color: #ffffff;
-        }
-
-/* === Validation Messages === */
-.validation-message,
-.text-danger,
-.validation-summary-errors {
-    color: #f04747;
-    font-size: 0.85rem;
-}
-
-/* === Submit Buttons === */
-form button[type="submit"] {
-    background-color: #5865f2;
-    border: none;
-    color: white;
-    padding: 0.6rem 1.2rem;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: background-color 0.2s ease;
-    margin-top: 1rem;
-}
-
-    form button[type="submit"]:hover {
-        background-color: #4752c4;
-    }
-
-/* === Link Text === */
+/* === Link and Paragraph === */
 form + p, p.mt-3 {
     text-align: center;
     color: #b9bbbe;
@@ -211,9 +180,9 @@ form + p, p.mt-3 {
 .toast {
     border-radius: 6px;
     box-shadow: 0 0 8px rgba(0,0,0,0.5);
-    font-family: "Segoe UI", sans-serif;
     min-width: 280px;
     padding: 0.75rem;
+    font-family: "Segoe UI", sans-serif;
     animation: fadein 0.3s ease-in-out;
 }
 
@@ -225,6 +194,7 @@ form + p, p.mt-3 {
     .toast .btn-close {
         filter: invert(1);
     }
+
     .toast.bg-danger {
         background-color: #dc3545;
         border: 1px solid #b02a37;
@@ -255,6 +225,7 @@ form + p, p.mt-3 {
     background-color: #faa61a !important;
 }
 
+/* === Animations === */
 @keyframes fadein {
     from {
         opacity: 0;
@@ -266,3 +237,246 @@ form + p, p.mt-3 {
         transform: translateY(0);
     }
 }
+.discord-nav {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #1e1f22;
+    color: white;
+    position: relative;
+}
+.sc-sidebars {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+}
+.server-sidebar {
+    width: 72px;
+    background-color: #1e1f22;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 12px;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.server-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: #313338;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-radius 0.2s ease, background-color 0.2s ease;
+}
+
+    .server-icon:hover {
+        border-radius: 16px;
+        background-color: #5865f2;
+    }
+
+    .server-icon img {
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        object-fit: cover;
+    }
+
+    .server-icon.active {
+        border-radius: 16px;
+        background-color: #5865f2;
+    }
+
+.channel-sidebar {
+    width: 240px;
+    background-color: #2b2d31;
+    color: #b9bbbe;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid #1e1f22;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2b2d31;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+    .sidebar-header h3 {
+        margin: 0;
+        font-size: 16px;
+        color: white;
+    }
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: #b9bbbe;
+    cursor: pointer;
+}
+
+.channel-category {
+    padding: 16px 0;
+}
+
+.category-header {
+    padding: 0 16px 8px;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #8e9297;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.channel-list {
+    padding: 0;
+}
+
+.channel-item {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 0 8px;
+}
+
+    .channel-item:hover {
+        background-color: #3a3c43;
+        color: white;
+    }
+
+.channel-prefix {
+    margin-right: 8px;
+    color: #8e9297;
+}
+.channel-item.active {
+    background-color: #404249;
+    color: white;
+}
+
+.channel-name {
+    font-size: 14px;
+}
+.channel-sidebar-wrapper {
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    height: 100%;
+}
+.channel-sidebar {
+    width: 240px;
+    resize: horizontal;
+    overflow: auto;
+    background-color: #2b2d31;
+    color: #b9bbbe;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 52px; 
+    box-sizing: border-box;
+}
+.channel-scrollable {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-bottom: 52px;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #202225 #2b2d31;
+}
+.add-channel {
+    color: #8e9297;
+}
+
+    .add-channel:hover {
+        background-color: transparent;
+        color: #dcddde;
+    }
+
+.server-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+.user-box {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 52px;
+    flex-direction: row;
+    padding: 8px;
+    background-color: #232428;
+    border-top: 1px solid #1e1f22;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+    .user-box .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #5865f2;
+    }
+
+    .user-box .user-info {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        font-size: 12px;
+    }
+
+    .user-box .username {
+        font-weight: bold;
+        color: #ffffff;
+    }
+
+    .user-box .status {
+        color: #72767d;
+        font-size: 11px;
+    }
+
+    .user-box .user-actions {
+        display: flex;
+        gap: 6px;
+        font-size: 14px;
+        color: #b9bbbe;
+        cursor: pointer;
+    }
+
+        .user-box .user-actions i:hover {
+            color: #ffffff;
+        }
+
+
+.toggle-switch.active .toggle-slider {
+    transform: translateX(16px);
+}
+
+.context-menu-item.danger {
+    color: #f04747;
+}
+
+    .context-menu-item.danger:hover {
+        background-color: #4e1e1e;
+    }
+
+    .context-menu-item .danger i {
+        color: #f04747;
+    }

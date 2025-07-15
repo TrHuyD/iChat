@@ -1,0 +1,209 @@
+﻿@* @using Microsoft.AspNetCore.Components.Forms
+@inject ToastService ToastService
+
+
+<div class="discord-modal-backdrop" @onclick="CloseModal"></div>
+
+<div class="discord-modal-container" @onclick:stopPropagation>
+    <div class="discord-modal-dialog">
+        <div class="discord-modal-header">
+            <h3>Update Your Profile</h3>
+            <button class="close-button" @onclick="CloseModal" type="button">
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M18.4 4L12 10.4L5.6 4L4 5.6L10.4 12L4 18.4L5.6 20L12 13.6L18.4 20L20 18.4L13.6 12L20 5.6L18.4 4Z" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="discord-modal-body">
+            <!-- Left: User Preview -->
+            <div class="preview-section">
+                <div class="user-preview-card">
+                    <div class="avatar-container">
+                        <img class="avatar" src="@GetPreviewAvatarUrl()" alt="Avatar preview" />
+                        <div class="status-indicator"></div>
+                    </div>
+                    <div class="user-info">
+                        <div class="username">@PreviewNickname</div>
+                        <div class="status-text">Online</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Form Inputs -->
+            <div class="form-section">
+                <div class="input-group">
+                    <label class="input-label" for="nickname">Nickname</label>
+                    <input id="nickname"
+                           class="discord-input @(string.IsNullOrEmpty(ValidationError) ? "" : "error")"
+                           @bind="PreviewNickname"
+                           @bind:event="oninput"
+                           placeholder="Enter new nickname"
+                           maxlength="32" />
+                    @if (!string.IsNullOrEmpty(ValidationError))
+                    {
+                        <div class="error-message">@ValidationError</div>
+                    }
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label" for="avatar">Avatar</label>
+                    <div class="file-input-wrapper">
+                        <InputFile OnChange="HandleAvatarChange"
+                                   class="file-input"
+                                   id="avatar"
+                                   accept="image/png,image/jpeg,image/gif,image/webp" />
+
+                    </div>
+                    <div class="file-hint">PNG, JPG, GIF, or WebP. Max 5MB.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="discord-modal-footer">
+            <button class="discord-button secondary" @onclick="CloseModal" disabled="@IsSaving">Cancel</button>
+            <button class="discord-button primary" @onclick="Save" disabled="@(!CanSave || IsSaving)">
+                @if (IsSaving)
+                {
+                    <div class="button-loading">
+                        <div class="spinner"></div>
+                        <span>Saving...</span>
+                    </div>
+                }
+                else
+                {
+                    <span>Save Changes</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+  
+</style>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<(string?, IBrowserFile?)> OnSave { get; set; }
+
+    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+    private string? _nicknameTemp;
+    private string? OriginalNickname = "a333";
+    private string? AvatarUrl = "/images/default-avatar.png"; 
+    private IBrowserFile? SelectedAvatarFile;
+    private string? AvatarPreviewUrl;
+    private bool IsSaving = false;
+    private string? ValidationError;
+
+    private string? PreviewNickname
+    {
+        get => _nicknameTemp;
+        set
+        {
+            _nicknameTemp = value;
+            ValidateNickname();
+        }
+    }
+
+    private bool CanSave =>
+        string.IsNullOrWhiteSpace(ValidationError)
+        && !string.IsNullOrWhiteSpace(PreviewNickname)
+        && (PreviewNickname != OriginalNickname || SelectedAvatarFile != null);
+
+    protected override void OnInitialized()
+    {
+        PreviewNickname = OriginalNickname;
+    }
+
+    private void ValidateNickname()
+    {
+        if (string.IsNullOrWhiteSpace(PreviewNickname))
+        {
+            ValidationError = "Nickname cannot be empty.";
+        }
+        else if (PreviewNickname.Length > 32)
+        {
+            ValidationError = "Nickname must be 32 characters or less.";
+        }
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(PreviewNickname, @"^[a-zA-Z0-9_]+$"))
+        {
+            ValidationError = "Only letters, numbers, and underscores are allowed.";
+        }
+        else
+        {
+            ValidationError = null;
+        }
+    }
+
+    private async Task HandleAvatarChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file.Size > MaxFileSize)
+        {
+            ToastService.ShowError("Avatar must be less than 5MB.");
+            AvatarPreviewUrl = null;
+            SelectedAvatarFile = null;
+            return;
+        }
+
+        var allowedTypes = new[] { "image/png", "image/jpeg", "image/gif", "image/webp" };
+        if (!allowedTypes.Contains(file.ContentType))
+        {
+            ToastService.ShowError("Please select a valid image file (PNG, JPG, GIF, or WebP).");
+            return;
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream(MaxFileSize);
+            var buffer = new byte[file.Size];
+            await stream.ReadAsync(buffer);
+            AvatarPreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+            SelectedAvatarFile = file;
+            StateHasChanged();
+        }
+        catch (IOException ex)
+        {
+            ToastService.ShowError("Failed to read file: " + ex.Message);
+        }
+    }
+
+    private string GetPreviewAvatarUrl()
+    {
+        return AvatarPreviewUrl ?? AvatarUrl ?? "/images/default-avatar.png";
+    }
+
+    private async Task Save()
+    {
+        if (!CanSave)
+        {
+            ToastService.ShowError("Please make changes before saving.");
+            return;
+        }
+
+        IsSaving = true;
+
+        try
+        {
+            await Task.Delay(1000); // Simulate network delay
+            await OnSave.InvokeAsync((PreviewNickname, SelectedAvatarFile));
+            ToastService.ShowSuccess("Profile updated successfully!");
+            await CloseModal();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Failed to save profile: " + ex.Message);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        await OnClose.InvokeAsync();
+    }
+} *@

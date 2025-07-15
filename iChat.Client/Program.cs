@@ -39,7 +39,7 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<LastVisitedChannelService>();
 builder.Services.AddScoped<LoginStateService>();
 builder.Services.AddScoped<TokenProvider>();
-
+//builder.Services.AddSingleton<ProfileModalService>();
 
 builder.Services.AddScoped(sp => new HttpClient
 {

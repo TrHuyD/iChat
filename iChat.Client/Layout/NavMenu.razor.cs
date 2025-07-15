@@ -1,8 +1,8 @@
 ﻿using iChat.Client.DTOs.Chat;
-using iChat.Client.Services.UserServices.Chat;
+
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.JSInterop;
+
 
 namespace iChat.Client.Layout
 {
@@ -111,6 +111,11 @@ namespace iChat.Client.Layout
             ChatNavService.ServerChanged -= OnServerChange;
             ChatNavService.ChannelChanged -= OnChannelChange;
 
+        }
+        private Task OnSave() => Task.CompletedTask;
+        private void OpenProfileModal()
+        {
+            //profileChanger.ShowDefaultModal(OnSave);
         }
     }
 }
