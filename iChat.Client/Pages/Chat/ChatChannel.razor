@@ -12,6 +12,7 @@
 @inject UserMetadataService _userMetadataService
 @inject iChat.Client.Services.Auth.JwtAuthHandler _https
 @inject MessageHandleService _messageHandleService
+
 @inject IJSRuntime JS
 @implements IDisposable
 @implements IAsyncDisposable
@@ -22,6 +23,8 @@
             <!-- Left Chat Panel -->
             <div class="left-header d-flex align-center">
                 <h3>Room: @_currentChannel.Name</h3>
+   @*              <div>@($"There is {_myCount} people typing")</div> *@
+
             </div>
             <!-- Right Chat Panel-->
             <div class="right-header">
@@ -57,20 +60,21 @@
                                 <span class="message-icon">@item.Icon</span>
                             }
 
-                            <div class="message-content">
-                                @if (item.Message.IsDeleted)
-                                {
-                                    <span class="deleted-text">@RenderedMessage.DeleteMessage</span>
-                                }
-                                else
-                                {
-                                    @item.Content
-                                    @if (item.isEdited)
+                                <div class="message-content">
+                                    @if (item.Message.IsDeleted)
                                     {
-                                        <span class="edited-badge">(edited)</span>
+                                        <span class="deleted-text">@RenderedMessage.DeleteMessage</span>
                                     }
-                                }
-                            </div>
+                                    else
+                                    {
+                                        @((MarkupString)item.Content)
+                                        @if (item.isEdited)
+                                        {
+                                            <span class="edited-badge">(edited)</span>
+                                        }
+                                    }
+                                </div>
+
 
                         </div>
                     }
@@ -97,9 +101,17 @@
             </div>
         }
 
-        <div class="message-input">
+        <div class="message-input d-flex align-center">
             <input type="text" @bind="_newMessage" @bind:event="oninput"
                    placeholder="Type your message..." @onkeypress="HandleKeyPress" />
+            <label class="upload-icon icon-button" title="Upload Image" @onclick="TriggerFileInput">
+                <i class="fas fa-image"></i>
+            </label>
+            <InputFile @ref="_fileInputRef"
+                       OnChange="HandleFileUpload"
+                       accept="image/*"
+                       style="display: none;" />
+
             <button @onclick="SendMessage">Send</button>
         </div>
     </div>

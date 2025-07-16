@@ -7,8 +7,10 @@ using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Threading.Channels;
+using System.Timers;
 
 namespace iChat.Client.Pages.Chat
 {
@@ -23,6 +25,7 @@ namespace iChat.Client.Pages.Chat
         private ChatServerDtoUser? _currentServer=new ChatServerDtoUser();
         private ChatChannelDtoLite? _currentChannel= new ChatChannelDtoLite();
         private string _newMessage = string.Empty;
+        private int _myCount = 0;
         private ElementReference _messagesContainer;
         private string _connectionStatus = "Disconnected";
         private string _connectionStatusClass = "disconnected";
@@ -60,6 +63,10 @@ namespace iChat.Client.Pages.Chat
                 _connectionStatus = "Connection Failed";
                 _connectionStatusClass = "disconnected";
             }
+
+
+
+
             StateHasChanged();
         }
         private void HandleUserMetadataUpdate()
@@ -102,6 +109,27 @@ namespace iChat.Client.Pages.Chat
                 await ChatService.JoinRoomAsync(ServerId);
                 StateHasChanged();
                 checkScrollToBotoom = checkScrollToTop = _isOldHistoryRequestButtonDisabled = checkScrollToTop = _currentBucketIndex == 0;
+
+
+                ///Typing
+                _typingTimer = new System.Timers.Timer(1000);
+                _typingTimer.Elapsed += (_, _) =>
+                {
+                    var now = DateTime.UtcNow;
+                    var expired = _typingUsers
+                        .Where(x => (now - x.Value).TotalSeconds > 3)
+                        .Select(x => x.Key)
+                        .ToList();
+
+                    foreach (var uid in expired)
+                        _typingUsers.Remove(uid);
+
+                    InvokeAsync(StateHasChanged);
+                };
+                _typingTimer.Start();
+                //ChatService.TypingReceived += HandleTyping;
+
+
                 await Task.Delay(125);
                 await ScrollToMessage(loc.ToString());
             }
@@ -173,6 +201,7 @@ namespace iChat.Client.Pages.Chat
         public async ValueTask DisposeAsync()
         {
             await DisposeCore();
+            //ChatService.TypingReceived -= HandleTyping;
             GC.SuppressFinalize(this);
         }
 
@@ -182,6 +211,69 @@ namespace iChat.Client.Pages.Chat
             DisposeCore().AsTask().Wait();
             GC.SuppressFinalize(this);
         }
+        private Dictionary<long, DateTime> _typingUsers = new();
+        private System.Timers.Timer? _typingTimer;
+
+        private bool _hasSentTyping = false;
+        private System.Timers.Timer? _typingDebounceTimer;
+        private readonly object _typingLock = new();
+
+        //private async Task HandleInput(ChangeEventArgs e)
+        //{
+        //    _newMessage = e.Value?.ToString() ?? "";
+
+        //    if (!_hasSentTyping)
+        //    {
+        //        _hasSentTyping = true;
+        //        await ChatService.Typing();
+        //    }
+
+        //    ResetTypingDebounceTimer();
+        //}
+        //private void ResetTypingDebounceTimer()
+        //{
+        //    lock (_typingLock)
+        //    {
+        //        if (_typingDebounceTimer != null)
+        //        {
+        //            _typingDebounceTimer.Stop();
+        //            _typingDebounceTimer.Elapsed -= OnTypingDebounceElapsed;
+        //        }
+        //        else
+        //        {
+        //            _typingDebounceTimer = new System.Timers.Timer(3000);
+        //            _typingDebounceTimer.AutoReset = false;
+        //        }
+
+        //        _typingDebounceTimer.Elapsed += OnTypingDebounceElapsed;
+        //        _typingDebounceTimer.Start();
+        //    }
+        //}
+        //private void OnTypingDebounceElapsed(object? sender, ElapsedEventArgs e)
+        //{
+        //    _hasSentTyping = false;
+
+        //    lock (_typingLock)
+        //    {
+        //        if (_typingDebounceTimer != null)
+        //        {
+        //            _typingDebounceTimer.Elapsed -= OnTypingDebounceElapsed;
+        //            _typingDebounceTimer.Stop();
+        //        }
+        //    }
+        //}
+
+        //private void HandleTyping((string channelId, string userId) package)
+        //{
+        //    if (package.channelId != _currentChannel.Id) return;
+
+        //    if (long.TryParse(package.userId, out var uid))
+        //    {
+        //        _typingUsers[uid] = DateTime.UtcNow;
+        //        InvokeAsync(StateHasChanged);
+        //    }
+        //}
+
 
         private async ValueTask DisposeCore()
         {

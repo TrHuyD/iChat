@@ -13,7 +13,6 @@ namespace iChat.Client.Services.UserServices.Chat
         private readonly ConcurrentDictionary<long, long> _lastSeen = new();
         private readonly ConcurrentDictionary<long, int> _latestBucketMap = new();
         private readonly JwtAuthHandler _httpClient;
-
         public event Func<ChatMessageDto, Task>? OnMessageReceived;
         public event Func<EditMessageRt, Task>? OnMessageEdited;
         public event Func<DeleteMessageRt, Task>? OnMessageDeleted;

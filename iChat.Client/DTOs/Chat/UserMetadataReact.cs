@@ -1,4 +1,5 @@
-﻿    using System.ComponentModel;
+﻿using iChat.Client.Services.UserServices.Chat.Util;
+using System.ComponentModel;
     using System.Runtime.CompilerServices;
 
     namespace iChat.Client.DTOs.Chat
@@ -28,8 +29,8 @@
                 {
                     if (_avatarUrl != value)
                     {
-                        _avatarUrl = value;
-                    AvatarUrlSanitizer();
+                        _avatarUrl =URLsanitizer.Apply(value);
+                  
                         OnPropertyChanged();
                     }
                 }
@@ -37,29 +38,14 @@
             public event PropertyChangedEventHandler? PropertyChanged;
             protected void OnPropertyChanged([CallerMemberName] string? name = null)
                 => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        private void AvatarUrlSanitizer()
-        {
-            if (string.IsNullOrEmpty(_avatarUrl))
-            {
-                _avatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png";
-            }
-            else
-     if (!_avatarUrl.StartsWith("http"))
-            {
-#if DEBUG
-                _avatarUrl = "https://localhost:6051" + _avatarUrl;
-#else
-                                        _avatarUrl = "https://ichat.dedyn.io" +_avatarUrl;
-#endif
-            }
-        }
+
             public UserMetadataReact(long userId, string displayName, string avatarUrl,long version)
             {
                 UserId = userId;
                 _displayName = displayName;
-                _avatarUrl = avatarUrl;
+                _avatarUrl = URLsanitizer.Apply(avatarUrl);
                 Version = version;
-                AvatarUrlSanitizer();
+             
 
             }
         }

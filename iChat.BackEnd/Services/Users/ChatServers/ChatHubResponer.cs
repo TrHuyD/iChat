@@ -1,4 +1,5 @@
-﻿using iChat.BackEnd.Controllers.UserControllers.MessageControllers;
+﻿using Auth0.ManagementApi.Models;
+using iChat.BackEnd.Controllers.UserControllers.MessageControllers;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.SignalR;
@@ -19,7 +20,10 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             await _chatHub.Clients.Groups(ServerId).SendAsync("ChannelCreate", dto);
 
         }
-
+        public async Task NewMessage (NewMessage newMessage,string serverId)
+        {
+            await _chatHub.Clients.Group(serverId).SendAsync("ReceiveMessage", newMessage);
+        }
         public async Task EditedMessage(EditMessageRt rt)
         {
             await _chatHub.Clients.Group(rt.ServerId).SendAsync("MessageEdit", rt);

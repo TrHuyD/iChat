@@ -1,4 +1,5 @@
-﻿using iChat.BackEnd.Models.User.MessageRequests;
+﻿using iChat.BackEnd.Models.User;
+using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.DTOs.Users.Messages;
@@ -57,38 +58,15 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             }
                 return Ok("Message deleted successfully.");
         }
-        //[HttpPost("api/upload")]
-        //[RequestSizeLimit(6 * 1024 * 1024)]
-
-        //[HttpPost("{channelId}/send")]
-        //public async Task<IActionResult> SendMessage(string channelId, [FromBody] UserWeb_MessageRequest request)
-        //{
-        //    if (!long.TryParse(channelId, out long longChannelId))
-        //    {
-        //        return BadRequest("Valid channel ID is required.");
-        //    }
-        //    if (request == null)
-        //    {
-        //        return BadRequest("Message request is required.");
-        //    }
-        //    string userId = new UserClaimHelper(User).GetUserIdStr();
-        //    var r = new MessageRequest
-        //    {
-        //        SenderId= userId,
-        //        ReceiveChannelId = channelId,
-        //        TextContent = request.TextContent,
-        //        MediaContent = request.MediaContent,
-        //    };
-        //    var result = await _writeService.SendTextMessageAsync(r);
-        //    if (result.Success)
-        //    {
-        //        return Ok("Message sent successfully.");
-        //    }
-        //    else
-        //    {
-        //        return StatusCode(500, "Failed to send message.");
-        //    }
-        //}
+        [HttpPost("UploadMessage")]
+        [RequestSizeLimit(3145728)]
+        public async Task<IActionResult> SendMessage( [FromForm] MessageUploadRequest request)
+        {
+            var userId = new UserClaimHelper(User).GetUserIdStr();
+            var result = await _writeService.SendMediaMessageAsync(request, userId);
+            await _chatHub.NewMessage(result, request.ServerId);
+            return Ok();
+        }
         //[HttpPost]
         //[HttpPost("{channelId}/send")]
         //public async Task<IActionResult> SendMessageApi()

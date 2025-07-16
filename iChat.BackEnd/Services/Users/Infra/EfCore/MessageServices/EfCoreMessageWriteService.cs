@@ -47,7 +47,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             var tempo = "";
             if (message.MessageType == (short)MessageType.Media)
             {
-                tempo = message.MediaId.ToString();
+                tempo = message.MediaId.ToString()??"";
                 message.MediaId = null;
                 message.MediaFile = null;
 
@@ -70,7 +70,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 Timestamp = DateTimeOffset.UtcNow,
                 ActorUserId = rq.UserId,
                 ActorUser = message.User,
-                PreviousContent=tempo
+                PreviousContent=tempo??""
             };
             _context.MessageAuditLogs.Add(log);
             await _context.SaveChangesAsync();

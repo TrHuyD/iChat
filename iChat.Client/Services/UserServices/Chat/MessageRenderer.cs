@@ -1,4 +1,5 @@
 ﻿using iChat.Client.DTOs.Chat;
+using iChat.Client.Services.UserServices.Chat.Util;
 using iChat.DTOs.Users.Messages;
 
 namespace iChat.Client.Services.UserServices.Chat
@@ -12,14 +13,24 @@ namespace iChat.Client.Services.UserServices.Chat
             {
                 Message = message,
                 Icon = "",
-                Content = message.Content,
                 ShowTimestamp = true
             };
-            if(message.IsDeleted)
-            {
+
+            if (message.IsDeleted)
                 return result.WithDelete();
+
+            if (message.ContentMedia != null)
+            {
+                var url = URLsanitizer.Apply(message.ContentMedia.Url);
+                result.Content = @$"<img src=""{url}"" style=""max-height:400px; height:auto; width:auto;"" />";
             }
+            else
+            {
+                result.Content = message.Content; 
+            }
+
             return result;
         }
+
     }
 }

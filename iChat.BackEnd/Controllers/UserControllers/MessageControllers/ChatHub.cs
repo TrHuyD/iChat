@@ -3,6 +3,7 @@ using iChat.BackEnd.Models.Helpers;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs;
+using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
@@ -24,18 +25,21 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 
     //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
         public static string FocusKey(string roomId)=> $"{roomId}_focus";
-     //    public static string PersonalKey(string userId) => $"{userId}_personal";
+        //    public static string PersonalKey(string userId) => $"{userId}_personal";
+        public static string FocusChannelKey(string ChannelId) => $"{ChannelId}c_focus";
+
         private readonly IUserPresenceCacheService _presenceService;
         private readonly IUserConnectionTracker _connectionTracker;
-
+        private readonly ConnectionChannelTracker _connectionChannelTracker;
         public ChatHub(
             ILogger<ChatHub> logger,
             IMessageWriteService sendMessageService,
             MemCacheUserChatService memCacheUserChatService,
              IUserPresenceCacheService presenceService,
-             IUserConnectionTracker connectionTracker
-            )
+             IUserConnectionTracker connectionTracker,
+           ConnectionChannelTracker connectionChannelTracker )
         {
+            _connectionChannelTracker = connectionChannelTracker;
             _logger = logger;
             _sendMessageService = sendMessageService;
             _localCache = memCacheUserChatService;
@@ -75,8 +79,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             var finally_offline =_connectionTracker.RemoveConnection(userIdLong, connectionId);
             if(finally_offline)
             _localCache.MoveUserToOffline(userId);
-           
-            await base.OnDisconnectedAsync(exception);
+            _connectionChannelTracker.RemoveConnection(Context.ConnectionId);
+             await base.OnDisconnectedAsync(exception);
         }
 
         public async Task JoinRoom(string roomId)
@@ -94,7 +98,12 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             await Groups.AddToGroupAsync(Context.ConnectionId, FocusKey(roomId));
             _logger.LogInformation($"Client {Context.ConnectionId} joined room {roomId}");
         }
-
+        public async Task JoinChannel(string ChannelId)
+        {
+            var userId = new UserClaimHelper(Context.User).GetUserIdStr();
+            //Doesnt check for now
+            _connectionChannelTracker.SetChannel(Context.ConnectionId, ChannelId);
+        }
         public async Task LeaveRoom(string roomId)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusKey(roomId));

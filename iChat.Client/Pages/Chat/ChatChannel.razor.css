@@ -187,7 +187,6 @@ background-color: #3a3c43;
 .avatar {
     width: 32px;
     height: 32px;
-    background-color: #5865f2;
     color: white;
     border-radius: 50%;
     display: flex;
@@ -285,4 +284,25 @@ background-color: #3a3c43;
 
 .leave-server {
     color: #f04747;
+}
+.typing-indicator {
+    font-style: italic;
+    color: #999;
+    padding: 4px 12px;
+}
+.message-input .upload-icon {
+    margin-left: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+
+.message-content img {
+    display: block;
+    max-height: 400px;
+    height: auto;
+    width: auto;
+    border-radius: 0.5rem;
+    margin-top: 0.25rem;
 }

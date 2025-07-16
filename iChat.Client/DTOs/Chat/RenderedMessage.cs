@@ -23,6 +23,7 @@ namespace iChat.Client.DTOs.Chat
                     ChannelId=Message.ChannelId,
                     SenderId=Message.SenderId,
                     MessageType=Message.MessageType,
+                    CreatedAt=Message.CreatedAt,
 
                 },
                 Content = DeleteMessage,
@@ -47,6 +48,8 @@ namespace iChat.Client.DTOs.Chat
                     ChannelId = Message.ChannelId,
                     SenderId = Message.SenderId,
                     MessageType = Message.MessageType,
+                    CreatedAt = Message.CreatedAt,
+
 
                 },
                 Content = newContent,

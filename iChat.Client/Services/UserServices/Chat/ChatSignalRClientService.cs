@@ -38,7 +38,9 @@ namespace iChat.Client.Services.UserServices.Chat
                 try
                 {
                     Console.WriteLine($"Recieved message for {message.message.Id}");
-                    await _MessageCacheService.AddLatestMessage(new ChatMessageDto(message.message));
+                    var newmessage = new ChatMessageDto(message.message);
+                    _userMetadata.SyncMetadataVersion(newmessage.SenderId, long.Parse(message.UserMetadataVersion));
+                    await _MessageCacheService.AddLatestMessage(newmessage);
                 }
                 catch (Exception ex)
                 {
@@ -71,6 +73,17 @@ namespace iChat.Client.Services.UserServices.Chat
             _hubConnection.On<string>("LeaveServer",LeaveRoomAsync);
             _hubConnection.On<string>("JoinNewServer", OnJoiningNewServer);
             _hubConnection.On<EditMessageRt>("MessageEdit",  HandleEditMessage);
+            _hubConnection.On<string, string>("UserTyping", async (channelId, userId) =>
+            {
+                try
+                {
+                    OnUserType(channelId,userId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error handling user type: {ex.Message}");
+                }
+            });
             _hubConnection.Closed += async (error) =>
             {
                 try
@@ -85,6 +98,7 @@ namespace iChat.Client.Services.UserServices.Chat
                 }
             }
                 ;
+
 
             await _hubConnection.StartAsync();
             Console.WriteLine("Connected to ChatHub");
@@ -108,6 +122,13 @@ namespace iChat.Client.Services.UserServices.Chat
             if (_hubConnection is { State: HubConnectionState.Connected })
             {
                 await _hubConnection.InvokeAsync("SendMessage", roomId, message);
+            }
+        }
+        public async Task Typing()
+        {
+            if (_hubConnection is { State: HubConnectionState.Connected })
+            {
+                await _hubConnection.InvokeAsync("Typing");
             }
         }
         public async Task DisconnectAsync()
@@ -137,18 +158,24 @@ namespace iChat.Client.Services.UserServices.Chat
         {
             _chatNavigationService.AddChannel(channel);
         }
-        public void HandleMetadataChange(UserMetadata userMetadata)
+        private void HandleMetadataChange(UserMetadata userMetadata)
         {
             _userMetadata.SetUserProfile(userMetadata);
         }
-        public void OnJoiningNewServer(string serverID)
+        private void OnJoiningNewServer(string serverID)
         {
 
         }
-        public void OnLeavingServer(string serverId)
+        private void OnLeavingServer(string serverId)
         {
 
         }
+        public event Action<(string channelId, string userId)>? TypingReceived;
+        private void OnUserType(string channelId, string userId)
+        {
+            TypingReceived?.Invoke((channelId, userId));
+        }
+
     }
 
 }

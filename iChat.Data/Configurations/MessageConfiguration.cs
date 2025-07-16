@@ -34,7 +34,9 @@ namespace iChat.Data.Configurations
                    .HasForeignKey(m => m.SenderId)
                    .OnDelete(DeleteBehavior.Restrict);
             builder.HasOne(m => m.MediaFile)
-                .WithOne().HasForeignKey<Message>(m => m.MediaId);
+                   .WithMany() 
+                   .HasForeignKey(m => m.MediaId)
+                   .OnDelete(DeleteBehavior.SetNull);
             builder.HasIndex(m => m.ChannelId);
             builder.HasIndex(m => new { m.ChannelId, m.Timestamp });
             builder.HasIndex(m => new { m.ChannelId, m.SenderId, m.Timestamp });

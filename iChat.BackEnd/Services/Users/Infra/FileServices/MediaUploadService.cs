@@ -28,7 +28,7 @@ namespace iChat.BackEnd.Services.Users.Infra.FileServices
                     Size = new Size(128, 128),
                     Mode = ResizeMode.Crop
                 })),
-                webpQuality: 75);
+                webpQuality: 50);
         }
 
         public async Task<MediaFile> SaveImageAsync(IFormFile file, long? uploaderUserId)

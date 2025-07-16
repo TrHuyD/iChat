@@ -57,7 +57,7 @@
                                    accept="image/png,image/jpeg,image/gif,image/webp" />
 
                     </div>
-                    <div class="file-hint">PNG, JPG, GIF, or WebP. Max 5MB.</div>
+                    <div class="file-hint">PNG, JPG, GIF, or WebP. Max 2MB.</div>
                 </div>
             </div>
         </div>
@@ -89,7 +89,7 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<(string?, IBrowserFile?)> OnSave { get; set; }
 
-    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+    private const long MaxFileSize = 2 * 1024 * 1024; // 2MB
 
     private string? _nicknameTemp;
     private string? OriginalNickname;
@@ -170,7 +170,7 @@
 
         if (file.Size > MaxFileSize)
         {
-            ToastService.ShowError("Avatar must be less than 5MB.");
+            ToastService.ShowError("Avatar must be less than 2MB.");
             AvatarPreviewUrl = null;
             SelectedAvatarFile = null;
             return;

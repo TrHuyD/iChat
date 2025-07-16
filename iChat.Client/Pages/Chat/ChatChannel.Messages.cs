@@ -2,8 +2,11 @@
 using iChat.Client.DTOs.Chat;
 using iChat.Client.Services.UserServices.Chat;
 using iChat.DTOs.Users.Messages;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using System.Net.Http.Headers;
 
 namespace iChat.Client.Pages.Chat
 {
@@ -23,6 +26,56 @@ namespace iChat.Client.Pages.Chat
                 }
             }
         }
+        private InputFile _fileInputRef;
+        private async Task TriggerFileInput()
+        {
+            await JS.InvokeVoidAsync("triggerInputFileClick", _fileInputRef.Element);
+        }
+        private async Task HandleFileUpload(InputFileChangeEventArgs e)
+        {
+                try
+            {
+
+                var inputFile = e.File;
+                if (inputFile != null)
+                    {
+                        if (inputFile.Size > 2 * 1024 * 1024)
+                        {
+                            ToastService.ShowError("File is too large. (2MB limit)");
+                            return;
+                        }
+                        using var stream = inputFile.OpenReadStream(5 * 1024 * 1024/2);
+                    using var ms = new MemoryStream();
+                    await stream.CopyToAsync(ms);
+                    var fileBytes = ms.ToArray();
+
+                    var fileContent = new StreamContent(new MemoryStream(fileBytes));
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(inputFile.ContentType); 
+                    var form = new MultipartFormDataContent();
+                    form.Add(fileContent, "file", inputFile.Name);
+                    form.Add(new StringContent(_currentChannel.Id.ToString()), "channelId");
+                    form.Add(new StringContent(_currentServer.Id.ToString()), "serverId");
+
+                    var request = new HttpRequestMessage(HttpMethod.Post, "/api/chat/UploadMessage") { Content = form };
+                    var response = await _https.SendAuthAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                        {
+                        }
+                        else
+                        {
+                        ToastService.ShowError($"Image upload failed.{response.StatusCode}");
+
+                        }
+                    }
+            }
+            catch(Exception ex)
+            {
+                ToastService.ShowError($"Image upload failed.{ex.Message}");
+
+            }
+        }
+
 
         private async Task SendMessage()
         {
@@ -50,6 +103,10 @@ namespace iChat.Client.Pages.Chat
             if (e.Key == "Enter" && !e.ShiftKey)
             {
                 await SendMessage();
+            }
+            else
+            {
+
             }
         }
         private async Task AddMessagesBehind(MessageBucket bucket)
