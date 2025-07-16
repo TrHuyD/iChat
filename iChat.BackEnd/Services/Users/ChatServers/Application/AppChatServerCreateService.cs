@@ -9,12 +9,14 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
 
         private readonly IChatCreateDBService createService;
         private readonly IChatServerMetadataCacheService serverMetaDataCacheService;
+        private readonly AppChatServerService appChatServerService;
         public AppChatServerCreateService(IChatCreateDBService createService, 
-            IChatServerMetadataCacheService serverMetaDataCacheService)
+            IChatServerMetadataCacheService serverMetaDataCacheService,
+            AppChatServerService appChatServerService)
         {
             this.createService = createService;
             this.serverMetaDataCacheService = serverMetaDataCacheService;
-
+            this.appChatServerService = appChatServerService;
         }
         public async Task<ChatServerMetadata> CreateServerAsync(ChatServerCreateRq request, long userId)
         {
@@ -25,6 +27,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             }
             var server = await createService.CreateServerAsync(request.Name, userId);
             serverMetaDataCacheService.UploadServerAsync(server);
+            await appChatServerService.Join(userId, long.Parse(server.Id));
             return server;
 
         }

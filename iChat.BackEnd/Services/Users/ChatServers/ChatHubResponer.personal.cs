@@ -8,12 +8,12 @@ namespace iChat.BackEnd.Services.Users.ChatServers
     public partial class ChatHubResponer
     {
 
-        public async Task JoinNewServer(string userId, string serverId)
+        public async Task JoinNewServer(string userId, ChatServerMetadata serverId)
         {
             var connections = _tracker.GetConnections(long.Parse(userId));
             foreach (var conn in connections)
             {
-                await _chatHub.Groups.AddToGroupAsync(conn, serverId);
+                await _chatHub.Groups.AddToGroupAsync(conn, serverId.Id);
             }
             await _chatHub.Clients.User(userId).SendAsync("JoinNewServer", serverId);
         }

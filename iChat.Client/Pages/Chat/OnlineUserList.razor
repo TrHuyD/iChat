@@ -1,0 +1,14 @@
+﻿
+@code {
+   public IEnumerable<string> Users { get; set; } = Enumerable.Empty<string>();
+}
+
+<div class="online-list">
+    <h4>Online Users</h4>
+    <ul>
+        @foreach (var user in Users)
+        {
+            <li>@user</li>
+        }
+    </ul>
+</div>

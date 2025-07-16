@@ -189,7 +189,8 @@ namespace iChat.Client.Pages.Chat
                 _messages.TryAdd(messageId, rendered);
 
                 await TryAddNewMessageToGroupAsync(rendered);
-              //  _shouldScrollToBottom = true;
+                if(rendered.Message.SenderId.ToString()==_currentUserId)
+                _shouldScrollToBottom = true;
 
                 await InvokeAsync(StateHasChanged);
             }

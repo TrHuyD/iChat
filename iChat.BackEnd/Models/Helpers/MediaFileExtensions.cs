@@ -5,10 +5,9 @@ namespace iChat.BackEnd.Models.Helpers
 {
     public static class MediaFileExtensions
     {
-        public static MediaFileDto ToDto(this MediaFile mediaFile)
+        public static MediaFileDto? ToDto(this MediaFile mediaFile)
         {
-            if (mediaFile == null)
-                throw new ArgumentNullException(nameof(mediaFile));
+            if (mediaFile == null) return null;
 
             return new MediaFileDto
             {

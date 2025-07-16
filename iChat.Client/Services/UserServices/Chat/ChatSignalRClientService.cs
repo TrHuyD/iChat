@@ -1,4 +1,5 @@
-﻿using iChat.Client.Services.Auth;
+﻿using iChat.Client.Data.Chat;
+using iChat.Client.Services.Auth;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -71,7 +72,7 @@ namespace iChat.Client.Services.UserServices.Chat
                 }
             });
             _hubConnection.On<string>("LeaveServer",LeaveRoomAsync);
-            _hubConnection.On<string>("JoinNewServer", OnJoiningNewServer);
+            _hubConnection.On<ChatServerMetadata>("JoinNewServer", OnJoiningNewServer);
             _hubConnection.On<EditMessageRt>("MessageEdit",  HandleEditMessage);
             _hubConnection.On<string, string>("UserTyping", async (channelId, userId) =>
             {
@@ -116,6 +117,8 @@ namespace iChat.Client.Services.UserServices.Chat
             {
                 await _hubConnection.InvokeAsync("LeaveRoom", roomId);
             }
+            _chatNavigationService.RemoveServer(roomId);
+
         }
         public async Task SendMessageAsync(string roomId, ChatMessageDtoSafe message)
         {
@@ -162,14 +165,11 @@ namespace iChat.Client.Services.UserServices.Chat
         {
             _userMetadata.SetUserProfile(userMetadata);
         }
-        private void OnJoiningNewServer(string serverID)
+        private void OnJoiningNewServer(ChatServerMetadata serverID)
         {
-
+            _chatNavigationService.AddServer(serverID);
         }
-        private void OnLeavingServer(string serverId)
-        {
 
-        }
         public event Action<(string channelId, string userId)>? TypingReceived;
         private void OnUserType(string channelId, string userId)
         {

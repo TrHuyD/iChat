@@ -87,7 +87,7 @@ namespace iChat.Client.Layout
         {
             var server = ChatNavService.GetServer(serverId);
             if (server == null) return;
-            await ChatNavService.NavigateToServer(serverId, Navigation);
+            await ChatNavService.NavigateToServer(serverId);
            
         }
         public void OnServerChange(ChatServerDtoUser server)
@@ -103,7 +103,7 @@ namespace iChat.Client.Layout
 
         private async Task NavigateToChannel(string serverId, string channelId)
         {
-            await ChatNavService.NavigateToChannel(serverId, channelId, Navigation);
+            await ChatNavService.NavigateToChannel(serverId, channelId);
         }
         public void Dispose()
         {

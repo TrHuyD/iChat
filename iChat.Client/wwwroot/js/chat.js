@@ -67,6 +67,7 @@ window.getTopVisibleMessageId = function (containerSelector, messageSelectorPref
 
     return closestMessageId;
 }
+
 window.triggerInputFileClick = function (element) {
     element.click();
 };

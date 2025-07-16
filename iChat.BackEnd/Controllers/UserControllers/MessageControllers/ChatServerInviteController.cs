@@ -57,7 +57,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             }
         }
         [HttpPost("InviteLink/{inviteId}")]
-        public async Task<IActionResult> UseInviteLink(string inviteId, [FromServices] AppChatServerService _joinService, [FromServices] ChatHubResponer hub)
+        public async Task<IActionResult> UseInviteLink(string inviteId, [FromServices] AppChatServerService _joinService, [FromServices] ChatHubResponer hub, [FromServices] IChatServerMetadataCacheService cacheService)
         {
             var userId = new UserClaimHelper(User).GetUserIdStr();
             var uId= long.Parse(userId);    
@@ -66,7 +66,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
                 var serverIdstr = await _service.ParseInviteLink(inviteId);
                 var serverId = long.Parse(serverIdstr);
                 await _joinService.Join(uId, serverId);
-                await hub.JoinNewServer(userId, serverIdstr);
+                await hub.JoinNewServer(userId, await cacheService.GetServerAsync(serverIdstr));
                 return Ok();
             }
             catch (InvalidOperationException ex)

@@ -36,7 +36,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 
                 var userId = new UserClaimHelper(User).GetUserId();
                 var serverid = await createService.CreateServerAsync(rq, userId);
-                await responer.JoinNewServer(userId.ToString(), serverid.Id);
+                await responer.JoinNewServer(userId.ToString(), serverid);
                 return Ok();
             }
             catch(Exception ex)

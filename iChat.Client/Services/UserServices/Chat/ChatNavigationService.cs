@@ -25,12 +25,17 @@ namespace iChat.Client.Services.UserServices
         private readonly LastVisitedChannelService _channelTracker;
         public event Action<ChatServerDtoUser> ServerChanged;
         public event Action<string> ChannelChanged;
-
-        public ChatNavigationService(JwtAuthHandler jwtAuthHandler,ToastService toast, LastVisitedChannelService channelTracker)
-        {   
+        private readonly Lazy<UserStateService> userStateService;
+        NavigationManager nav;
+        string CurrentServer = "";
+        public ChatNavigationService(JwtAuthHandler jwtAuthHandler,ToastService toast, LastVisitedChannelService channelTracker, NavigationManager nav,
+            Lazy< UserStateService> userStateService)
+        {
+            this.nav = nav;
             _http = jwtAuthHandler ?? throw new ArgumentNullException(nameof(jwtAuthHandler));
             _toastService = toast ?? throw new ArgumentNullException(nameof(toast));
             _channelTracker = channelTracker ;
+            this.userStateService = userStateService;
         }
 
         /// <summary>
@@ -57,9 +62,34 @@ namespace iChat.Client.Services.UserServices
             server.Channels.Add(ccdto);
 
         }
+        public void RemoveServer(string serverId )
+        {
+            if (serverId == CurrentServer)
+                nav.NavigateTo("/");
+            var removed = ChatServers.RemoveAll(s => s.Id == serverId);
+            if (removed > 0)
+            {
+                OnChatServersChanged?.Invoke();
+            }
+        }
         /// <summary>
         /// Adds a single server to the navigation
         /// </summary>
+        public void AddServer(ChatServerMetadata server)
+        {
+            int post = 0;
+            if(ChatServers.Count!=0)
+                post = ChatServers[^1].Position+1;
+            AddServer(new ChatServerDtoUser
+            {
+                Id = server.Id,
+                Name = server.Name,
+                AvatarUrl = server.AvatarUrl,
+                Channels = server.Channels,
+                Position = post,
+                isadmin=long.Parse(server.AdminId)==userStateService.Value.GetUserProfile().UserId
+            });
+        }
         public void AddServer(ChatServerDtoUser server)
         {
             if (server == null)
@@ -70,21 +100,7 @@ namespace iChat.Client.Services.UserServices
             OnChatServersChanged?.Invoke();
         }
 
-        /// <summary>
-        /// Removes a server from navigation
-        /// </summary>
-        public void RemoveServer(string serverId)
-        {
-            if (string.IsNullOrEmpty(serverId))
-                return;
 
-            var removed = ChatServers.RemoveAll(s => s.Id == serverId);
-
-            if (removed > 0)
-            {
-                OnChatServersChanged?.Invoke();
-            }
-        }
 
         /// <summary>
         /// Updates a server's details in the navigation
@@ -153,9 +169,6 @@ namespace iChat.Client.Services.UserServices
                 throw new InvalidOperationException($"Failed to create server: {errorContent}");
             }
 
-            var newserver = await response.Content.ReadFromJsonAsync<ChatServerDtoUser>();
-
-            AddServer(newserver);
         }
         /// <summary>
         /// Gets a specific server by ID
@@ -171,7 +184,7 @@ namespace iChat.Client.Services.UserServices
             return false;
             return ChatServers.Any(s => s.Id == serverId);
         }
-        public async Task NavigateToServer(string serverId , NavigationManager nav)
+        public async Task NavigateToServer(string serverId)
         {
             var server = GetServer(serverId);
             if (server == null || server.Channels.Count == 0)
@@ -189,7 +202,7 @@ namespace iChat.Client.Services.UserServices
             ServerChanged?.Invoke(server);
 
         }
-        public async Task NavigateToChannel(string serverId, string channelId,  NavigationManager nav)
+        public async Task NavigateToChannel(string serverId, string channelId)
         {
             
             await _channelTracker.SaveLastChannelAsync(serverId, channelId);

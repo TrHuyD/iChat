@@ -185,15 +185,7 @@
 
         else
         {
-            <div class="online-list">
-                <h4>Online Users</h4>
-                <ul>
-                    @foreach (var user in _onlineUsers)
-                    {
-                        <li>@user</li>
-                    }
-                </ul>
-            </div>
+            <OnlineUserList ></OnlineUserList> 
         }
     </div>
 </div>
