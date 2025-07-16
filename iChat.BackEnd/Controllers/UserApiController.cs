@@ -1,6 +1,7 @@
 ﻿using iChat.BackEnd.Services.Users;
 using iChat.BackEnd.Services.Users.Auth;
 using iChat.BackEnd.Services.Users.ChatServers;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.Data.Entities.Users;
@@ -41,7 +42,7 @@ namespace iChat.BackEnd.Controllers
         }
         [HttpGet("CompleteInfo")]
         [Authorize]
-        public async Task<IActionResult> GetCompleteInfo([FromServices] ServerListService serverListService, [FromServices] IMemoryCache _cache, [FromServices] MemCacheUserChatService metadatacache,
+        public async Task<IActionResult> GetCompleteInfo([FromServices] ServerListService serverListService, [FromServices] IMemoryCache _cache, [FromServices] IChatServerMetadataCacheService metadatacache,
             [FromServices] AppUserService metadataProvider)
         {
             var userId = new UserClaimHelper(User).GetUserId();
@@ -53,7 +54,8 @@ namespace iChat.BackEnd.Controllers
                 // var userProfile = await _userService.GetUserProfileAsync(userId.ToString());
                 var metatdata =await metadataProvider.GetUserMetadataAsync(userIdStr);
                 var userServerList = await serverListService.GetServerList(userId);
-                metadatacache.SetOnlineUserData( userServerList.Select(t=>long.Parse(t.Id)).ToList(),metatdata);
+                
+                metadatacache.SetUserOnline( userServerList.Select(t=>long.Parse(t.Id)).ToList(),metatdata, userId);
                 package = new UserCompleteDto
                 {
                     UserProfile = metatdata,

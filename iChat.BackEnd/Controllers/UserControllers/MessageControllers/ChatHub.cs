@@ -28,14 +28,12 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         //    public static string PersonalKey(string userId) => $"{userId}_personal";
         public static string FocusChannelKey(string ChannelId) => $"{ChannelId}c_focus";
 
-        private readonly IUserPresenceCacheService _presenceService;
         private readonly IUserConnectionTracker _connectionTracker;
         private readonly ConnectionChannelTracker _connectionChannelTracker;
         public ChatHub(
             ILogger<ChatHub> logger,
             IMessageWriteService sendMessageService,
             MemCacheUserChatService memCacheUserChatService,
-             IUserPresenceCacheService presenceService,
              IUserConnectionTracker connectionTracker,
            ConnectionChannelTracker connectionChannelTracker )
         {
@@ -43,7 +41,6 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             _logger = logger;
             _sendMessageService = sendMessageService;
             _localCache = memCacheUserChatService;
-            _presenceService = presenceService;
             _connectionTracker = connectionTracker;
         }
 

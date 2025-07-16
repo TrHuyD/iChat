@@ -1,4 +1,5 @@
-﻿using iChat.Data.EF;
+﻿using iChat.BackEnd.Models.ChatServer;
+using iChat.Data.EF;
 using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,19 +14,19 @@ namespace iChat.BackEnd.Services.StartUpServices.SUS_ChatServer
             _db = db;
         }
 
-        public async Task<List<ChatServerMetadata>> GetAllServersWithChannelsAsync()
+        public async Task<List<ChatServerbulk>> GetAllServersWithChannelsAsync()
         {
             var servers = await _db.ChatServers
                 .AsNoTracking()
                 .Include(s => s.ChatChannels)
-                .Select(s => new ChatServerMetadata
+                .Select(s => new ChatServerbulk
                 {
-                    Id = s.Id.ToString(),
+                    Id = s.Id,
                     Name = s.Name,
                     AvatarUrl = s.Avatar ?? "https://cdn.discordapp.com/embed/avatars/0.png",
                     CreatedAt=s.CreatedAt
                     ,
-                    AdminId=s.AdminId.ToString(),
+                    AdminId=s.AdminId,
                     Channels = s.ChatChannels
                         .OrderBy(c => c.Order)
                         .Select(c => new ChatChannelDtoLite
@@ -35,7 +36,9 @@ namespace iChat.BackEnd.Services.StartUpServices.SUS_ChatServer
                             Order = c.Order,
                             last_bucket_id = c.LastAssignedBucketId
                         })
-                        .ToList()
+                        .ToList(),
+                    memberList= s.UserChatServers.Select(us =>us.UserId).ToList()
+                       
                 })
                 .ToListAsync();
 

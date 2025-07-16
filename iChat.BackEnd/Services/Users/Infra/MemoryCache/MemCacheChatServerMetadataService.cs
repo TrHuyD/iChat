@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
 using iChat.BackEnd.Collections;
 using iChat.DTOs.Users;
+using iChat.BackEnd.Models.ChatServer;
 
 namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 {
@@ -21,7 +22,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             _userChatService = userChatService;
         }
 
-        public Task<bool> UploadServersAsync(List<ChatServerMetadata> servers)
+        public Task<bool> UploadServersAsync(List<ChatServerbulk> servers)
         {
             foreach (var server in servers)
             {
@@ -31,8 +32,13 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 if (server.Channels.Any())
                 {
                     var channelMap = server.Channels.ToDictionary(c => c.Id);
-                    _cache.Set(GetChannelKey(server.Id), channelMap);
+                    _cache.Set(GetChannelKey(server.Id.ToString()), channelMap);
                 }
+                var tempo= new ThreadSafeIndexedUserCollection();
+                tempo.Initialize(server.memberList);
+                _serverOfflineUserMap[server.Id] = tempo;
+                _serverOnlineUserMap[server.Id] = new ThreadSafeIndexedUserCollection();
+                
             }
 
             return Task.FromResult(true);
@@ -153,15 +159,23 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             server.Channels.Add(channel);
         }
 
-        public void SetOnlineStatusForUserAcrossServers(long userId, List<long> serverIds)
+        public bool SetUserOnline(List<long> serverIds, UserMetadata user,  long userIdL=-1)
         {
+
+            var userId = user.ToString();
+            if (userIdL ==-1)
+                userIdL = long.Parse(userId);
+            if (_userChatService.IsUserOnline(userId))
+                return false;
+            
             foreach (var serverId in serverIds)
             {
                 if (!_serverOnlineUserMap.TryGetValue(serverId, out var set))
-                    _serverOnlineUserMap[serverId] = set = new ThreadSafeIndexedUserCollection();
-
-                set.AddUser(userId);
+                    throw new Exception($"Server {serverId} not found in cache");
+                set.AddUser(userIdL);
             }
+            _userChatService.SetOnlineUserData(serverIds, user);
+            return true;
         }
 
 
@@ -192,10 +206,55 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
             set.AddRange(users);
         }
-
-        public Task SetUserOnline(List<long> serverList, UserMetadata metadata, long userId = -1)
+        public void SetUserOffline(long userId)
         {
-            throw new NotImplementedException();
+            var (list, metadata) = _userChatService.GetUserChatData(userId.ToString());
+            if(list == null)
+            {
+                //user already offline
+                return ;
+            }
+            foreach(var i in list)
+            {
+                if(_serverOfflineUserMap.TryGetValue(i,out var offlinelist))
+                {
+                    offlinelist.Add(userId);
+                }else
+                    Console.WriteLine($"Server  {i} not found in here");
+                if (_serverOnlineUserMap.TryGetValue(i, out var onlinelist))
+                {
+                    onlinelist.Add(userId);
+                }
+                else
+                    Console.WriteLine($"Server {i} not found in here");
+            }
+        }
+        private void _AddUserToServer(long userId,long serverId, bool online)
+        {
+            if (online)
+                _serverOnlineUserMap[serverId].Add(userId);
+            else
+                _serverOnlineUserMap[serverId].Add(userId);
+
+        }
+        public void AddUserToServer(long userId, long serverId, bool online)
+        {
+            _userChatService.AddServerToUser(userId, serverId);
+            _AddUserToServer(userId, serverId, online);
+        }
+
+        public bool RemoveUserFromServer(long userId, long serverId)
+        {
+            var isOnline = _serverOnlineUserMap.Remove(userId);
+            if (isOnline)
+                _userChatService.RemoveServerFromUser(userId.ToString(), serverId);
+            else
+            {
+            var offline=       _serverOfflineUserMap.Remove(userId);
+                if (!offline)
+                    return false;//throw new Exception($"{userId} is not in {serverId}");
+            }
+            return true;
         }
     }
 }

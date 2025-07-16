@@ -1,11 +1,12 @@
-﻿using iChat.DTOs.Users;
+﻿using iChat.BackEnd.Models.ChatServer;
+using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
 {
     public interface IChatServerMetadataCacheService
     {
-        Task<bool> UploadServersAsync(List<ChatServerMetadata> servers);
+        Task<bool> UploadServersAsync(List<ChatServerbulk> servers);
         void UploadServerAsync(ChatServerMetadata server);
         void AddChannelAsync(ChatChannelDto server);
         Task<ChatServerMetadata?> GetServerAsync(string serverId, bool includeChannels = true);
@@ -16,7 +17,9 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
         Task IsInServerWithCorrectStruct(long userId, long serverId, long channelId);
         Task<Dictionary<long, long>> GetAllUserPermsInServerAsync(long userId, long serverId);
         Task<Dictionary<long, long>> GetAllUserPermsInChannelAsync(long serverId, long channelId);
-        Task SetUserOnline(List<long> serverList, UserMetadata metadata, long userId = -1);
+        bool SetUserOnline(List<long> serverList, UserMetadata metadata, long userId = -1);
+        void AddUserToServer(long userId, long serverId, bool  online);
+        bool RemoveUserFromServer(long userId, long serverId);
 
     }
 }
