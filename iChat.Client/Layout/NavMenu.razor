@@ -16,6 +16,7 @@
 @inject UserMetadataService _userMetadataService
 @inject InviteService InviteService
 @inject ProfileModalService profileChanger
+@inject UserMetadataService userMetadataService
 @inject IJSRuntime JS
 @inject iChat.Client.Services.Auth.JwtAuthHandler _https
 @implements IDisposable
@@ -112,7 +113,7 @@
 
         <img class="avatar" src="@userProfileDto.AvatarUrl" />
         <div class="user-info">
-            <div class="username">@userProfileDto.Name</div>
+            <div class="username">@userProfileDto.DisplayName</div>
             <div class="status">Online</div>
         </div>
         <div class="user-actions">

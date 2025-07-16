@@ -9,7 +9,6 @@ namespace iChat.DTOs.Users.Messages
     public class MessageProcessingContext
     {
         public bool IsInServer { get; set; }
-        public long? MetadataVersion { get; set; }
         public UserMetadata? Metadata { get; set; }
         public List<long>? UserServerList { get; set; }
     }

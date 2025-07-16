@@ -13,7 +13,7 @@ namespace iChat.Client.Layout
         private int _contextMenuY = 0;
         private ChatServerDtoUser _contextMenuServer = null;
         private List<UserMetadataReact> _filteredUsers = new List<UserMetadataReact>();
-        private UserProfileDto userProfileDto = new UserProfileDto();
+        private UserMetadataReact userProfileDto = new (0,"loading.....", "https://cdn.discordapp.com/embed/avatars/3.png",0);
         private bool showCreateServer = false;
         private bool showCreateChannel = false;
         private ChatServerDtoUser? _selectedServer;
@@ -24,6 +24,7 @@ namespace iChat.Client.Layout
             ChatNavService.ServerChanged += OnServerChange;
             ChatNavService.ChannelChanged += OnChannelChange;
             userProfileDto = LoadingService.GetUserProfile();
+            _userMetadataService.OnMetadataUpdated += () => StateHasChanged();
         }
         private void Reset()
         {

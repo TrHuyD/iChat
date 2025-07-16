@@ -44,17 +44,36 @@
                     </div>
 
                     <div class="message-group-body">
-                        @foreach (var item in group.Messages)
-                        {
-                            <div class="message @item.CssClass"
-                                 id="message-@item.Message.Id"
-                                 @oncontextmenu="(e => ShowContextMenu(e, item.Message))"
-                                 @oncontextmenu:preventDefault
-                                 @key="item.Message.Id">
+                    @foreach (var item in group.Messages)
+                    {
+                        <div class="message @item.CssClass @(item.Message.IsDeleted ? "deleted-message" : "")"
+                                id="message-@item.Message.Id"
+                                @key="item.Message.Id"
+                                @oncontextmenu="(e) => ShowContextMenu(e, item.Message)"
+                                @oncontextmenu:preventDefault>
 
-                                <div class="message-content">@item.Content</div>
+                            @if (!string.IsNullOrEmpty(item.Icon))
+                            {
+                                <span class="message-icon">@item.Icon</span>
+                            }
+
+                            <div class="message-content">
+                                @if (item.Message.IsDeleted)
+                                {
+                                    <span class="deleted-text">@RenderedMessage.DeleteMessage</span>
+                                }
+                                else
+                                {
+                                    @item.Content
+                                    @if (item.isEdited)
+                                    {
+                                        <span class="edited-badge">(edited)</span>
+                                    }
+                                }
                             </div>
-                        }
+
+                        </div>
+                    }
                     </div>
                 </div>
             </Virtualize>

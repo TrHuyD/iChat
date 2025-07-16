@@ -44,7 +44,7 @@ namespace iChat.Client.Pages.Chat
                 return;
             }
             Console.WriteLine($"Initializing ChatChannel for RoomId: {ChannelId}");
-           _userMetadataService._onMetadataUpdated += HandleUserMetadataUpdate;
+           _userMetadataService.OnMetadataUpdated += HandleUserMetadataUpdate;
             _sendQueueTask = ProcessSendQueueAsync();
             _currentUserId = _userInfo.GetUserId().ToString();
             try
@@ -62,7 +62,7 @@ namespace iChat.Client.Pages.Chat
             }
             StateHasChanged();
         }
-        private void HandleUserMetadataUpdate(List<UserMetadataReact> updatedUsers)
+        private void HandleUserMetadataUpdate()
         {
             InvokeAsync(StateHasChanged);
         }
@@ -121,13 +121,11 @@ namespace iChat.Client.Pages.Chat
             try
             {
                 var messageId = long.Parse(rq.MessageId);
-                var rendered= _messages.GetValueOrDefault(messageId);
-                if(rendered != null)
-                {
-                rendered.ToggleDelete();
-                    await Task.Delay(250);
-                await InvokeAsync(StateHasChanged);
 
+                if (_messages.TryGetValue(messageId, out var oldMessage))
+                {
+                    _messages[messageId] = oldMessage.WithDelete();
+                    await InvokeAsync(StateHasChanged);
                 }
             }
             catch (Exception ex)
@@ -141,10 +139,10 @@ namespace iChat.Client.Pages.Chat
             try
             {
                 var messageId = long.Parse(rq.MessageId);
-                var rendered = _messages.GetValueOrDefault(messageId);
-                if (rendered != null)
+
+                if (_messages.TryGetValue(messageId, out var oldMessage))
                 {
-                    rendered.HandleEdit(rq.NewContent);
+                    _messages[messageId] = oldMessage.WithEdit(rq.NewContent);
                     await InvokeAsync(StateHasChanged);
                 }
             }
@@ -180,7 +178,7 @@ namespace iChat.Client.Pages.Chat
 
         public void Dispose()
         {
-            _userMetadataService._onMetadataUpdated -= HandleUserMetadataUpdate;
+            _userMetadataService.OnMetadataUpdated -= HandleUserMetadataUpdate;
             DisposeCore().AsTask().Wait();
             GC.SuppressFinalize(this);
         }

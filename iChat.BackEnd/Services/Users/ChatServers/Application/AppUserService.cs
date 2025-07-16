@@ -8,6 +8,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
     {
         private readonly IUserMetaDataCacheService _userMetaDataCacheService;
         private readonly Lazy<IUserService> _userService;
+        
         public AppUserService(IUserMetaDataCacheService userMetaDataCacheService, Lazy<IUserService> userService)
         {
             _userMetaDataCacheService = userMetaDataCacheService;
@@ -46,22 +47,6 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             }
             return userIds.Select(id => metadata.ContainsKey(id) ? metadata[id] : null).Where(x => x != null).ToList();
         }
-        public async Task<UserMetadata> UpdateUserName(string UserId, string UserName)
-        {
-            var userMetadata = await _userService.Value.EditUserNickNameAsync(UserId, UserName);
-            _ = _userMetaDataCacheService.SetAsync(userMetadata);
-            return userMetadata;
 
-        }
-        public async Task<UserMetadata> UpdateUserAvatar(string UserId, string AvatarUrl)
-        {
-            var userMetadata = await _userService.Value.EditAvatarAsync(UserId, AvatarUrl);
-            _ = _userMetaDataCacheService.SetAsync(userMetadata);
-            return userMetadata;
-        }
-        //public async Task<UserMetadata>UpdateUserNameAndAvatar(string UserId,string UserName,string AvatarUrl)
-        //{
-
-        //}
     }
 }

@@ -17,7 +17,7 @@ namespace iChat.Client.Services.UserServices.Chat
             };
             if(message.IsDeleted)
             {
-                result.ToggleDelete();
+                return result.WithDelete();
             }
             return result;
         }

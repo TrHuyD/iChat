@@ -1,7 +1,9 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
+@using iChat.Client.DTOs.Chat
+@using iChat.Client.Services.Auth
 @inject ToastService ToastService
 @inject UserStateService userState
-
+@inject JwtAuthHandler _http
 <div class="discord-modal-backdrop" @onclick="CloseModal"></div>
 
 <div class="discord-modal-container" @onclick:stopPropagation>
@@ -121,7 +123,7 @@
 
             if (profile is not null)
             {
-                OriginalNickname = profile.Name;
+                OriginalNickname = profile.DisplayName;
                 AvatarUrl = profile.AvatarUrl ?? "/images/default-avatar.png";
                 PreviewNickname = OriginalNickname;
             }
@@ -213,10 +215,40 @@
 
         try
         {
-            await Task.Delay(1000); // Simulate network delay
-            await OnSave.InvokeAsync((PreviewNickname, SelectedAvatarFile));
-            ToastService.ShowSuccess("Profile updated successfully!");
-            await CloseModal();
+            HttpResponseMessage response;
+
+            if (SelectedAvatarFile is null)
+            {
+                // No file, send JSON payload
+                var nicknamePayload = new { UserName = PreviewNickname };
+                response = await _http.SendAuthAsync(nicknamePayload, HttpMethod.Post, "/api/users/Update/NickName");
+            }
+            else
+            {
+                // File is present, send multipart form data
+                using var formData = new MultipartFormDataContent();
+                formData.Add(new StringContent(PreviewNickname ?? ""), "newName");
+                var stream = SelectedAvatarFile.OpenReadStream(MaxFileSize);
+                var content = new StreamContent(stream);
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(SelectedAvatarFile.ContentType);
+                formData.Add(content, "file", SelectedAvatarFile.Name);
+
+                var request = new HttpRequestMessage(HttpMethod.Post, "/api/users/Update/Profile")
+                {
+                    Content = formData
+                };
+
+                response = await _http.SendAuthAsync(request);
+            }
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.ShowSuccess("Profile updated successfully!");
+                await CloseModal();
+            }
+            else
+            {
+                ToastService.ShowError($"Failed to update profile. Status: {response.StatusCode}");
+            }
         }
         catch (Exception ex)
         {
@@ -227,6 +259,7 @@
             IsSaving = false;
         }
     }
+
 
     private async Task CloseModal()
     {

@@ -6,7 +6,7 @@
         public class UserMetadataReact : INotifyPropertyChanged
         {
             public long UserId { get; }
-
+            public long Version { get; set; }
             private string _displayName;
             public string DisplayName
             {
@@ -29,6 +29,7 @@
                     if (_avatarUrl != value)
                     {
                         _avatarUrl = value;
+                    AvatarUrlSanitizer();
                         OnPropertyChanged();
                     }
                 }
@@ -36,11 +37,30 @@
             public event PropertyChangedEventHandler? PropertyChanged;
             protected void OnPropertyChanged([CallerMemberName] string? name = null)
                 => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-            public UserMetadataReact(long userId, string displayName, string avatarUrl)
+        private void AvatarUrlSanitizer()
+        {
+            if (string.IsNullOrEmpty(_avatarUrl))
+            {
+                _avatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png";
+            }
+            else
+     if (!_avatarUrl.StartsWith("http"))
+            {
+#if DEBUG
+                _avatarUrl = "https://localhost:6051" + _avatarUrl;
+#else
+                                        _avatarUrl = "https://ichat.dedyn.io" +_avatarUrl;
+#endif
+            }
+        }
+            public UserMetadataReact(long userId, string displayName, string avatarUrl,long version)
             {
                 UserId = userId;
                 _displayName = displayName;
                 _avatarUrl = avatarUrl;
+                Version = version;
+                AvatarUrlSanitizer();
+
             }
         }
 

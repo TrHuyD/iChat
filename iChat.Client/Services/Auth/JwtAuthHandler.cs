@@ -1,7 +1,11 @@
-﻿using iChat.DTOs.Users.Auth;
+﻿using iChat.Client.Data.Chat;
+using iChat.DTOs.Users.Auth;
+using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Components;
-
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using System.Xml.Linq;
 
 
 
@@ -18,8 +22,20 @@ namespace iChat.Client.Services.Auth
             _tokenProvider = tokenProvider;
             _navigation = navigation;
             _configService = configService;
-        } 
+        }
+        public async Task<HttpResponseMessage> SendAuthAsync<T>
+            (T container,
+            HttpMethod method,
+            string url)
+        {
+            var  request = new HttpRequestMessage(method, url)
+            {
+                          
+                Content = new StringContent(JsonSerializer.Serialize(container), Encoding.UTF8, "application/json")
 
+            };
+            return await SendAuthAsync(request);
+            }
         public async Task<HttpResponseMessage> SendAuthAsync(
             HttpRequestMessage request,
             bool forceRedirectToLogin = true,

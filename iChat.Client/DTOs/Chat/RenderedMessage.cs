@@ -11,24 +11,50 @@ namespace iChat.Client.DTOs.Chat
         public bool ShowTimestamp { get; set; }
         public bool isEdited { get; set; } = false;
         public static string DeleteMessage = "[This message has been deleted.]";
-        public void ToggleDelete()
+        public RenderedMessage WithDelete()
         {
-            
-            Message.Content = DeleteMessage;
-            Message.IsDeleted = true;
-        //    CssClass = "deleted-message";
-            Content =DeleteMessage;
-        }   
-        public void HandleEdit(string newContent)
-        {
-            if(Message.IsDeleted)
+            return new RenderedMessage
             {
-                return; // Cannot edit a deleted message
-            }
-            isEdited = true;
-          //  CssClass = "edited-message";
-            Content = newContent;
-            Message.Content = newContent;
+                Message = new ChatMessageDto
+                {
+                    Id = Message.Id,
+                    Content = DeleteMessage,
+                    IsDeleted = true,
+                    ChannelId=Message.ChannelId,
+                    SenderId=Message.SenderId,
+                    MessageType=Message.MessageType,
+
+                },
+                Content = DeleteMessage,
+                CssClass = CssClass,
+                Icon = Icon,
+                ShowTimestamp = ShowTimestamp,
+                isEdited = isEdited
+            };
+        }
+
+        public RenderedMessage WithEdit(string newContent)
+        {
+            if (Message.IsDeleted) return this;
+
+            return new RenderedMessage
+            {
+                Message = new ChatMessageDto
+                {
+                    Id = Message.Id,
+                    Content = newContent,
+                    IsDeleted = Message.IsDeleted,
+                    ChannelId = Message.ChannelId,
+                    SenderId = Message.SenderId,
+                    MessageType = Message.MessageType,
+
+                },
+                Content = newContent,
+                CssClass = CssClass,
+                Icon = Icon,
+                ShowTimestamp = ShowTimestamp,
+                isEdited = true
+            };
         }
     }
 

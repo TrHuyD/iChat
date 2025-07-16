@@ -1,5 +1,7 @@
-﻿using iChat.Client.Services.Auth;
+﻿using iChat.Client.DTOs.Chat;
+using iChat.Client.Services.Auth;
 using iChat.Client.Services.UserServices;
+using iChat.Client.Services.UserServices.Chat;
 using iChat.Client.Services.UserServices.ChatService;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
@@ -12,15 +14,17 @@ public class UserStateService
     private readonly ChatNavigationService _chatNavigationService;
 
 
-    private UserProfileDto? _userProfile;
+    private UserMetadataReact? _userProfile;
     public static bool HasLoadedUserData { get; private set; } = false;
     public event Action OnAppReadyStateChanged;
-    
+    private readonly UserMetadataService _userMetadataService;
     public UserStateService(JwtAuthHandler authHandler,
-        ChatNavigationService chatNavigationService)
+        ChatNavigationService chatNavigationService,
+        UserMetadataService metaDataService)
     {
         _authHandler = authHandler;
         _chatNavigationService = chatNavigationService;
+        _userMetadataService=metaDataService;
     }
     public bool ConfirmServerChannelId(string ServerId, string ChannelId)
     {
@@ -54,7 +58,14 @@ public class UserStateService
     {
         var package = await Load();
         _chatNavigationService.UpdateChatServers(package.ChatServers);
-        _userProfile = package.UserProfile;
+        _userProfile =new UserMetadataReact
+        (
+             long.Parse(package.UserProfile.UserId),
+             package.UserProfile.DisplayName,
+              package.UserProfile.AvatarUrl,
+              long.Parse(package.UserProfile.Version)
+        );
+        _userMetadataService.AddOrUpdateMetadata(_userProfile);
         return true;
     }
     //public async Task LoadServerList(List<ChatServerDtoUser> list)
@@ -66,9 +77,9 @@ public class UserStateService
     {
         if (_userProfile == null)
             throw new InvalidOperationException("User profile is not loaded yet.");
-        return _userProfile.Id;
+        return _userProfile.UserId;
     }
-    public UserProfileDto? GetUserProfile()
+    public UserMetadataReact? GetUserProfile()
     {
         return _userProfile;
     }

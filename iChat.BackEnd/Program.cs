@@ -25,6 +25,7 @@ using iChat.Data.Entities.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
 
@@ -92,6 +93,7 @@ new IdBuilderHelper().AddService(builder, WorkerIdConfig);
 new ValidatorsHelper(builder);
 
 // Add business services
+builder.Services.AddScoped<AppUserEditService>();
 builder.Services.AddScoped<IChatListingService, EfCoreChatListingService>();
 builder.Services.AddScoped<IMessageDbReadService, EfCoreMessageReadService>();
 builder.Services.AddScoped<IMessageDbWriteService, EfCoreMessageWriteService>();
@@ -199,6 +201,11 @@ else
 }
 
 // Configure middleware pipeline
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(builder.Environment.ContentRootPath.Replace("\\","/"), "wwwroot/uploads")),
+    RequestPath = "/api/uploads"
+});
 app.UseRouting();
 app.UseCors("AllowClient");
 app.UseAuthentication();

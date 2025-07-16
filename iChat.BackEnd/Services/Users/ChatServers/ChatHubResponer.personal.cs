@@ -7,10 +7,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers
 {
     public partial class ChatHubResponer
     {
-        public async Task MetadataUpdateAsync(string userId, UserMetadata metadata)
-        {
-            await _chatHub.Clients.User(userId).SendAsync("UserMetadataUpdate", userId, metadata);
-        }
+
         public async Task JoinNewServer(string userId, string serverId)
         {
             var connections = _tracker.GetConnections(long.Parse(userId));
@@ -24,6 +21,10 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         public async Task LeaveServer(string userId, long serverId)
         {
             await _chatHub.Clients.User(userId).SendAsync("LeaveServer", serverId);
+        }
+        public async Task UpdateProfile(UserMetadata user)
+        {
+            await _chatHub.Clients.User(user.UserId).SendAsync("UpdateProfile", user);
         }
     }
 }

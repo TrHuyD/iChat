@@ -38,7 +38,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         /// Hot path: Gets both server membership and metadata version in one cache lookup
         /// Use this for message processing where you need both pieces of info
         /// </summary>
-        public (bool isInServer, long? metadataVersion) CheckUserAccessAndVersion(string userId, long serverId, bool extendExpire = false)
+        public (bool isInServer, string? metadataVersion) CheckUserAccessAndVersion(string userId, long serverId, bool extendExpire = false)
         {
             var key = CombinedKey(userId);
 
@@ -68,7 +68,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 return new MessageProcessingContext
                 {
                     IsInServer = data.ServerSet?.Contains(serverId) == true,
-                    MetadataVersion = data.Metadata?.Version,
                     Metadata = data.Metadata,
                     UserServerList = data.ServerList
                 };
@@ -79,7 +78,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             return new MessageProcessingContext
             {
                 IsInServer = false,
-                MetadataVersion = metadata?.Version,
                 Metadata = metadata,
                 UserServerList = null
             };
@@ -254,7 +252,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             return isInServer;
         }
 
-        public long? GetMetadataVersion(string userId, bool extendExpire = false)
+        public string? GetMetadataVersion(string userId, bool extendExpire = false)
         {
             var (_, version) = CheckUserAccessAndVersion(userId, 0, extendExpire);
             return version;

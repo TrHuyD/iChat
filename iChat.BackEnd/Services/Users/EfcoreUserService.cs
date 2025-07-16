@@ -72,11 +72,11 @@ public class EfcoreUserService : IUserService
         var user = await _userManager.FindByIdAsync(userId);
         if(user == null)
             throw new Exception("User not found");
-        user.UserName = newNickName;
+        user.Name = newNickName;
         try
         {
             var result = await _userManager.UpdateAsync(user);
-
+            
         }
         catch(Exception ex)
         {
@@ -91,8 +91,7 @@ public class EfcoreUserService : IUserService
     }
     public async Task<UserMetadata> EditAvatarAsync(string userId, string avatarUrl)
     {
-        if (string.IsNullOrWhiteSpace(avatarUrl) || !Uri.IsWellFormedUriString(avatarUrl, UriKind.Absolute))
-            throw new ArgumentException("Invalid avatar URL.");
+
         var user =await _userManager.FindByIdAsync(userId);
         if (user == null)
             throw new Exception("User not found");
@@ -116,13 +115,12 @@ public class EfcoreUserService : IUserService
 
     public async Task<UserMetadata> EditNameAndAvatarAsync(string userId, string newNickName, string avatarUrl)
     {
-        if (string.IsNullOrWhiteSpace(avatarUrl) || !Uri.IsWellFormedUriString(avatarUrl, UriKind.Absolute))
-            throw new ArgumentException("Invalid avatar URL.");
+
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
             throw new Exception("User not found");
         user.AvatarUrl = avatarUrl;
-        user.UserName=newNickName;
+        user.Name=newNickName;
         try
         {
             var result = await _userManager.UpdateAsync(user);
@@ -135,7 +133,7 @@ public class EfcoreUserService : IUserService
         return new UserMetadata
             (
                 user.Id.ToString(),
-                user.UserName,
+                user.Name,
                 avatarUrl
             );
     }

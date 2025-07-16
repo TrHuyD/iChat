@@ -1,5 +1,6 @@
-﻿using iChat.BackEnd.Services.Users.ChatServers.Application;
-using iChat.DTOs.Users.personal;
+﻿using iChat.BackEnd.Models.User;
+using iChat.BackEnd.Services.Users.ChatServers.Application;
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers.UserControllers
@@ -21,8 +22,8 @@ namespace iChat.BackEnd.Controllers.UserControllers
             var metadata = await _userMetadataService.GetUserMetadataAsync(userId);
             if (metadata == null)
                 return NotFound();
-            Response.Headers["Cache-Control"] = "public,max-age=86400"; 
-            Response.Headers["Expires"] = DateTime.UtcNow.AddDays(1).ToString("R"); 
+            //Response.Headers["Cache-Control"] = "public,max-age=86400"; 
+            //Response.Headers["Expires"] = DateTime.UtcNow.AddDays(1).ToString("R"); 
             return Ok(metadata);
         }
         [HttpPost("GetUsersByIds")]
@@ -34,15 +35,6 @@ namespace iChat.BackEnd.Controllers.UserControllers
             if (metadataList == null || metadataList.Count == 0)
                 return NotFound();
             return Ok(metadataList);
-        }
-        [HttpPost("UpdateUserName")]
-        public async Task<IActionResult> UpdateUserName([FromBody] UpdateNicknameRequest request)
-        {
-            if(ModelState.IsValid == false)
-                return BadRequest(ModelState);
-            var userId = new UserClaimHelper(User).GetUserIdStr();
-            var updatedMetadata = await _userMetadataService.UpdateUserName(userId, request.NewNickName);
-            return Ok(updatedMetadata);
         }
 
     }

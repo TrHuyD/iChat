@@ -100,7 +100,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             return new NewMessage
             {
                 message = chatMessage,
-                UserMetadataVersion = _userCacher.GetMetadataVersion(UserId).ToString()
+                UserMetadataVersion = _userCacher.GetMetadataVersion(UserId)
             };
         }
 
@@ -125,7 +125,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             var rt = new NewMessage
             {
                 message = chatMesssage,
-                UserMetadataVersion = _userCacher.GetMetadataVersion(request.SenderId).ToString()
+                UserMetadataVersion = _userCacher.GetMetadataVersion(request.SenderId)
             };
             await _cache.AddMessageToLatestBucketAsync(channelId, chatMesssage);
             return OperationResultT<NewMessage>.Ok(rt);

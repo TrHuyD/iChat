@@ -1,4 +1,5 @@
 ﻿using iChat.Client.Services.Auth;
+using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -15,11 +16,13 @@ namespace iChat.Client.Services.UserServices.Chat
 #endif
         private readonly ChatMessageCacheService _MessageCacheService;
         private readonly ChatNavigationService _chatNavigationService;
-        public ChatSignalRClientService(SignalRConnectionFactory connectionFactory,ChatMessageCacheService MessageCacheService, ChatNavigationService chatNavigationService)
+        private readonly UserMetadataService _userMetadata;
+        public ChatSignalRClientService(SignalRConnectionFactory connectionFactory,ChatMessageCacheService MessageCacheService, ChatNavigationService chatNavigationService, UserMetadataService userMetadata)
         {
             _MessageCacheService = MessageCacheService;
             _connectionFactory = connectionFactory;
             _chatNavigationService = chatNavigationService;
+            _userMetadata = userMetadata;
         }
 
         public async Task ConnectAsync()
@@ -54,6 +57,19 @@ namespace iChat.Client.Services.UserServices.Chat
                     Console.WriteLine($"Error handling delete message: {ex.Message}");
                 }
             });
+            _hubConnection.On<UserMetadata>("UpdateProfile", async rt =>
+            {
+                try
+                {
+                    HandleMetadataChange(rt);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error handling delete message: {ex.Message}");
+                }
+            });
+            _hubConnection.On<string>("LeaveServer",LeaveRoomAsync);
+            _hubConnection.On<string>("JoinNewServer", OnJoiningNewServer);
             _hubConnection.On<EditMessageRt>("MessageEdit",  HandleEditMessage);
             _hubConnection.Closed += async (error) =>
             {
@@ -121,5 +137,18 @@ namespace iChat.Client.Services.UserServices.Chat
         {
             _chatNavigationService.AddChannel(channel);
         }
+        public void HandleMetadataChange(UserMetadata userMetadata)
+        {
+            _userMetadata.SetUserProfile(userMetadata);
+        }
+        public void OnJoiningNewServer(string serverID)
+        {
+
+        }
+        public void OnLeavingServer(string serverId)
+        {
+
+        }
     }
+
 }

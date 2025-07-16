@@ -1,6 +1,7 @@
 ﻿using iChat.BackEnd.Services.Users;
 using iChat.BackEnd.Services.Users.Auth;
 using iChat.BackEnd.Services.Users.ChatServers;
+using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.Data.Entities.Users;
 using iChat.DTOs.Users;
@@ -40,23 +41,22 @@ namespace iChat.BackEnd.Controllers
         }
         [HttpGet("CompleteInfo")]
         [Authorize]
-        public async Task<IActionResult> GetCompleteInfo([FromServices] ServerListService serverListService, [FromServices] IMemoryCache _cache, [FromServices] MemCacheUserChatService metadatacache)
+        public async Task<IActionResult> GetCompleteInfo([FromServices] ServerListService serverListService, [FromServices] IMemoryCache _cache, [FromServices] MemCacheUserChatService metadatacache,
+            [FromServices] AppUserService metadataProvider)
         {
             var userId = new UserClaimHelper(User).GetUserId();
+            var userIdStr = new UserClaimHelper(User).GetUserIdStr();
+
             var cacheKey = $"complete_info:{userId}";
             if (!_cache.TryGetValue(cacheKey, out UserCompleteDto? package))
             {
-                var userProfile = await _userService.GetUserProfileAsync(userId.ToString());
+                // var userProfile = await _userService.GetUserProfileAsync(userId.ToString());
+                var metatdata =await metadataProvider.GetUserMetadataAsync(userIdStr);
                 var userServerList = await serverListService.GetServerList(userId);
-                metadatacache.SetOnlineUserData(userId.ToString(), userServerList.Select(t=>long.Parse(t.Id)).ToList(),
-                    new UserMetadata(                    
-                        userProfile.Id.ToString(),
-                         userProfile.Name,
-                        userProfile.AvatarUrl ?? $"https://cdn.discordapp.com/embed/avatars/0.png"
-                    ));
+                metadatacache.SetOnlineUserData(userId.ToString(), userServerList.Select(t=>long.Parse(t.Id)).ToList(),metatdata);
                 package = new UserCompleteDto
                 {
-                    UserProfile = userProfile,
+                    UserProfile = metatdata,
                     ChatServers = userServerList
                 };
                 _cache.Set(cacheKey, package, TimeSpan.FromSeconds(10));
