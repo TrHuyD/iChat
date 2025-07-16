@@ -50,6 +50,16 @@ public class JwtService
 
         return new TokenResponse( new JwtSecurityTokenHandler().WriteToken(token),expires.AddMinutes(-1));
     }
+    public void ExpireToken(HttpContext httpContext)
+    {
+        httpContext.Response.Cookies.Delete("access_token", new CookieOptions
+        {
+            Domain = _domainOptions.CookieDomain,
+            Path = "/",
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
+    }
     public void AssignToken(TokenResponse token, HttpContext httpContext)
     {
         var cookieOptions = new CookieOptions

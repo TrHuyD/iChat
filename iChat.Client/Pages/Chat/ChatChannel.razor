@@ -120,67 +120,79 @@
     <div class="sidebar">
         @if (_showSearchSidebar)
         {
-            <div class="search-sidebar scrollable">
-                <input type="text"
-                       class="search-input"
-                       @bind="_searchQuery"
-                       @bind:event="oninput"
-                       @onkeypress="HandleSearchKeyPress"
-                       placeholder="Search..." />
-                <div class="search-options">
-                    <h5>Search Options</h5>
+                    <div class="search-sidebar scrollable">
+                        <input type="text"
+                               class="search-input"
+                               @bind="_searchQuery"
+                               @bind:event="oninput"
+                               @onkeypress="HandleSearchKeyPress"
+                               placeholder="Search..." />
 
-@*                     <div class="option-row">
-                        <label>from:</label>
-                        <input type="text" @bind="_searchSenderId" />
-                    </div *@
-                    <div class="option-row">
-                        <label>before:</label>
-                        <input type="date" @bind="_searchBefore" />
-                    </div>
-                    <div class="option-row">
-                        <label>after:</label>
-                        <input type="date" @bind="_searchAfter" />
-                    </div>
-                    <div class="option-row">
-                        <label>in:</label>
-                        <select @bind="_searchChannelId">
-                            <option value="">All Channels</option>
-                            @foreach (var channel in _currentServer.Channels)
+                        <div class="search-options-compact">
+                            <div class="option-row-compact">
+                                <label for="before">Before:</label>
+                                <input type="date" id="before" @bind="_searchBefore" />
+                            </div>
+                            <div class="option-row-compact">
+                                <label for="after">After:</label>
+                                <input type="date" id="after" @bind="_searchAfter" />
+                            </div>
+                            <div class="option-row-compact">
+                                <label for="channel">In:</label>
+                                <select id="channel" @bind="_searchChannelId">
+                                    <option value="">All Channels</option>
+                                    @foreach (var channel in _currentServer.Channels)
+                                    {
+                                        <option value="@channel.Id">@channel.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        @if (true)
+                        {
+                            @if (_searchResults.Count == 0)
                             {
-                                <option value="@channel.Id">@channel.Name</option>
+                                <p><em>Press Enter to Search</em></p>
                             }
-                        </select>
+                            else
+                            {
+                                @foreach (var msg in _searchResults)
+                                {
+                                    var userMeta = _userMetadataService.GetUserByIdAsync(long.Parse(msg.SenderId));
+
+                                    <div class="message">
+                                        <img class="avatar" src="@userMeta.AvatarUrl" alt="avatar" />
+                                        <div>
+                                            <div class="chat-message-meta">
+                                                <span class="username">@userMeta.DisplayName</span>
+                                                <span class="timestamp">@msg.CreatedAt.LocalDateTime.ToString("g")</span>
+                                            </div>
+                                            <div class="message-content">@msg.Content</div>
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="pagination">
+                                    <button class="page-btn" @onclick="() => TriggerSearchAsync(_currentSearchPage - 1)" disabled="@(_currentSearchPage == 1)">Prev</button>
+
+                                    @for (int i = 1; i <= _totalSearchPages; i++)
+                                    {
+                                        <button class="page-btn @(i == _currentSearchPage ? "active" : "")"
+                                                @onclick="@(() => TriggerSearchAsync(i))">
+                                            @i
+                                        </button>
+                                    }
+
+                                    <button class="page-btn" @onclick="() => TriggerSearchAsync(_currentSearchPage + 1)" disabled="@(_currentSearchPage == _totalSearchPages)">Next</button>
+                                </div>
+                            }
+                        }
                     </div>
 
-                    <div class="option-row">
-                        <label>sort:</label>
-                        <select @bind="_sortBy">
-                            <option value="timestamp">timestamp</option>
-                            <option value="relevance">relevance</option>
-                        </select>
-                        <select @bind="_sortDescending">
-                            <option value="true">desc</option>
-                            <option value="false">asc</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="search-results">
-                    <ul>
-                        @if (_searchResults.Count == 0 && !string.IsNullOrWhiteSpace(_searchQuery))
-                        {
-                            <li><em>No results</em></li>
-                        }
-                        else
-                        {
-                            @foreach (var result in _searchResults)
-                            {
-                                <li>@result.Content</li>
-                            }
-                        }
-                    </ul>
-                </div>
-            </div>
+
+
+          
         }
 
         else

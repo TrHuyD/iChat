@@ -1,13 +1,20 @@
 ﻿using iChat.Client.DTOs.Chat;
-
+using iChat.Client.Services.Auth;
 using iChat.DTOs.Users.Messages;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 
 namespace iChat.Client.Layout
 {
     public partial class NavMenu
     {
+        private bool _editServerModalVisible = false;
+
+
+
+
         private bool _showServerMenu = false;
         private int _contextMenuX = 0;
         private int _contextMenuY = 0;
@@ -114,9 +121,43 @@ namespace iChat.Client.Layout
 
         }
         private Task OnSave() => Task.CompletedTask;
+        private async Task LogOut()
+        {
+            try
+            {
+#if DEBUG
+                await JS.InvokeVoidAsync("logout");
+#else
+            await _https.SendAuthAsync(new HttpRequestMessage(HttpMethod.Post, "/api/auth/refreshtoken/logout"));
+#endif
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            Navigation.NavigateTo("/login",forceLoad:true);
+        }
         private void OpenProfileModal()
         {
             profileChanger.ShowDefaultModal(OnSave);
         }
+        private Task OnEditModalClose()
+        {
+            _editServerModalVisible = false;
+            StateHasChanged();
+            return Task.CompletedTask;
+        }
+        private Task HandleServerUpdated((string? newName, IBrowserFile? newAvatar) result)
+        {
+            ToastService.ShowSuccess("Server profile updated!");
+            _editServerModalVisible = false;
+            return Task.CompletedTask;
+        }
+        private void ShowEditServerModal()
+        {
+            _showServerMenu = false;
+            _editServerModalVisible = true;
+        }
+
     }
 }

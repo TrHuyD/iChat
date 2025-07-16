@@ -15,31 +15,31 @@
 
     <div class="mb-3">
         <label for="name" class="form-label">Nick Name</label>
-        <InputText id="name" @bind-Value="register.Name" class="form-control" />
+        <InputText id="name" @bind-Value="register.Name" class="discord-input" />
         <ValidationMessage For="@(() => register.Name)" />
     </div>
 
     <div class="mb-3">
         <label for="username" class="form-label">Username</label>
-        <InputText id="username" @bind-Value="register.UserName" class="form-control" />
+        <InputText id="username" @bind-Value="register.UserName" class="discord-input" />
         <ValidationMessage For="@(() => register.UserName)" />
     </div>
 
     <div class="mb-3">
         <label for="email" class="form-label">Email</label>
-        <InputText id="email" @bind-Value="register.Email" class="form-control" />
+        <InputText id="email" @bind-Value="register.Email" class="discord-input" />
         <ValidationMessage For="@(() => register.Email)" />
     </div>
 
     <div class="mb-3">
         <label for="password" class="form-label">Password</label>
-        <InputText id="password" @bind-Value="register.Password" type="password" class="form-control" />
+        <InputText id="password" @bind-Value="register.Password" type="password" class="discord-input" />
         <ValidationMessage For="@(() => register.Password)" />
     </div>
 
     <div class="mb-3">
         <label for="confirmPassword" class="form-label">Confirm Password</label>
-        <InputText id="confirmPassword" @bind-Value="confirmPassword" type="password" class="form-control" />
+        <InputText id="confirmPassword" @bind-Value="confirmPassword" type="password" class="discord-input" />
         @if (!string.IsNullOrEmpty(passwordError))
         {
             <div class="text-danger">@passwordError</div>

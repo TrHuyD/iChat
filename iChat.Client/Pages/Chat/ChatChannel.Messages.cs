@@ -170,7 +170,7 @@ namespace iChat.Client.Pages.Chat
 
             foreach (var msg in messages.Values.OrderBy(m => m.Message.Id))
             {
-                UserMetadataReact user = await _userMetadataService.GetUserByIdAsync(msg.Message.SenderId);
+                UserMetadataReact user =  _userMetadataService.GetUserByIdAsync(msg.Message.SenderId);
                 if (current == null ||
                     current.UserId != msg.Message.SenderId ||
                     !current.CanAppend(msg.Message))
@@ -193,7 +193,7 @@ namespace iChat.Client.Pages.Chat
         private async Task TryAddNewMessageToGroupAsync(RenderedMessage message)
         {
             var userId = message.Message.SenderId;
-            var user = await _userMetadataService.GetUserByIdAsync(userId);
+            var user =  _userMetadataService.GetUserByIdAsync(userId);
             if (_groupedMessages.Count != 0)
             {
                 var group = _groupedMessages[^1];

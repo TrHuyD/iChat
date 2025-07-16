@@ -29,6 +29,17 @@ namespace iChat.BackEnd.Controllers
             var token = result.Value;
             return Ok(token);
         }
+        [HttpPost("refreshtoken/logout")]
+        public async Task<IActionResult> LogOut([FromServices] SqlKeyRotationService _service)
+        {
+            try
+            {
+                await _service.Logout(HttpContext);
+                return Ok();
+            }
+            catch(Exception ex)
+            { return BadRequest(ex.Message); }
+        }
         //  [ValidateAntiForgeryToken]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request, [FromServices] IRegisterService registerService)

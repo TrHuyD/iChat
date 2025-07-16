@@ -109,5 +109,21 @@ namespace iChat.BackEnd.Services.Users.Auth
             AssignRFTokenCookie(context, rf);
 
         }
+        private void RevokeAndExpireCookie(RefreshToken rf, HttpContext context)
+        {
+            Revoke(rf); 
+            ExpireRefreshToken(context); 
+        }
+        public void ExpireRefreshToken(HttpContext context)
+        {
+            context.Response.Cookies.Delete("refreshToken", new CookieOptions
+            {
+                Domain = DomainOptions.CookieDomain,
+                Path = UrlPath.RefreshTokenApi,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                HttpOnly = true
+            });
+        }
     }
 }

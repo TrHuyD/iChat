@@ -17,13 +17,13 @@
 
     <div class="mb-3">
         <label for="username" class="form-label">Username</label>
-        <InputText id="username" @bind-Value="login.Username" class="form-control" />
+            <InputText id="username" @bind-Value="login.Username" class="discord-input" />
         <ValidationMessage For="@(() => login.Username)" />
     </div>
 
     <div class="mb-3">
         <label for="password" class="form-label">Password</label>
-        <InputText id="password" @bind-Value="login.Password" type="password" class="form-control" />
+            <InputText id="password" @bind-Value="login.Password" type="password" class="discord-input" />
         <ValidationMessage For="@(() => login.Password)" />
     </div>
 

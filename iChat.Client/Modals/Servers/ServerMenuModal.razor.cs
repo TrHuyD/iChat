@@ -8,6 +8,7 @@ namespace iChat.Client.Modals.Servers
 {
     public partial class ServerMenuModal
     {
+        [Parameter] public EventCallback OnEditServer { get; set; }
         [Parameter] public bool IsVisible { get; set; }
         [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
         [Parameter] public ChatServerDtoUser? Server { get; set; }
@@ -73,6 +74,14 @@ namespace iChat.Client.Modals.Servers
             {
                 _inviteLink = await InviteService.CreateInvite(Server.Id);
                 StateHasChanged();
+            }
+        }
+
+        private async Task TriggerEditServer()
+        {
+            if (OnEditServer.HasDelegate)
+            {
+                await OnEditServer.InvokeAsync();
             }
         }
 

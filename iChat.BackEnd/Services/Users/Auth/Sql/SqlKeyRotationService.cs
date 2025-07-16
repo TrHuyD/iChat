@@ -26,7 +26,7 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
         public async Task<OperationResultT<TokenResponse>> RefreshCred(HttpContext _context)
         {
             var token = _context.Request.Cookies["refreshToken"];
-            if (string.IsNullOrEmpty(token))
+                if (string.IsNullOrEmpty(token))
                 return OperationResultT<TokenResponse>.Fail("401", "Invalid credential, refreshtoken is missing");
             var refreshToken = await _dbContext.RefreshTokens
                 .Include(r => r.User)
@@ -41,6 +41,23 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
 
             return OperationResultT<TokenResponse>.Ok(accesstoken);
 
+        }
+        public async Task Logout(HttpContext _context)
+        {
+            var token = _context.Request.Cookies["refreshToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                _accessKeyService.ExpireToken(_context);
+                _refreshTokenService.ExpireRefreshToken(_context);
+
+            }
+            else
+            {
+                var refreshToken = await _dbContext.RefreshTokens
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Token == token);
+                _refreshTokenService.ExpireRefreshToken(_context);
+            }
         }
     }
 }

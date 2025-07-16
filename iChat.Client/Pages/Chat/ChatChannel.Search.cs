@@ -19,6 +19,8 @@ namespace iChat.Client.Pages.Chat
         private DateTime? _searchAfter=null;
         private string _sortBy = "timestamp";
         private bool _sortDescending = true;
+        private int _currentSearchPage = 1;
+        private int _totalSearchPages = 1;
         private partial class SavedStateServer
         {
             public bool _showSearchSidebar=false;
@@ -30,7 +32,8 @@ namespace iChat.Client.Pages.Chat
             public string _sortBy = "timestamp";
             public bool _sortDescending = true;
             public IList<ChatMessageDtoSafeSearchExtended> _searchResults = new List<ChatMessageDtoSafeSearchExtended>();
-
+            public int _currentSearchPage = 1;
+            public int _totalSearchPages = 1;
         }
         private void SaveSearchState(SavedStateServer state)
         {
@@ -43,6 +46,8 @@ namespace iChat.Client.Pages.Chat
             state._sortBy = _sortBy;
             state._sortDescending = _sortDescending;
             state._searchResults = _searchResults;
+            state._currentSearchPage= _currentSearchPage;
+            state._totalSearchPages= _totalSearchPages;
         }
         private void LoadSearchState(SavedStateServer state)
         {
@@ -55,7 +60,8 @@ namespace iChat.Client.Pages.Chat
             _sortBy = state._sortBy;
             _sortDescending = state._sortDescending;
             _searchResults = state._searchResults;
-
+            _totalSearchPages = state._totalSearchPages;
+            _currentSearchPage = state._currentSearchPage;
 
         }
         private void ToggleSearchSidebar()
@@ -65,8 +71,9 @@ namespace iChat.Client.Pages.Chat
             _searchQuery = string.Empty;
             _searchResults.Clear();
         }
-        private async Task TriggerSearchAsync()
+        private async Task TriggerSearchAsync(int page = 1)
         {
+            _currentSearchPage = page;
             _searchCts.Cancel();
             _searchCts = new CancellationTokenSource();
 
@@ -76,14 +83,14 @@ namespace iChat.Client.Pages.Chat
                 _searchResults.Clear();
                 return;
             }
+
             try
             {
                 var uri = $"/api/search/messages?" +
                           $"serverId={ServerId}" +
                           $"&channelId={_searchChannelId}" +
                           $"&queryText={Uri.EscapeDataString(query)}" +
-                          $"&page=1&pageSize=20" +
-                       //   $"&senderId={Uri.EscapeDataString(_searchSenderId ?? "")}" +
+                          $"&page={_currentSearchPage}&pageSize=20" +
                           $"&sortBy={_sortBy}" +
                           $"&sortDescending={_sortDescending}" +
                           (_searchBefore.HasValue ? $"&toDate={_searchBefore:O}" : "") +
@@ -91,19 +98,19 @@ namespace iChat.Client.Pages.Chat
                 using var request = new HttpRequestMessage(HttpMethod.Get, uri);
                 using var response = await _https.SendAuthAsync(request);
 
-                if (!response.IsSuccessStatusCode)
-                    return;
+                if (!response.IsSuccessStatusCode) return;
 
                 var paged = await response.Content.ReadFromJsonAsync<PaginatedResult<ChatMessageDtoSafeSearchExtended>>();
                 if (paged?.Items != null)
+                {
                     _searchResults = paged.Items;
+                    _totalSearchPages = paged.TotalPages;
+                }
             }
             catch (TaskCanceledException) { }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Search error: {ex.Message}");
-            }
         }
+
+
 
 
         private async Task HandleSearchKeyPress(KeyboardEventArgs e)

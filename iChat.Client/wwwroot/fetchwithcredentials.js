@@ -9,3 +9,19 @@
         };
     });
 };
+window.logout = async function () {
+    const response = await window.fetchwithcredentials("https://localhost:6051/api/Auth/refreshtoken/logout", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (response.ok) {
+        console.log(" Logged out successfully");
+    } else {
+        console.error(` Logout failed with status ${response.status}`, response);
+    }
+
+    return response;
+};

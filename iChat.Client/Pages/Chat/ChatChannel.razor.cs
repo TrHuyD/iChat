@@ -76,59 +76,57 @@ namespace iChat.Client.Pages.Chat
 
         protected override async Task OnParametersSetAsync()
         {
-            if (Init_failed)
-                return;
+            if (Init_failed) return;
+
             if (_currentRoomId != ChannelId)
             {
-                RoomIdL= long.Parse(ChannelId);
+                RoomIdL = long.Parse(ChannelId);
                 ServerIdL = long.Parse(ServerId);
+
+                // Save old state before changes
                 SaveState();
+
                 if (!string.IsNullOrEmpty(_currentRoomId))
-                    await ChatService.LeaveRoomAsync(_currentRoomId);
-                if(!string.IsNullOrEmpty(_currentServerId)|| _currentServerId != ServerId)
                 {
-                    _currentServerId = ServerId;
-                    _currentServer = _ServerCacheManager.GetServer(_currentServerId);
-                  await  _ServerCacheManager.OnServerChange(ServerId);
+                    await ChatService.LeaveRoomAsync(_currentRoomId);
                 }
-                await _ServerCacheManager.OnChannelChange(ChannelId);
-                _currentChannel =_currentServer.Channels.FirstOrDefault(c => c.Id == ChannelId);
+
+                // Store previous serverId for comparison
+                var previousServerId = _currentServerId;
+                var isNewServer = _currentServerId != ServerId;
+
+                // Update to new server
+                _currentServerId = ServerId;
                 _currentRoomId = ChannelId;
-                LoadState();
+
+                // Load server and channel
+                _currentServer = _ServerCacheManager.GetServer(_currentServerId);
+                await _ServerCacheManager.OnServerChange(ServerId);
+                await _ServerCacheManager.OnChannelChange(ChannelId);
+                _currentChannel = _currentServer.Channels.FirstOrDefault(c => c.Id == ChannelId);
+
+                // Load state AFTER setting current IDs
+                LoadState(isNewServer);
                 checkScrollToBotoom = false;
+
                 var (latest, loc) = await MessageManager.GetLatestMessage(ChannelId);
                 _messages.Clear();
+                _groupedMessages.Clear();
+
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
                 MessageManager.RegisterOnMessageEdited(HandleEditMessage);
                 MessageManager.RegisterOnMessageDeleted(HandleDeleteMessage);
-                Console.WriteLine("Registered message handler for ChatService.");
-                _groupedMessages.Clear();
+
                 foreach (var bucket in latest)
                     await AddMessagesForward(bucket);
+
                 _currentBucketIndex = latest[0].BucketId;
                 await ChatService.JoinRoomAsync(ServerId);
                 StateHasChanged();
-                checkScrollToBotoom = checkScrollToTop = _isOldHistoryRequestButtonDisabled = checkScrollToTop = _currentBucketIndex == 0;
 
+                checkScrollToBotoom = checkScrollToTop = _isOldHistoryRequestButtonDisabled = _currentBucketIndex == 0;
 
-                ///Typing
-                _typingTimer = new System.Timers.Timer(1000);
-                _typingTimer.Elapsed += (_, _) =>
-                {
-                    var now = DateTime.UtcNow;
-                    var expired = _typingUsers
-                        .Where(x => (now - x.Value).TotalSeconds > 3)
-                        .Select(x => x.Key)
-                        .ToList();
-
-                    foreach (var uid in expired)
-                        _typingUsers.Remove(uid);
-
-                    InvokeAsync(StateHasChanged);
-                };
-                _typingTimer.Start();
-                //ChatService.TypingReceived += HandleTyping;
-
+              //  StartTypingTimer();
 
                 await Task.Delay(125);
                 await ScrollToMessage(loc.ToString());

@@ -27,16 +27,16 @@ namespace iChat.Client.Services.UserServices.Chat
             _timer.Elapsed += async (_, _) => await ProcessQueueAsync();
             _timer.Start();
         }
-        public Task<UserMetadataReact> GetUserByIdAsync(long userId)
+        public UserMetadataReact GetUserByIdAsync(long userId)
         {
             if (_cache.TryGetValue(userId, out var cached))
-                return Task.FromResult(cached);
+                return cached;
 
             var placeholder = new UserMetadataReact(userId, $"{userId}", "https://cdn.discordapp.com/embed/avatars/1.png",0);
             _cache[userId] = placeholder;
 
             QueueUserIdForUpdate(userId);
-            return Task.FromResult(placeholder);
+            return placeholder;
         }
         public void SyncMetadataVersion(long userId,long  version)
         {

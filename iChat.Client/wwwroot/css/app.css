@@ -73,7 +73,7 @@ form input.form-control {
     border-radius: 4px;
     font-size: 14px;
     box-sizing: border-box;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, color 0.2s ease;
 }
 
     .discord-input:focus,
@@ -83,6 +83,23 @@ form input.form-control {
         outline: none;
         color: #ffffff;
     }
+
+    /* Autofill fix for Chrome (password/text inputs) */
+    .discord-input:-webkit-autofill,
+    form input.form-control:-webkit-autofill {
+        -webkit-box-shadow: 0 0 0px 1000px #1e1f22 inset !important;
+        box-shadow: 0 0 0px 1000px #1e1f22 inset !important;
+        -webkit-text-fill-color: #ffffff !important;
+        caret-color: #ffffff !important;
+        border-color: #5865f2 !important;
+        transition: background-color 9999s ease-in-out 0s;
+    }
+
+
+input[type="password"]:-webkit-autofill {
+    -webkit-text-fill-color: #ffffff !important;
+}
+
 
 /* === Buttons === */
 .discord-button,
