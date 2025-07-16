@@ -72,53 +72,47 @@ jobs:
             
             echo "🛑 Stopping backend service..."
             sudo systemctl stop $BACKEND_SERVICE_NAME || true
-            
+
             echo "📦 Extracting backend..."
-            sudo rm -rf "$BACKEND_REMOTE_PATH" "$BACKEND_TEMP_UNZIP"
             sudo mkdir -p "$BACKEND_TEMP_UNZIP"
-            sudo unzip -q ~/backend-static.zip -d "$BACKEND_TEMP_UNZIP"
+            sudo unzip -o -q ~/backend-static.zip -d "$BACKEND_TEMP_UNZIP"
             sudo rm ~/backend-static.zip
-            
-            echo "Contents of backend-temp:"
-            ls -la "$BACKEND_TEMP_UNZIP"
-            
-            sudo mkdir -p "$BACKEND_REMOTE_PATH"
+
             if [ -d "$BACKEND_TEMP_UNZIP/backend-publish" ]; then
-              sudo mv "$BACKEND_TEMP_UNZIP/backend-publish/"* "$BACKEND_REMOTE_PATH"
+              echo "🔁 Copying backend-publish to live backend path..."
+              sudo mkdir -p "$BACKEND_REMOTE_PATH"
+              sudo cp -r "$BACKEND_TEMP_UNZIP/backend-publish/"* "$BACKEND_REMOTE_PATH/"
             else
-              echo "⚠️ backend-publish directory not found!"
-              sudo mv "$BACKEND_TEMP_UNZIP/"* "$BACKEND_REMOTE_PATH"
+              echo "⚠️ backend-publish directory not found! Copying fallback..."
+              sudo cp -r "$BACKEND_TEMP_UNZIP/"* "$BACKEND_REMOTE_PATH/"
             fi
             sudo rm -rf "$BACKEND_TEMP_UNZIP"
-            
-            echo "🔐 Creating appsettings.secrets.json..."
+
+            echo "🔐 Writing appsettings.secrets.json..."
             sudo tee "$BACKEND_REMOTE_PATH/appsettings.secrets.json" > /dev/null <<EOF
             ${{ secrets.APPSETTINGS_SECRETS_JSON }}
             EOF
-            
+
             echo "🌐 Extracting client..."
-            sudo rm -rf "$CLIENT_REMOTE_PATH" "$CLIENT_TEMP_UNZIP"
             sudo mkdir -p "$CLIENT_TEMP_UNZIP"
-            sudo unzip -q ~/client-static.zip -d "$CLIENT_TEMP_UNZIP"
+            sudo unzip -o -q ~/client-static.zip -d "$CLIENT_TEMP_UNZIP"
             sudo rm ~/client-static.zip
-            
-            echo "Contents of client-temp:"
-            ls -la "$CLIENT_TEMP_UNZIP"
-            
-            sudo mkdir -p "$CLIENT_REMOTE_PATH"
+
             if [ -d "$CLIENT_TEMP_UNZIP/client-publish/wwwroot" ]; then
-              sudo mv "$CLIENT_TEMP_UNZIP/client-publish/wwwroot/"* "$CLIENT_REMOTE_PATH"
+              echo "🔁 Copying wwwroot to live client path..."
+              sudo mkdir -p "$CLIENT_REMOTE_PATH"
+              sudo cp -r "$CLIENT_TEMP_UNZIP/client-publish/wwwroot/"* "$CLIENT_REMOTE_PATH/"
             else
-              echo "⚠️ client-publish/wwwroot not found!"
-              sudo mv "$CLIENT_TEMP_UNZIP/"* "$CLIENT_REMOTE_PATH"
+              echo "⚠️ client-publish/wwwroot not found! Copying fallback..."
+              sudo cp -r "$CLIENT_TEMP_UNZIP/"* "$CLIENT_REMOTE_PATH/"
             fi
             sudo rm -rf "$CLIENT_TEMP_UNZIP"
-            
+
             echo "👷 Fixing ownership..."
             sudo chown -R ubuntu:ubuntu "$BACKEND_REMOTE_PATH"
             sudo chown -R ubuntu:ubuntu "$CLIENT_REMOTE_PATH"
-            
+
             echo "🚀 Restarting backend service..."
             sudo systemctl start $BACKEND_SERVICE_NAME
-            
+
             echo "✅ Deployment complete!"

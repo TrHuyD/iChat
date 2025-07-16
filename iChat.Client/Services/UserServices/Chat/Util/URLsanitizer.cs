@@ -14,7 +14,7 @@
 #if DEBUG
                 url = "https://localhost:6051" + url;
 #else
-                                        _avatarUrl = "https://ichat.dedyn.io" +_avatarUrl;
+                                        url = "https://ichat.dedyn.io" +url;
 #endif
             }
             return url;
