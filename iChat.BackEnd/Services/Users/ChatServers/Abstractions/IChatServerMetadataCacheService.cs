@@ -1,4 +1,5 @@
-﻿using iChat.DTOs.Users.Messages;
+﻿using iChat.DTOs.Users;
+using iChat.DTOs.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
 {
@@ -8,7 +9,6 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
         void UploadServerAsync(ChatServerMetadata server);
         void AddChannelAsync(ChatChannelDto server);
         Task<ChatServerMetadata?> GetServerAsync(string serverId, bool includeChannels = true);
-
         Task<long?> GetUserPermissionAsync(long userId, long serverId, long channelId);
         Task<bool> SetUserPermissionAsync(long userId, long serverId, long channelId, long perm);
         Task<bool> IsAdmin(long serverId, long userId);
@@ -16,5 +16,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
         Task IsInServerWithCorrectStruct(long userId, long serverId, long channelId);
         Task<Dictionary<long, long>> GetAllUserPermsInServerAsync(long userId, long serverId);
         Task<Dictionary<long, long>> GetAllUserPermsInChannelAsync(long serverId, long channelId);
+        Task SetUserOnline(List<long> serverList, UserMetadata metadata, long userId = -1);
+
     }
 }

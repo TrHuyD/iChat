@@ -2,11 +2,15 @@
 {
     public interface IUserPresenceCacheService
     {
-        public void SetUserOnline(string userId, IEnumerable<long> serverIds);
-
-        public List<string> GetOnlineUsersPaged(long serverId, int page = 0, int pageSize = 50);
-        public void SetUserOffline(string userId, IEnumerable<long> serverIds);
-        public void RemoveUserFromServer(string userId, long serverId);
-
+        Task AddUserToServerAsync(long userId, long serverId);
+        Task RemoveUserFromServerAsync(long userId, long serverId);
+        Task SetUserOnlineAsync(long userId, long serverId);
+        Task SetUserOfflineAsync(long userId, long serverId);
+        Task<List<long>> GetOnlineUsersAsync(long serverId);
+        Task<List<long>> GetOfflineUsersAsync(long serverId);
+        Task<List<long>> GetSortedUserListAsync(long serverId);
+        bool IsUserInServer(long userId, long serverId);
+        bool IsUserOnlineInServer(long userId, long serverId);
     }
+
 }

@@ -86,7 +86,7 @@
     protected override void OnInitialized()
     {
         PreviewName = OriginalName;
-        AvatarPreviewUrl = OriginalAvatarUrl ?? "/images/default-server.png";
+        AvatarPreviewUrl = OriginalAvatarUrl ;
     }
 
     private bool CanSave =>
@@ -120,7 +120,7 @@
         SelectedAvatarFile = file;
     }
 
-    private string GetPreviewAvatarUrl() => AvatarPreviewUrl ?? "/images/default-server.png";
+    private string GetPreviewAvatarUrl() => AvatarPreviewUrl;
 
     private async Task Save()
     {

@@ -10,5 +10,6 @@
         Task UnbanUser(long userId, long serverId, long adminUserId);
         Task TaskDeleteChatServerAsync(long serverId, long adminUserId);
         Task UpdateChatServerNameAsync(long serverId, string newName, long adminUserId);
+        Task UpdateChatServerProfileAsync(long serverId, string newName, string url, long adminUserId);
     }
 }

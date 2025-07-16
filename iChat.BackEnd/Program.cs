@@ -142,7 +142,7 @@ builder.Services.AddScoped<CreateUserService>();
 builder.Services.AddTransient<IUserService, EfcoreUserService>();
 builder.Services.AddScoped<IPublicUserService, PublicUserService>();
 builder.Services.AddScoped<IMessageLastSeenService, RedisMessageLastSeenService>();
-builder.Services.AddScoped<IUserPresenceCacheService, MemCacheUserPresence>();
+builder.Services.AddScoped<IUserPresenceCacheService, UserPresenceCacheService>();
 builder.Services.AddScoped<IChatServerDbService, EfCoreChatServerService>();
 builder.Services.AddScoped<RedisCSInviteLinkService>();
 builder.Services.AddScoped<AppUserService>();

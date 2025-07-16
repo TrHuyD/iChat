@@ -1,14 +1,20 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.DTOs.Users.Messages;
 using Microsoft.Extensions.Caching.Memory;
-using System.Threading.Channels;
+using System.Collections.Concurrent;
+using iChat.BackEnd.Collections;
+using iChat.DTOs.Users;
 
 namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 {
     public class MemCacheChatServerMetadataService : IChatServerMetadataCacheService
     {
         private readonly IMemoryCache _cache;
-        private MemCacheUserChatService _userChatService ;
+        private readonly MemCacheUserChatService _userChatService;
+
+        private readonly Dictionary<long, ThreadSafeIndexedUserCollection> _serverOfflineUserMap = new();
+        private readonly Dictionary<long, ThreadSafeIndexedUserCollection> _serverOnlineUserMap = new();
+
         public MemCacheChatServerMetadataService(IMemoryCache cache, MemCacheUserChatService userChatService)
         {
             _cache = cache;
@@ -24,47 +30,45 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
                 if (server.Channels.Any())
                 {
-                    var channelMap = new Dictionary<string, ChatChannelDtoLite>();
-                    foreach (var channel in server.Channels)
-                    {
-                        channelMap[channel.Id] = channel;
-                    }
+                    var channelMap = server.Channels.ToDictionary(c => c.Id);
                     _cache.Set(GetChannelKey(server.Id), channelMap);
                 }
             }
 
             return Task.FromResult(true);
         }
+
         public void UploadServerAsync(ChatServerMetadata server)
         {
             var serverKey = GetServerKey(server.Id);
             _cache.Set(serverKey, server);
+
             if (server.Channels.Any())
             {
-                var channelMap = new Dictionary<string, ChatChannelDtoLite>();
-                foreach (var channel in server.Channels)
-                {
-                    channelMap[channel.Id] = channel;
-                }
+                var channelMap = server.Channels.ToDictionary(c => c.Id);
                 _cache.Set(GetChannelKey(server.Id), channelMap);
             }
-           
         }
-        public Task<bool> IsAdmin(long serverId,long userId)
+
+        public Task<bool> IsAdmin(long serverId, long userId)
         {
             if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
                 throw new KeyNotFoundException($"Server {serverId} not found in cache.");
             return Task.FromResult(server.AdminId == userId.ToString());
         }
-        public Task<bool> IsAdmin(long ServerId,long ChannelId,long UserId)
+
+        public Task<bool> IsAdmin(long serverId, long channelId, long userId)
         {
-            if (!_cache.TryGetValue(GetServerKey(ServerId), out ChatServerMetadata? server))
-                throw new KeyNotFoundException($"Server {ServerId} not found in cache.");
-            var channel = ChannelId.ToString();
-            if (!_userChatService.IsUserInServer(UserId.ToString(), ServerId))
-                throw new KeyNotFoundException($"Member {UserId} not in {ServerId}");
-            return Task.FromResult(server.AdminId == UserId.ToString()&&server.Channels.Any(c=>c.Id==channel));
+            if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
+                throw new KeyNotFoundException($"Server {serverId} not found in cache.");
+
+            var channel = channelId.ToString();
+            if (!_userChatService.IsUserInServer(userId.ToString(), serverId))
+                throw new KeyNotFoundException($"Member {userId} not in {serverId}");
+
+            return Task.FromResult(server.AdminId == userId.ToString() && server.Channels.Any(c => c.Id == channel));
         }
+
         public Task<ChatServerMetadata?> GetServerAsync(string serverId, bool includeChannels = true)
         {
             if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
@@ -103,17 +107,13 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
         public Task<Dictionary<long, long>> GetAllUserPermsInServerAsync(long userId, long serverId)
         {
-            var perms = GetOrCreateUserPerms(userId, serverId);
-            return Task.FromResult(perms);
+            return Task.FromResult(GetOrCreateUserPerms(userId, serverId));
         }
 
         public Task<Dictionary<long, long>> GetAllUserPermsInChannelAsync(long serverId, long channelId)
         {
-            var perms = GetOrCreateChannelPerms(serverId, channelId);
-            return Task.FromResult(perms);
+            return Task.FromResult(GetOrCreateChannelPerms(serverId, channelId));
         }
-
-        // Helpers
 
         private Dictionary<long, long> GetOrCreateUserPerms(long userId, long serverId)
         {
@@ -129,19 +129,19 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
         private string GetServerKey(long serverId) => $"server:{serverId}:meta";
         private string GetServerKey(string serverId) => $"server:{serverId}:meta";
-        private string GetChannelKey(long serverId) => $"server:{serverId}:channels";
-    private string GetChannelKey(string serverId) => $"server:{serverId}:channels";
+        private string GetChannelKey(string serverId) => $"server:{serverId}:channels";
 
         public async Task IsInServerWithCorrectStruct(long userId, long serverId, long channelId)
         {
             if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
                 throw new KeyNotFoundException($"Server {serverId} not found in cache.");
+
             var channel = channelId.ToString();
             if (!server.Channels.Any(c => c.Id == channel))
                 throw new KeyNotFoundException($"Channel {channel} not found in server {serverId}.");
+
             if (!_userChatService.IsUserInServer(userId.ToString(), serverId))
                 throw new KeyNotFoundException($"Member {userId} not in {serverId}");
-
         }
 
         public void AddChannelAsync(ChatChannelDto channel)
@@ -149,7 +149,53 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             var serverId = channel.ServerId;
             if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
                 throw new KeyNotFoundException($"Server {serverId} not found in cache.");
+
             server.Channels.Add(channel);
+        }
+
+        public void SetOnlineStatusForUserAcrossServers(long userId, List<long> serverIds)
+        {
+            foreach (var serverId in serverIds)
+            {
+                if (!_serverOnlineUserMap.TryGetValue(serverId, out var set))
+                    _serverOnlineUserMap[serverId] = set = new ThreadSafeIndexedUserCollection();
+
+                set.AddUser(userId);
+            }
+        }
+
+
+        public List<long> GetOnlineUsersAsync(long serverId,int lim=50)
+        {
+            if(_serverOnlineUserMap.TryGetValue(serverId,out  var index))
+            {
+                return index.GetUserPage(0, lim);
+            }
+            throw new Exception($"Error while loading online user :Server havent loaded {serverId}");
+        }
+
+        public List<long> GetOfflineUsersAsync(long serverId, int lim = 50)
+        {
+            if (_serverOfflineUserMap.TryGetValue(serverId, out var index))
+            {
+                return index.GetUserPage(0, lim);
+            }
+            throw new Exception($"Error while loading offline user: Server havent loaded {serverId}");
+        }
+
+        public void SetAllUsers(long serverId, List<long> users)
+        {
+            if (!_serverOfflineUserMap.TryGetValue(serverId, out var set))
+                _serverOfflineUserMap[serverId] = set = new ThreadSafeIndexedUserCollection();
+            else
+                set.Clear();
+
+            set.AddRange(users);
+        }
+
+        public Task SetUserOnline(List<long> serverList, UserMetadata metadata, long userId = -1)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -53,7 +53,7 @@ namespace iChat.BackEnd.Controllers
                 // var userProfile = await _userService.GetUserProfileAsync(userId.ToString());
                 var metatdata =await metadataProvider.GetUserMetadataAsync(userIdStr);
                 var userServerList = await serverListService.GetServerList(userId);
-                metadatacache.SetOnlineUserData(userId.ToString(), userServerList.Select(t=>long.Parse(t.Id)).ToList(),metatdata);
+                metadatacache.SetOnlineUserData( userServerList.Select(t=>long.Parse(t.Id)).ToList(),metatdata);
                 package = new UserCompleteDto
                 {
                     UserProfile = metatdata,

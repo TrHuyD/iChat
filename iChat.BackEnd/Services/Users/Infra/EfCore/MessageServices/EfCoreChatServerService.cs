@@ -121,17 +121,38 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             server.Name = newName;
             await _db.SaveChangesAsync();
         }
-
+        
         public async Task TaskDeleteChatServerAsync(long serverId, long adminUserId)
         {
             var server = await _db.ChatServers
-                .FirstOrDefaultAsync(cs => cs.Id == serverId && cs.AdminId == adminUserId);
-
-            if (server == null)
+                .FirstOrDefaultAsync(cs => cs.Id == serverId);
+           
+            if (server == null||server.AdminId!=adminUserId)
                 throw new UnauthorizedAccessException("You do not have permission to delete this server.");
 
             _db.ChatServers.Remove(server);
             await _db.SaveChangesAsync();
         }
+
+        public async Task UpdateChatServerProfileAsync(long serverId, string newName, string url, long adminUserId)
+        {
+            try
+            {
+                var server = await _db.ChatServers
+                    .FirstOrDefaultAsync(cs => cs.Id == serverId);
+                if (server == null)
+                    throw new UnauthorizedAccessException("Server not found in server.");
+                if (server.AdminId != adminUserId)
+                    throw new UnauthorizedAccessException("You do not have permission to edit this server.");
+                server.Avatar = url;
+                server.Name = newName;
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new UnauthorizedAccessException($"An error has occured {ex.Message}");
+
+            }
+            }
     }
 }

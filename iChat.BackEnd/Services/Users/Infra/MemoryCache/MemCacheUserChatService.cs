@@ -89,13 +89,16 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
         /// <summary>
         /// Use when user comes online - cache both server list and metadata together
+       /// Return false if user already setted to online
         /// </summary>
-        public void SetOnlineUserData(string userId, List<long> serverList, UserMetadata metadata)
+       
+        public bool SetOnlineUserData(List<long> serverList, UserMetadata metadata)
         {
+            var userId = metadata.UserId;
+            if (IsUserOnline(userId))
+                return false;
             var key = CombinedKey(userId);
             var serverSet = GetOrCreateHashSet();
-
-            // Populate the HashSet efficiently
             foreach (var serverId in serverList)
             {
                 serverSet.Add(serverId);
@@ -112,6 +115,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
             // Remove metadata-only cache since we have combined data now
             _localCache.Remove(MetadataOnlyKey(userId));
+            return true;
         }
 
         /// <summary>
@@ -209,7 +213,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         /// </summary>
         public void SetOfflineUserMetadata(string userId, UserMetadata metadata)
         {
-            // Only set if we don't have combined data
             if (!_localCache.TryGetValue(CombinedKey(userId), out _))
             {
                 var key = MetadataOnlyKey(userId);
@@ -394,7 +397,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         {
             if (serverList != null && metadata != null)
             {
-                SetOnlineUserData(userId, serverList, metadata);
+                SetOnlineUserData(serverList, metadata);
             }
             else if (metadata != null)
             {

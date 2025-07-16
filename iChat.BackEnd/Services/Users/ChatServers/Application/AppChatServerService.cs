@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
+using iChat.DTOs.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.ChatServers.Application
 {
@@ -16,6 +17,10 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
         {
             await _dbService.Join(userId, serverId);
             _localMem.AddServerToUser(userId, serverId);
+        }
+        public async Task<ChatServerMetadata> EditServerName(long userId, long serverId)
+        {
+            throw new NotImplementedException();
         }
 
     }
