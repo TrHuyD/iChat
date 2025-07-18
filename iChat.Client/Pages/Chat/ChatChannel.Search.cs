@@ -67,7 +67,7 @@ namespace iChat.Client.Pages.Chat
         private void ToggleSearchSidebar()
         {
             _showSearchSidebar = !_showSearchSidebar;
-            _searchChannelId = _currentRoomId;
+            _searchChannelId = _currentChannelId;
             _searchQuery = string.Empty;
             _searchResults.Clear();
         }

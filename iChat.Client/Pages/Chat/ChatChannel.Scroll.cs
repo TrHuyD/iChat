@@ -39,7 +39,7 @@ namespace iChat.Client.Pages.Chat
                     {
                         Console.WriteLine("Scroll is at the bottom.");
                         checkScrollToBotoom = true;
-                        MessageManager.UpdateLastSeen(_currentRoomId);
+                        MessageManager.UpdateLastSeen(_currentChannelId);
                     }
                 }
                 // Top check: for triggering historical message load

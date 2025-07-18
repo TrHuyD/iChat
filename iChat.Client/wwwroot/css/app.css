@@ -557,3 +557,6 @@ form + p, p.mt-3 {
             stroke-dashoffset: -10;
             animation: spinner-dash 1.5s ease-in-out infinite, spinner-rotate 2s linear infinite;
         }
+.hidden {
+    display: none;
+}

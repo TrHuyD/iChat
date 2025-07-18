@@ -21,7 +21,7 @@ namespace iChat.DTOs.Users.Enum
         //onlinelist
         public static string NewUserOnline = "ol_NewUserOnline";
         public static string NewUserOffline = "ol_NewUserOffline";
-        
+        public static string UserList = "ol_list";
         //Personal
         public static string JoinNewServer = "p_JoinNewServer";
         public static string LeaverServer = "p_LeaverServer";

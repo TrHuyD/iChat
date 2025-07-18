@@ -8,7 +8,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         public async Task Typing()
         {
             var userId = new UserClaimHelper(Context.User).GetUserId();
-            var channelId = _connectionChannelTracker.GetChannelForConnection(Context.ConnectionId);
+            var channelId = _connectionTracker.GetChannelForConnection(Context.ConnectionId);
             Console.WriteLine($"{userId} is typing");
             if (channelId != null)
             {

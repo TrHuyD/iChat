@@ -6,6 +6,7 @@ using iChat.BackEnd.Collections;
 using iChat.DTOs.Users;
 using iChat.BackEnd.Models.ChatServer;
 using iChat.DTOs.Shared;
+using iChat.DTOs.Collections;
 
 
 namespace iChat.BackEnd.Services.Users.Infra.MemoryCache

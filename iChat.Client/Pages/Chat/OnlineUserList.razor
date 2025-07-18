@@ -1,14 +1,58 @@
-﻿
-@code {
-   public IEnumerable<string> Users { get; set; } = Enumerable.Empty<string>();
-}
-
-<div class="online-list">
-    <h4>Online Users</h4>
+﻿<div class="online-list">
+    <h4>Users</h4>
     <ul>
-        @foreach (var user in Users)
+        @foreach (var user in OnlineUsers)
         {
-            <li>@user</li>
+            <li class="online">@user</li>
+        }
+        @foreach (var user in OfflineUsers)
+        {
+            <li class="offline">@user</li>
         }
     </ul>
 </div>
+
+@code {
+    private List<long> OnlineUsers { get; set; } = new();
+    private List<long> OfflineUsers { get; set; } = new();
+
+    private readonly object _lock = new();
+    public void LoadUsers(IEnumerable<long> onlineUsers, IEnumerable<long> offlineUsers)
+    {
+        lock (_lock)
+        {
+            OnlineUsers = onlineUsers.Distinct().OrderBy(x => x).ToList();
+            OfflineUsers = offlineUsers.Distinct().Where(id => !OnlineUsers.Contains(id)).OrderBy(x => x).ToList();
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void SetUserOnline(long userId)
+    {
+        lock (_lock)
+        {
+            if (!OnlineUsers.Contains(userId))
+            {
+                OnlineUsers.Add(userId);
+                OnlineUsers = OnlineUsers.Distinct().OrderBy(x => x).ToList();
+                OfflineUsers.Remove(userId);
+            }
+        }
+        InvokeAsync(StateHasChanged);
+    }
+    public void SetUserOffline(long userId)
+    {
+        lock (_lock)
+        {
+            if (!OfflineUsers.Contains(userId))
+            {
+                OfflineUsers.Add(userId);
+                OfflineUsers = OfflineUsers.Distinct().OrderBy(x => x).ToList();
+                OnlineUsers.Remove(userId);
+            }
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+}

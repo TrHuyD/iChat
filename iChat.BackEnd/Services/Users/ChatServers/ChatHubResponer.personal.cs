@@ -27,5 +27,6 @@ namespace iChat.BackEnd.Services.Users.ChatServers
         {
             await _chatHub.Clients.User(user.UserId).SendAsync(SignalrClientPath.UpdateProfile, user);
         }
+
     }
 }

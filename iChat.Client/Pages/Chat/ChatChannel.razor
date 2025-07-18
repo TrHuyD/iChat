@@ -197,7 +197,11 @@
 
         else
         {
-            <OnlineUserList ></OnlineUserList> 
         }
+        <div class="@(!_showSearchSidebar ? "" : "hidden")">
+            <OnlineUserList @ref="_userList" />
+        </div>
+
+
     </div>
 </div>

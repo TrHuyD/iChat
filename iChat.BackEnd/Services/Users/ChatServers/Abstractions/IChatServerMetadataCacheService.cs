@@ -1,5 +1,5 @@
-﻿using iChat.BackEnd.Collections;
-using iChat.BackEnd.Models.ChatServer;
+﻿using iChat.BackEnd.Models.ChatServer;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Shared;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;

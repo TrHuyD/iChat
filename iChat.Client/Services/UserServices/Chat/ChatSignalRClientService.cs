@@ -1,5 +1,6 @@
 ﻿using iChat.Client.Data.Chat;
 using iChat.Client.Services.Auth;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Enum;
 using iChat.DTOs.Users.Messages;
@@ -19,6 +20,11 @@ namespace iChat.Client.Services.UserServices.Chat
         private readonly ChatMessageCacheService _MessageCacheService;
         private readonly ChatNavigationService _chatNavigationService;
         private readonly UserMetadataService _userMetadata;
+        public event Action<(string channelId, string userId)>? TypingReceived;
+        public event Action<MemberList>? OnlineListRecieved;
+        public event Action<(stringlong id, bool online)>? OnlineStatechanged;
+        public void RegisterOnMemberListRecieve(Action<MemberList> callback) => OnlineListRecieved = callback;
+        public void RegisterOnOnlineUpdate(Action<(stringlong id,bool online)> callback)=> OnlineStatechanged= callback;
         public ChatSignalRClientService(SignalRConnectionFactory connectionFactory,ChatMessageCacheService MessageCacheService, ChatNavigationService chatNavigationService, UserMetadataService userMetadata)
         {
             _MessageCacheService = MessageCacheService;
@@ -75,17 +81,59 @@ namespace iChat.Client.Services.UserServices.Chat
             _hubConnection.On<string>(SignalrClientPath.LeaverServer,LeaveRoomAsync);
             _hubConnection.On<ChatServerMetadata>(SignalrClientPath.JoinNewServer, OnJoiningNewServer);
             _hubConnection.On<EditMessageRt>(SignalrClientPath.MessageEdit,  HandleEditMessage);
-            _hubConnection.On<string, string>(SignalrClientPath.UserTyping, async (channelId, userId) =>
+            _hubConnection.On<string, string>(SignalrClientPath.UserTyping,  (channelId, userId) =>
             {
                 try
                 {
                     OnUserType(channelId,userId);
+                    Console.WriteLine($"{userId} is typing");
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error handling user type: {ex.Message}");
                 }
             });
+            _hubConnection.On<MemberList>(SignalrClientPath.UserList, (userlist)=> 
+              {
+                  try
+                  {
+                      Console.WriteLine($"Handling user list");
+
+                      OnlineListRecieved?.Invoke(userlist);
+                  }
+                  catch(Exception ex)
+                  {
+                      Console.WriteLine($"Error handling user list {ex.Message}");
+                  }
+            });
+            _hubConnection.On<stringlong>(SignalrClientPath.NewUserOnline, (id) =>
+            {
+            try
+                {
+                    Console.WriteLine($"User {id} online");
+                    OnlineStatechanged?.Invoke((id, true));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error handling user online {ex.Message}");
+
+                }
+            }
+            );
+            _hubConnection.On<stringlong>(SignalrClientPath.NewUserOffline, (id) =>
+            {
+                try
+                {
+                    Console.WriteLine($"User {id} offline");
+                    OnlineStatechanged?.Invoke((id, false));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error handling user offline {ex.Message}");
+
+                }
+            }
+);
             _hubConnection.Closed += async (error) =>
             {
                 try
@@ -98,8 +146,7 @@ namespace iChat.Client.Services.UserServices.Chat
                 {
                     Console.WriteLine($"Error editing channel: {ex.Message}");
                 }
-            }
-                ;
+            } ;
 
 
             await _hubConnection.StartAsync();
@@ -171,7 +218,6 @@ namespace iChat.Client.Services.UserServices.Chat
             _chatNavigationService.AddServer(serverID);
         }
 
-        public event Action<(string channelId, string userId)>? TypingReceived;
         private void OnUserType(string channelId, string userId)
         {
             TypingReceived?.Invoke((channelId, userId));

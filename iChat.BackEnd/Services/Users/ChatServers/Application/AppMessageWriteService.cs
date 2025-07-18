@@ -8,6 +8,7 @@ using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.BackEnd.Services.Validators.TextMessageValidators;
 using iChat.Data.Entities.Users.Messages;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;

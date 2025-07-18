@@ -1,4 +1,5 @@
 ﻿
+using Auth0.ManagementApi.Models;
 using iChat.BackEnd.Models.Helpers;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
@@ -27,22 +28,21 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
     //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
         public static string FocusKey(string roomId)=> $"{roomId}_focus";
         public static string FocusKey(long roomId) => $"{roomId}_focus";
-        //    public static string PersonalKey(string userId) => $"{userId}_personal";
+        //    public static string PersonalKey(string userId) => $"{userId}_personal"; 
         public static string FocusChannelKey(string ChannelId) => $"{ChannelId}c_focus";
         private readonly AppChatServerCacheService _chatServerMetadataCacheService;
 
         private readonly IUserConnectionTracker _connectionTracker;
-        private readonly ConnectionChannelTracker _connectionChannelTracker;
+     
         public ChatHub(
             ILogger<ChatHub> logger,
             IMessageWriteService sendMessageService,
             MemCacheUserChatService memCacheUserChatService,
              IUserConnectionTracker connectionTracker,
-           ConnectionChannelTracker connectionChannelTracker,
+          
           AppChatServerCacheService csmcs)
         {
             _chatServerMetadataCacheService = csmcs;
-            _connectionChannelTracker = connectionChannelTracker;
             _logger = logger;
             _sendMessageService = sendMessageService;
             _localCache = memCacheUserChatService;
@@ -85,7 +85,6 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                await _chatServerMetadataCacheService.SetUserOffline(userId);
             }
-            _connectionChannelTracker.RemoveConnection(Context.ConnectionId);
              await base.OnDisconnectedAsync(exception);
         }
 
@@ -101,14 +100,17 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                 return;
             }
+            
             await Groups.AddToGroupAsync(Context.ConnectionId, FocusKey(roomId));
+            _connectionTracker.TrackRoom(roomId,userId);
+            await Clients.Caller.SendAsync(SignalrClientPath.UserList,await _chatServerMetadataCacheService.GetMemberList(roomId));
             _logger.LogInformation($"Client {Context.ConnectionId} joined room {roomId}");
         }
         public async Task JoinChannel(string ChannelId)
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
             //Doesnt check for now
-            _connectionChannelTracker.SetChannel(Context.ConnectionId, ChannelId);
+            _connectionTracker.SetChannel(Context.ConnectionId,ChannelId);
         }
         public async Task LeaveRoom(string roomId)
         {
@@ -121,45 +123,16 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         public async Task SendMessage(string roomId, ChatMessageDtoSafe message)
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
-
             var request = new MessageRequest
             {
                 SenderId = userId,
                 TextContent = message.Content,
                 ReceiveChannelId = message.ChannelId,
             };
-
             var result = await _sendMessageService.SendTextMessageAsync(request,roomId);
             _logger.LogInformation($"Message sent to room {roomId} by user {userId}");
-
-            // Broadcast to all members in room
             await Clients.Group(roomId).SendAsync(SignalrClientPath.RecieveMessage, result.Value);
         }
 
-        //public async Task<List<ChatMessageDtoSafe>> GetMessageHistory(string roomId, string? beforeMessageId = null)
-        //{
-        //    if(!ValueParser.TryLong(roomId, out var roomIdLong))
-        //    {
-        //        return new();
-        //    }
-        //    long? messageIdLong = null;
-        //    if(beforeMessageId!=null)
-        //    {
-        //        if (ValueParser.TryLong(beforeMessageId, out var beforeMessageIdLong))
-        //        messageIdLong = beforeMessageIdLong;
-        //    }    
-        //    var request = new UserGetRecentMessageRequest
-        //    {
-        //        UserId = new UserClaimHelper(Context.User).GetUserId(),
-        //        ChannelId = roomIdLong,
-        //        LastMessageId = messageIdLong
-        //    };
-
-        //    var messages = await _readMessageService.RetrieveRecentMessage(request);
-        //    List<ChatMessageDtoSafe> safeMessages = messages
-        //        .Select(m => new ChatMessageDtoSafe(m))
-        //        .ToList();
-        //    return safeMessages;
-        //}
     }
 }

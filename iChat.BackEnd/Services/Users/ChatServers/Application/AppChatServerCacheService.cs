@@ -1,6 +1,7 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
-
+using iChat.DTOs.Users.Messages;
 namespace iChat.BackEnd.Services.Users.ChatServers.Application
 {
     public class AppChatServerCacheService
@@ -26,6 +27,11 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             _=_chatHubResponer.BroadcastNewUser(userId.ToString(),serverId.ToString(),result.isOnline);
         
         }
-        
+        public async Task<MemberList> GetMemberList(stringlong serverId, int amount = 50, int skip = 0)
+        {
+            var(online,offline) = _localMem.GetUserList(serverId);
+            return new MemberList { online= online,offline=offline ,serverId=serverId};
+        }
+
     }
 }

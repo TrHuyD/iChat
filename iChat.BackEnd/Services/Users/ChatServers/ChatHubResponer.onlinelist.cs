@@ -1,4 +1,5 @@
 ﻿using iChat.BackEnd.Controllers.UserControllers.MessageControllers;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Enum;
 using iChat.DTOs.Users.Messages;
@@ -11,23 +12,14 @@ namespace iChat.BackEnd.Services.Users.ChatServers
     {
 
 
-        public async Task BroadcastUserOnline(string userId,List<string> serverId)
-        {
-            await Task.WhenAll(serverId.Select(item =>_chatHub.Clients.Group(ChatHub.FocusKey(item)).SendAsync(SignalrClientPath.NewUserOnline, userId)));
-        }
-        public async Task BroadcastUserOnline(string userId, List<long> serverId)
+
+        public async Task BroadcastUserOnline(stringlong userId, List<long> serverId)
         {
             await Task.WhenAll(serverId.Select(item => _chatHub.Clients.Group(ChatHub.FocusKey(item)).SendAsync(SignalrClientPath.NewUserOnline, userId)));
         }
-        public async Task BroadcastUserOnline(string userId, long serverId)
-        {
-           await _chatHub.Clients.Group(ChatHub.FocusKey(ChatHub.FocusKey(serverId))).SendAsync(SignalrClientPath.NewUserOnline, userId);
-        }
-        public async Task BroadcastUserOffline(string userId, List<string> serverId)
-        {
-            await Task.WhenAll(serverId.Select(item => _chatHub.Clients.Group(ChatHub.FocusKey(item)).SendAsync(SignalrClientPath.NewUserOffline, userId)));
-        }
-        public async Task BroadcastUserOffline(string userId, List<long> serverId)
+
+   
+        public async Task BroadcastUserOffline(stringlong userId, List<long> serverId)
         {
             await Task.WhenAll(serverId.Select(item => _chatHub.Clients.Group(ChatHub.FocusKey(item)).SendAsync(SignalrClientPath.NewUserOffline, userId)));
         }

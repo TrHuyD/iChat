@@ -156,7 +156,7 @@ builder.Services.AddTransient<AppChatServerCreateService>();
 builder.Services.AddHostedService<SUS_ServerChannelCacheLoader>();
 builder.Services.AddScoped<IMessageSearchService, EfCoreMessageSearchService>();
 builder.Services.AddSingleton<IUserConnectionTracker, UserConnectionTracker>();
-builder.Services.AddSingleton<ConnectionChannelTracker>();
+
 // Add API documentation
 builder.Services.AddEndpointsApiExplorer();
 

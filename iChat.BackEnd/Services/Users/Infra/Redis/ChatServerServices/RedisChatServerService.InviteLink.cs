@@ -1,7 +1,7 @@
-﻿using iChat.BackEnd.Collections;
-using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.Redis.Enums;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Shared;
 
 namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices

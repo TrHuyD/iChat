@@ -20,7 +20,7 @@ namespace iChat.Client.Pages.Chat
         [Parameter] public string ServerId { get; set; } = string.Empty;
         public long RoomIdL;
         public long ServerIdL;
-        private string? _currentRoomId;
+        private string? _currentChannelId;
         private string?_currentServerId;
         private ChatServerDtoUser? _currentServer=new ChatServerDtoUser();
         private ChatChannelDtoLite? _currentChannel= new ChatChannelDtoLite();
@@ -78,7 +78,7 @@ namespace iChat.Client.Pages.Chat
         {
             if (Init_failed) return;
 
-            if (_currentRoomId != ChannelId)
+            if (_currentChannelId != ChannelId)
             {
                 RoomIdL = long.Parse(ChannelId);
                 ServerIdL = long.Parse(ServerId);
@@ -86,9 +86,9 @@ namespace iChat.Client.Pages.Chat
                 // Save old state before changes
                 SaveState();
 
-                if (!string.IsNullOrEmpty(_currentRoomId))
+                if (!string.IsNullOrEmpty(_currentChannelId))
                 {
-                    await ChatService.LeaveRoomAsync(_currentRoomId);
+                    await ChatService.LeaveRoomAsync(_currentChannelId);
                 }
 
                 // Store previous serverId for comparison
@@ -97,7 +97,7 @@ namespace iChat.Client.Pages.Chat
 
                 // Update to new server
                 _currentServerId = ServerId;
-                _currentRoomId = ChannelId;
+                _currentChannelId = ChannelId;
 
                 // Load server and channel
                 _currentServer = _ServerCacheManager.GetServer(_currentServerId);
@@ -116,7 +116,8 @@ namespace iChat.Client.Pages.Chat
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
                 MessageManager.RegisterOnMessageEdited(HandleEditMessage);
                 MessageManager.RegisterOnMessageDeleted(HandleDeleteMessage);
-
+                ChatService.RegisterOnMemberListRecieve(HandleUserList);
+                ChatService.RegisterOnOnlineUpdate(HandleUserListchange);
                 foreach (var bucket in latest)
                     await AddMessagesForward(bucket);
 
@@ -206,6 +207,7 @@ namespace iChat.Client.Pages.Chat
 
         public void Dispose()
         {
+            ChatService.OnlineListRecieved -= HandleUserList;
             _userMetadataService.OnMetadataUpdated -= HandleUserMetadataUpdate;
             DisposeCore().AsTask().Wait();
             GC.SuppressFinalize(this);
