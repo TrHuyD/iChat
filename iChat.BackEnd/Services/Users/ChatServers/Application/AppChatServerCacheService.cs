@@ -27,6 +27,13 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             _=_chatHubResponer.BroadcastNewUser(userId.ToString(),serverId.ToString(),result.isOnline);
         
         }
+        public async Task<bool> IsMember(stringlong serverId,stringlong ChannelId,stringlong userId)
+        {
+            var result=await _localMem.IsAdmin(serverId, ChannelId, userId);
+            if (result.Success)
+                return true;
+            return false;
+        }
         public async Task<MemberList> GetMemberList(stringlong serverId, int amount = 50, int skip = 0)
         {
             var(online,offline) = _localMem.GetUserList(serverId);

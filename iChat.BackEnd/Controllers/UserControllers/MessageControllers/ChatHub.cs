@@ -98,7 +98,6 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                 return;
             }
-            
             await Groups.AddToGroupAsync(Context.ConnectionId, FocusServerKey(roomId));
             var prev =_connectionTracker.SetServer(roomId,userId);
             if(prev!=0)
@@ -110,7 +109,11 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         public async Task JoinChannel(string ChannelId)
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
-            //Doesnt check for now
+            var serverId = _connectionTracker.GetServer(Context.ConnectionId);
+            if (serverId == 0)
+                return;
+            if (!await _chatServerMetadataCacheService.IsMember(serverId, ChannelId, userId))
+                return;
             var prev=_connectionTracker.SetChannel(Context.ConnectionId,ChannelId);
             if (prev != 0)
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusChannelKey(prev));

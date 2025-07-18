@@ -1,17 +1,16 @@
-﻿using iChat.Data.Entities.Users;
+﻿using Azure.Core;
+using iChat.BackEnd.Models.Helpers;
+using iChat.BackEnd.Models.User;
+using iChat.Data.EF;
+using iChat.Data.Entities.Users;
+using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Auth;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
-
-using iChat.DTOs.Shared;
-using iChat.BackEnd.Models.User;
-using Microsoft.Extensions.Options;
-using iChat.BackEnd.Models.Helpers;
-
-using iChat.Data.EF;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
 
 namespace iChat.BackEnd.Services.Users.Auth.Sql
 {
@@ -23,17 +22,19 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
         private readonly RefreshTokenService _rfService;
         private readonly DomainOptions _domainOptions;
         private readonly iChatDbContext _dbContext;
+        private readonly JwtService _jwksService;
         public SqlLoginService(UserManager<AppUser> userManager
             /*SignInManager<AppUser> signInManager*/,
             RefreshTokenService rfService,
             iChatDbContext dbContext
             ,
             IOptions<DomainOptions> domainOptions
-
+            ,
+             JwtService jwksService
             )
         {
             _domainOptions = domainOptions.Value;
-
+            _jwksService=jwksService;
             _userManager = userManager;
             _rfService = rfService;
             _dbContext = dbContext;
@@ -41,7 +42,13 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
         }
 
 
-
+        public async Task<OperationResultString> LoginShortSession(LoginRequest request)
+        {
+            var user = await _userManager.FindByNameAsync(request.Username);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+                return OperationResultString.Fail("401", "Invalid credential");
+            return OperationResultString.Ok(_jwksService.GenerateAccessToken(user.Id.ToString()).AccessToken);
+        }
         public async Task<OperationResult> LoginAsync(LoginRequest request,HttpContext context)
         {
             var user = await _userManager.FindByNameAsync(request.Username);

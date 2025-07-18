@@ -65,7 +65,8 @@ namespace iChat.Client.Modals.Servers
 
         private async Task InviteUser(long userId)
         {
-            await OnInviteUser.InvokeAsync(userId);
+            
+            //await OnInviteUser.InvokeAsync(userId);
         }
 
         private async Task GenerateInviteLink()

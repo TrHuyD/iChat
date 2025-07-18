@@ -28,7 +28,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             {
                 var link = await _service.CreateInviteLink(serverId, userId);
                 //if(link)
-                return Ok(link);
+                return Ok(link.Value);
             }
             catch (UnauthorizedAccessException ex)
             {

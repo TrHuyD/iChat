@@ -1,14 +1,49 @@
-﻿<div class="online-list">
-    <h4>Users</h4>
+﻿@using iChat.Client.Services.UserServices.Chat
+@inject UserMetadataService _userMetadataService
+<div class="online-list">
+    
     <ul>
-        @foreach (var user in OnlineUsers)
+        @if (OnlineUsers.Any())
         {
-            <li class="online">@user</li>
+            <li class="section-header">--- Online ---</li>
+            @foreach (var userId in OnlineUsers)
+            {
+                var userMeta = _userMetadataService.GetUserByIdAsync(userId);
+                <li class="user-entry online">
+                    <div class="message">
+                        <img class="avatar" src="@userMeta.AvatarUrl" alt="avatar" />
+                        <div>
+                            <div class="chat-message-meta">
+                                <span class="username">@userMeta.DisplayName</span>
+                            </div>
+                            <div class="message-content placeholder">This user is currently offline</div>
+                        </div>
+                    </div>
+                </li>
+            }
         }
-        @foreach (var user in OfflineUsers)
+
+        @if (OfflineUsers.Any())
         {
-            <li class="offline">@user</li>
+            <li class="section-header">--- Offline ---</li>
+            @foreach (var userId in OfflineUsers)
+            {
+                var userMeta = _userMetadataService.GetUserByIdAsync(userId);
+                <li class="user-entry offline">
+                    <div class="message">
+                        <img class="avatar" src="@userMeta.AvatarUrl" alt="avatar" />
+                        <div>
+                            <div class="chat-message-meta">
+                                <span class="username">@userMeta.DisplayName</span>
+                            </div>
+                            <div class="message-content placeholder">This user is currently offline</div>
+                        </div>
+                    </div>
+                </li>
+            }
         }
+
+
     </ul>
 </div>
 
@@ -24,10 +59,13 @@
             OnlineUsers = onlineUsers.Distinct().OrderBy(x => x).ToList();
             OfflineUsers = offlineUsers.Distinct().Where(id => !OnlineUsers.Contains(id)).OrderBy(x => x).ToList();
         }
+        InvokeAsync(StateHasChanged);
 
+    }
+    public void StateChanged()
+    {
         InvokeAsync(StateHasChanged);
     }
-
     public void SetUserOnline(long userId)
     {
         lock (_lock)

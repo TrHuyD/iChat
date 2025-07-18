@@ -6,5 +6,6 @@ namespace iChat.BackEnd.Services.Users.Auth
     public interface ILoginService
     {
         public Task<OperationResult> LoginAsync(LoginRequest request, HttpContext context);
+        Task<OperationResultString> LoginShortSession(LoginRequest request);
     }
 }

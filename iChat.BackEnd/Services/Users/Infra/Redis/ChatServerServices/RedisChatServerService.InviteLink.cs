@@ -24,7 +24,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
           
             if(!isAdmin.Success)
               return OperationResultString.Fail("400","Fail to create link, due "+isAdmin.ErrorMessage);
-            if(isAdmin.Value)
+            if(!isAdmin.Value)
                 return OperationResultString.Fail("400", "Fail to create link because user is not Admin");
             var db = _service.GetDatabase();
             var serverkey = RedisVariableKey.GetServerInviteKey(serverId.ToString());

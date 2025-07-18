@@ -71,6 +71,7 @@ namespace iChat.Client.Pages.Chat
         }
         private void HandleUserMetadataUpdate()
         {
+            _userList.StateChanged();
             InvokeAsync(StateHasChanged);
         }
 
