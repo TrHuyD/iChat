@@ -6,12 +6,27 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
     public class UserConnectionTracker : IUserConnectionTracker
     {
         private readonly ConcurrentDictionary<long, HashSet<string>> _connections = new();
-        public void AddConnection(long userId, string connectionId)
+        public bool AddConnection(long userId, string connectionId)
         {
+            bool alreadyExists = true;
             _connections.AddOrUpdate(userId,
-                _ => new HashSet<string> { connectionId },
-                (_, set) => { lock (set) { set.Add(connectionId); } return set; });
+                _ =>
+                {
+                    alreadyExists = false;
+                    return new HashSet<string> { connectionId };
+                },
+                (_, set) =>
+                {
+                    lock (set)
+                    {
+                        set.Add(connectionId);
+                    }
+                    return set;
+                });
+
+            return alreadyExists;
         }
+
 
         public bool RemoveConnection(long userId, string connectionId)
         {

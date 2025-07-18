@@ -5,6 +5,7 @@ using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs;
 using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
+using iChat.DTOs.Users.Enum;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
 using Microsoft.AspNetCore.Authorization;
@@ -25,8 +26,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 
     //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
         public static string FocusKey(string roomId)=> $"{roomId}_focus";
+        public static string FocusKey(long roomId) => $"{roomId}_focus";
         //    public static string PersonalKey(string userId) => $"{userId}_personal";
         public static string FocusChannelKey(string ChannelId) => $"{ChannelId}c_focus";
+        private readonly AppChatServerCacheService _chatServerMetadataCacheService;
 
         private readonly IUserConnectionTracker _connectionTracker;
         private readonly ConnectionChannelTracker _connectionChannelTracker;
@@ -35,8 +38,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             IMessageWriteService sendMessageService,
             MemCacheUserChatService memCacheUserChatService,
              IUserConnectionTracker connectionTracker,
-           ConnectionChannelTracker connectionChannelTracker )
+           ConnectionChannelTracker connectionChannelTracker,
+          AppChatServerCacheService csmcs)
         {
+            _chatServerMetadataCacheService = csmcs;
             _connectionChannelTracker = connectionChannelTracker;
             _logger = logger;
             _sendMessageService = sendMessageService;
@@ -50,6 +55,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
             var connectionId = Context.ConnectionId;
             var serverList = _localCache.GetUserServerList(userId, true);
+            if (serverList == null)
+                throw new Exception("User hasnt cached");
             _connectionTracker.AddConnection(long.Parse(userId), connectionId);
             foreach (var list in serverList)
             {
@@ -74,8 +81,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             var connectionId = Context.ConnectionId;
             var userIdLong = long.Parse(userId);
             var finally_offline =_connectionTracker.RemoveConnection(userIdLong, connectionId);
-            if(finally_offline)
-            _localCache.MoveUserToOffline(userId);
+            if (finally_offline)
+            {
+               await _chatServerMetadataCacheService.SetUserOffline(userId);
+            }
             _connectionChannelTracker.RemoveConnection(Context.ConnectionId);
              await base.OnDisconnectedAsync(exception);
         }
@@ -124,7 +133,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             _logger.LogInformation($"Message sent to room {roomId} by user {userId}");
 
             // Broadcast to all members in room
-            await Clients.Group(roomId).SendAsync("ReceiveMessage", result.Value);
+            await Clients.Group(roomId).SendAsync(SignalrClientPath.RecieveMessage, result.Value);
         }
 
         //public async Task<List<ChatMessageDtoSafe>> GetMessageHistory(string roomId, string? beforeMessageId = null)

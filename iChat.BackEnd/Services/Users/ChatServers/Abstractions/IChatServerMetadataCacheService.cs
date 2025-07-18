@@ -1,4 +1,6 @@
-﻿using iChat.BackEnd.Models.ChatServer;
+﻿using iChat.BackEnd.Collections;
+using iChat.BackEnd.Models.ChatServer;
+using iChat.DTOs.Shared;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 
@@ -7,19 +9,18 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
     public interface IChatServerMetadataCacheService
     {
         Task<bool> UploadServersAsync(List<ChatServerbulk> servers);
-        void UploadServerAsync(ChatServerMetadata server);
-        void AddChannelAsync(ChatChannelDto server);
-        Task<ChatServerMetadata?> GetServerAsync(string serverId, bool includeChannels = true);
-        Task<long?> GetUserPermissionAsync(long userId, long serverId, long channelId);
-        Task<bool> SetUserPermissionAsync(long userId, long serverId, long channelId, long perm);
-        Task<bool> IsAdmin(long serverId, long userId);
-        Task<bool> IsAdmin(long serverId, long channelId,long userId);
-        Task IsInServerWithCorrectStruct(long userId, long serverId, long channelId);
-        Task<Dictionary<long, long>> GetAllUserPermsInServerAsync(long userId, long serverId);
-        Task<Dictionary<long, long>> GetAllUserPermsInChannelAsync(long serverId, long channelId);
-        bool SetUserOnline(List<long> serverList, UserMetadata metadata, long userId = -1);
-        void AddUserToServer(long userId, long serverId, bool  online);
-        bool RemoveUserFromServer(long userId, long serverId);
-
+        Task<bool> UploadNewServerAsync(ChatServerMetadata server);
+        Task<bool> AddChannel(ChatChannelDto channel);
+        Task<OperationResultT<ChatServerMetadata>> EditServerProfile(stringlong serverId, stringlong requestorId, string newName, string avatarUrl = "");
+        Task<OperationResultT<ChatServerMetadata>> GetServerAsync(stringlong serverId, bool isCopy = true);
+        OperationResultBool IsAdmin(stringlong serverId, stringlong userId);
+        Task<OperationResultBool> IsAdmin(stringlong serverId, stringlong channelId, stringlong userId);
+        (bool success, List<int> newOnlineLocations, List<int> oldOfflineLocations) SetUserOnline(List<long> serverIds, UserMetadata user);
+        (bool success, List<long> serverList, List<int> newOfflineLocations, List<int> oldOnlineLocations) SetUserOffline(stringlong userId);
+        List<long> GetOnlineUsersAsync(stringlong serverId, int lim = 50);
+        List<long> GetOfflineUsersAsync(stringlong serverId, int lim = 50);
+        (int index, bool isOnline) AddUserToServer(stringlong userId, stringlong serverId);
+        bool RemoveUserFromServer(stringlong userId, stringlong serverId);
+        (List<long> online, List<long> offline) GetUserList(stringlong serverId);
     }
 }

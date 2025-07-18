@@ -254,6 +254,38 @@ namespace iChat.BackEnd.Collections
                 _disposed = true;
             }
         }
+        public bool TryRemove(T item, out int index)
+        {
+            ThrowIfDisposed();
+
+            _lock.EnterWriteLock();
+            try
+            {
+                if (!_itemToIndex.TryGetValue(item, out index))
+                {
+                    index = -1;
+                    return false;
+                }
+
+                int lastIndex = _items.Count - 1;
+
+                if (index != lastIndex)
+                {
+                    _items[index] = _items[lastIndex];
+                    _itemToIndex[_items[index]] = index;
+                }
+
+                _items.RemoveAt(lastIndex);
+                _itemToIndex.Remove(item);
+                return true;
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+        }
+
+
     }
 
 

@@ -1,6 +1,8 @@
-﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+﻿using iChat.BackEnd.Collections;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.Redis.Enums;
+using iChat.DTOs.Shared;
 
 namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
 {
@@ -16,14 +18,16 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
             _localCache = localCache;
         }
         private TimeSpan default_invite_lifetime = TimeSpan.FromDays(7); // Default invite link lifetime
-        public async Task<string> CreateInviteLink(string serverId, string userId)
+        public async Task<OperationResultString> CreateInviteLink(stringlong serverId, stringlong userId)
         {
-           var isAdmin =await _localCache.IsAdmin(long.Parse(serverId),long.Parse (userId));
+           var isAdmin = _localCache.IsAdmin(serverId,userId);
           
-            if(!isAdmin)
-                throw new UnauthorizedAccessException($"User {userId} is not an admin of server {serverId}");
-          var db = _service.GetDatabase();
-            var serverkey = RedisVariableKey.GetServerInviteKey(serverId);
+            if(!isAdmin.Success)
+              return OperationResultString.Fail("400","Fail to create link, due "+isAdmin.ErrorMessage);
+            if(isAdmin.Value)
+                return OperationResultString.Fail("400", "Fail to create link because user is not Admin");
+            var db = _service.GetDatabase();
+            var serverkey = RedisVariableKey.GetServerInviteKey(serverId.ToString());
             var existimte = await db.KeyTimeToLiveAsync(serverkey);
             string inviteId = string.Empty;
             if (existimte!=null&&existimte.Value.Days>1)
@@ -46,9 +50,9 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
                 }
             if (string.IsNullOrEmpty(inviteId))
             throw new InvalidOperationException("Failed to generate a unique invite link after multiple attempts.");
-            await Task.WhenAll(db.StringSetAsync(RedisVariableKey.GetInviteLinkKey(inviteId), serverId, default_invite_lifetime),
+            await Task.WhenAll(db.StringSetAsync(RedisVariableKey.GetInviteLinkKey(inviteId), serverId.ToString(), default_invite_lifetime),
              db.StringSetAsync(serverkey, inviteId, default_invite_lifetime));
-            return inviteId;
+            return OperationResultString.Ok(inviteId);
         }
         public async Task<string> ParseInviteLink(string inviteId)
         {

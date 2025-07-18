@@ -42,7 +42,7 @@ namespace iChat.BackEnd.Controllers
         }
         [HttpGet("CompleteInfo")]
         [Authorize]
-        public async Task<IActionResult> GetCompleteInfo([FromServices] ServerListService serverListService, [FromServices] IMemoryCache _cache, [FromServices] IChatServerMetadataCacheService metadatacache,
+        public async Task<IActionResult> GetCompleteInfo([FromServices] ServerListService serverListService, [FromServices] IMemoryCache _cache, [FromServices] AppChatServerCacheService _appcsCacheService,
             [FromServices] AppUserService metadataProvider)
         {
             var userId = new UserClaimHelper(User).GetUserId();
@@ -54,14 +54,14 @@ namespace iChat.BackEnd.Controllers
                 // var userProfile = await _userService.GetUserProfileAsync(userId.ToString());
                 var metatdata =await metadataProvider.GetUserMetadataAsync(userIdStr);
                 var userServerList = await serverListService.GetServerList(userId);
-                
-                metadatacache.SetUserOnline( userServerList.Select(t=>long.Parse(t.Id)).ToList(),metatdata, userId);
+
+                await _appcsCacheService.SetUserOnline(metatdata, userServerList.Select(t=>long.Parse(t.Id)).ToList() );
                 package = new UserCompleteDto
                 {
                     UserProfile = metatdata,
                     ChatServers = userServerList
                 };
-                _cache.Set(cacheKey, package, TimeSpan.FromSeconds(10));
+               
             }
             return package is null ? NotFound() : Ok(package);
         }

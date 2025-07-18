@@ -9,8 +9,8 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
     public interface IMessageWriteService
     {
         Task<OperationResultT<NewMessage>> SendTextMessageAsync(MessageRequest request,string ServerId);
-        Task<EditMessageRt> EditMessageAsync(UserEditMessageRq rq,string UserId);
-        Task<DeleteMessageRt> DeleteMessageAsync(UserDeleteMessageRq rq, string UserId);
-        Task<NewMessage> SendMediaMessageAsync(MessageUploadRequest rq, string UserId);
+        Task<OperationResultT<EditMessageRt>> EditMessageAsync(UserEditMessageRq rq,string UserId);
+        Task<OperationResultT<DeleteMessageRt>> DeleteMessageAsync(UserDeleteMessageRq rq, string UserId);
+        Task<OperationResultT<NewMessage>> SendMediaMessageAsync(MessageUploadRequest rq, string UserId);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Azure.Core;
+using iChat.BackEnd.Collections;
 using iChat.BackEnd.Models.User;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
@@ -6,9 +7,11 @@ using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.BackEnd.Services.Validators.TextMessageValidators;
+using iChat.Data.Entities.Users.Messages;
 using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace iChat.BackEnd.Services.Users.ChatServers.Application
 {
@@ -36,7 +39,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             _idGen = snowflakeService;
         }
 
-        public async Task<DeleteMessageRt> DeleteMessageAsync(UserDeleteMessageRq rq,string UserId)
+        public async Task<OperationResultT<DeleteMessageRt>> DeleteMessageAsync(UserDeleteMessageRq rq,string UserId)
         {
             var longrq= new DeleteMessageRq
             {
@@ -45,20 +48,23 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 UserId =long.Parse(UserId),
                 ServerId=long.Parse(rq.ServerId)
             };
-            var isAdmin = await  _serverMetaDataCacheService.IsAdmin(longrq.ServerId,longrq.ChannelId,longrq.UserId);
+            var isAdminRt = await  _serverMetaDataCacheService.IsAdmin(longrq.ServerId,longrq.ChannelId,longrq.UserId);
+            if(!isAdminRt.Success)
+                return OperationResultT<DeleteMessageRt>.Fail(isAdminRt.ErrorCode,"Error when deleting message "+isAdminRt.ErrorMessage);
+            var isAdmin = isAdminRt.Value;
             var cacheResult =await _cache.DeleteMessageAsync(longrq, isAdmin);
             var bucketId=await _chatWriteService.DeleteMessageAsync(longrq, isAdmin);
-            return new DeleteMessageRt
+            return OperationResultT<DeleteMessageRt>.Ok( new DeleteMessageRt
             {
                 ChannelId = rq.ChannelId,
                 MessageId = rq.MessageId,
                 ServerId = rq.ServerId,
                 BucketId =bucketId
-            };
+            });
 
         }
 
-        public async Task<EditMessageRt> EditMessageAsync(UserEditMessageRq rq, string UserId)
+        public async Task<OperationResultT<EditMessageRt>> EditMessageAsync(UserEditMessageRq rq, string UserId)
         {
             var longrq= new EditMessageRq
             {
@@ -67,24 +73,28 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 UserId = long.Parse(UserId),
                 NewContent = rq.NewContent
             };
-            await _serverMetaDataCacheService.IsInServerWithCorrectStruct(longrq.UserId, longrq.UserId, longrq.ChannelId);
+            var isAdminRt = await _serverMetaDataCacheService.IsAdmin(rq.ServerId, rq.ChannelId, rq.ChannelId);
+            if (!isAdminRt.Success)
+                return OperationResultT<EditMessageRt>.Fail(isAdminRt.ErrorCode, "Error when editing message :" + isAdminRt.ErrorCode);
             var cacheResult= await _cache.EditMessageAsync(longrq);
             var bucketID =await _chatWriteService.EditMessageAsync(longrq);
-            return new EditMessageRt
+            return OperationResultT < EditMessageRt >.Ok( new EditMessageRt
             {
                 ChannelId = rq.ChannelId,
                 MessageId = rq.MessageId,
                 NewContent = rq.NewContent,
                 ServerId = rq.ServerId,
                 BucketId = bucketID
-            };
+            });
         }
-        public async Task<NewMessage> SendMediaMessageAsync(MessageUploadRequest rq,string UserId)
+        public async Task<OperationResultT<NewMessage>> SendMediaMessageAsync(MessageUploadRequest rq,string UserId)
         {
-            var channelId = long.Parse(rq.ChannelId);
-            var serverId = long.Parse(rq.ServerId);
-            var userId = long.Parse(UserId);
-            await _serverMetaDataCacheService.IsInServerWithCorrectStruct(userId, serverId, channelId);
+            var channelId = new stringlong(rq.ChannelId);
+            var serverId = new stringlong(rq.ServerId);
+            var userId = new stringlong(UserId);
+            var isAdminRt = await _serverMetaDataCacheService.IsAdmin(serverId, channelId,userId);
+            if (!isAdminRt.Success)
+                return OperationResultT<NewMessage>.Fail(isAdminRt.ErrorCode, "Error when editing message :" + isAdminRt.ErrorCode);
             var messageIdResult = _idGen.GenerateId();
             var uploadResult = await _chatWriteService.UploadImage(rq, messageIdResult, userId);
             var chatMessage = new ChatMessageDtoSafe
@@ -97,11 +107,11 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 ChannelId= rq.ChannelId,
                 CreatedAt=messageIdResult.CreatedAt,
             };
-            return new NewMessage
+            return OperationResultT < NewMessage > .Ok(new NewMessage
             {
                 message = chatMessage,
                 UserMetadataVersion = _userCacher.GetMetadataVersion(UserId)
-            };
+            });
         }
 
         public async Task<OperationResultT<NewMessage>> SendTextMessageAsync(MessageRequest request,string serverId)
@@ -109,7 +119,10 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             var channelId = long.Parse(request.ReceiveChannelId);
             var serverIdLong = long.Parse(serverId);
             var userId = long.Parse(request.SenderId);
-            await _serverMetaDataCacheService.IsInServerWithCorrectStruct(userId, serverIdLong, channelId);
+            var permCheck =await _serverMetaDataCacheService.IsAdmin(serverIdLong,channelId , userId);
+            if (!permCheck.Success)
+                return OperationResultT<NewMessage>.Fail(permCheck.ErrorCode, permCheck.ErrorMessage);
+            
             var messageIdResult = _idGen.GenerateId();
             _ = Task.Run(() => _chatWriteService.UploadMessageAsync(request, messageIdResult));
             var chatMesssage = new ChatMessageDtoSafe

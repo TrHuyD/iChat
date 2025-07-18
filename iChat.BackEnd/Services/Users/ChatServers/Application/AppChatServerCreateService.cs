@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
+using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Messages;
 
 namespace iChat.BackEnd.Services.Users.ChatServers.Application
@@ -18,33 +19,40 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             this.serverMetaDataCacheService = serverMetaDataCacheService;
             this.appChatServerService = appChatServerService;
         }
-        public async Task<ChatServerMetadata> CreateServerAsync(ChatServerCreateRq request, long userId)
+        public async Task<OperationResultT<ChatServerMetadata>> CreateServerAsync(ChatServerCreateRq request, long userId)
         {
             
             if (string.IsNullOrWhiteSpace(request.Name))
             {
-                throw new ArgumentException("Server name cannot be empty.", nameof(request.Name));
+                return OperationResultT<ChatServerMetadata>.Fail("400", "Server name cannot be empty.");
             }
             var server = await createService.CreateServerAsync(request.Name, userId);
-            serverMetaDataCacheService.UploadServerAsync(server);
+            await serverMetaDataCacheService.UploadNewServerAsync(server);
             await appChatServerService.Join(userId, long.Parse(server.Id));
-            return server;
+            return OperationResultT<ChatServerMetadata>.Ok(server);
 
         }
-        public async Task<ChatChannelDto> CreateChannelAsync(ChatChannelCreateRq request, long userId)
+        public async Task<OperationResultT<ChatChannelDto>> CreateChannelAsync(ChatChannelCreateRq request, long userId)
         {
             var serverId = long.Parse(request.ServerId);
+
             if (string.IsNullOrWhiteSpace(request.Name))
             {
-                throw new ArgumentException("Server name cannot be empty.", nameof(request.Name));
+                return OperationResultT<ChatChannelDto>.Fail("400", "Channel name cannot be empty.");
             }
-            if(!await serverMetaDataCacheService.IsAdmin(serverId, userId))
+            var permResult = serverMetaDataCacheService.IsAdmin(serverId, userId);
+            if (!permResult.Success)
             {
-                throw new UnauthorizedAccessException("User is not admin in cache");
+                return OperationResultT<ChatChannelDto>.Fail("500", "Failed to check admin permission.");
             }
-            var result= await createService.CreateChannelAsync(serverId,request.Name,userId);
-            serverMetaDataCacheService.AddChannelAsync(result);
-            return result;
+            if (!permResult.Value)
+            {
+                return OperationResultT<ChatChannelDto>.Fail("403", "User is not an admin of the server.");
+            }
+            var result = await createService.CreateChannelAsync(serverId, request.Name, userId);
+            await serverMetaDataCacheService.AddChannel(result);
+            return OperationResultT<ChatChannelDto>.Ok(result);
         }
+
     }
 }

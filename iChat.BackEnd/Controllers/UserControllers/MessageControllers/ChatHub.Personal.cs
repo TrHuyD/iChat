@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using iChat.DTOs.Users.Enum;
+using Microsoft.AspNetCore.SignalR;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
 {
@@ -11,7 +12,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             Console.WriteLine($"{userId} is typing");
             if (channelId != null)
             {
-                await Clients.Group(FocusChannelKey(channelId)).SendAsync("UserTyping", channelId, userId);
+                await Clients.Group(FocusChannelKey(channelId)).SendAsync(SignalrClientPath.UserTyping, channelId, userId);
             }
         }
     }

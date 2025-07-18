@@ -27,6 +27,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             try
             {
                 var link = await _service.CreateInviteLink(serverId, userId);
+                //if(link)
                 return Ok(link);
             }
             catch (UnauthorizedAccessException ex)
@@ -66,7 +67,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
                 var serverIdstr = await _service.ParseInviteLink(inviteId);
                 var serverId = long.Parse(serverIdstr);
                 await _joinService.Join(uId, serverId);
-                await hub.JoinNewServer(userId, await cacheService.GetServerAsync(serverIdstr));
+                var result = await cacheService.GetServerAsync(serverIdstr);
+                if (!result.Success)
+                    throw new Exception("Server is not loaded");
+                await hub.JoinNewServer(userId,result.Value);
                 return Ok();
             }
             catch (InvalidOperationException ex)

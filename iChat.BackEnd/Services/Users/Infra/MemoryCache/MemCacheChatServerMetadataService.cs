@@ -5,20 +5,20 @@ using System.Collections.Concurrent;
 using iChat.BackEnd.Collections;
 using iChat.DTOs.Users;
 using iChat.BackEnd.Models.ChatServer;
+using iChat.DTOs.Shared;
+
 
 namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 {
     public class MemCacheChatServerMetadataService : IChatServerMetadataCacheService
     {
-        private readonly IMemoryCache _cache;
+        private readonly ConcurrentDictionary<long, ChatServerMetadata> _metadataMap = new();
         private readonly MemCacheUserChatService _userChatService;
 
-        private readonly Dictionary<long, ThreadSafeIndexedUserCollection> _serverOfflineUserMap = new();
-        private readonly Dictionary<long, ThreadSafeIndexedUserCollection> _serverOnlineUserMap = new();
+        private readonly ConcurrentDictionary<long, (SkipListSortedSetV2<long> Online, SkipListSortedSetV2<long> Offline)> _serverUserMap = new();
 
-        public MemCacheChatServerMetadataService(IMemoryCache cache, MemCacheUserChatService userChatService)
+        public MemCacheChatServerMetadataService(MemCacheUserChatService userChatService)
         {
-            _cache = cache;
             _userChatService = userChatService;
         }
 
@@ -26,235 +26,208 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         {
             foreach (var server in servers)
             {
-                var serverKey = GetServerKey(server.Id);
-                _cache.Set(serverKey, server);
-
-                if (server.Channels.Any())
+                _metadataMap[server.Id] = new ChatServerMetadata
                 {
-                    var channelMap = server.Channels.ToDictionary(c => c.Id);
-                    _cache.Set(GetChannelKey(server.Id.ToString()), channelMap);
-                }
-                var tempo= new ThreadSafeIndexedUserCollection();
-                tempo.Initialize(server.memberList);
-                _serverOfflineUserMap[server.Id] = tempo;
-                _serverOnlineUserMap[server.Id] = new ThreadSafeIndexedUserCollection();
-                
+                    Id = server.Id.ToString(),
+                    Name = server.Name,
+                    AvatarUrl = server.AvatarUrl,
+                    CreatedAt = server.CreatedAt,
+                    Channels = server.Channels,
+                    AdminId = server.AdminId.ToString()
+                };
+                var offline = new SkipListSortedSetV2<long>();
+                offline.Initialize(server.memberList);
+                var online = new SkipListSortedSetV2<long>();
+                _serverUserMap[server.Id] = (online, offline);
             }
-
             return Task.FromResult(true);
         }
-
-        public void UploadServerAsync(ChatServerMetadata server)
+        public Task<bool> UploadNewServerAsync(ChatServerMetadata server)
         {
-            var serverKey = GetServerKey(server.Id);
-            _cache.Set(serverKey, server);
-
-            if (server.Channels.Any())
-            {
-                var channelMap = server.Channels.ToDictionary(c => c.Id);
-                _cache.Set(GetChannelKey(server.Id), channelMap);
-            }
-        }
-
-        public Task<bool> IsAdmin(long serverId, long userId)
-        {
-            if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
-                throw new KeyNotFoundException($"Server {serverId} not found in cache.");
-            return Task.FromResult(server.AdminId == userId.ToString());
-        }
-
-        public Task<bool> IsAdmin(long serverId, long channelId, long userId)
-        {
-            if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
-                throw new KeyNotFoundException($"Server {serverId} not found in cache.");
-
-            var channel = channelId.ToString();
-            if (!_userChatService.IsUserInServer(userId.ToString(), serverId))
-                throw new KeyNotFoundException($"Member {userId} not in {serverId}");
-
-            return Task.FromResult(server.AdminId == userId.ToString() && server.Channels.Any(c => c.Id == channel));
-        }
-
-        public Task<ChatServerMetadata?> GetServerAsync(string serverId, bool includeChannels = true)
-        {
-            if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
-                return Task.FromResult<ChatServerMetadata?>(null);
-
-            if (!includeChannels)
-            {
-                server.Channels = new List<ChatChannelDtoLite>();
-                return Task.FromResult(server);
-            }
-
-            if (_cache.TryGetValue(GetChannelKey(serverId), out Dictionary<string, ChatChannelDtoLite>? channels))
-            {
-                server.Channels = channels.Values.OrderBy(c => c.Order).ToList();
-            }
-
-            return Task.FromResult(server);
-        }
-
-        public Task<long?> GetUserPermissionAsync(long userId, long serverId, long channelId)
-        {
-            var perms = GetOrCreateUserPerms(userId, serverId);
-            return Task.FromResult(perms.TryGetValue(channelId, out var value) ? (long?)value : null);
-        }
-
-        public Task<bool> SetUserPermissionAsync(long userId, long serverId, long channelId, long perm)
-        {
-            var userPerms = GetOrCreateUserPerms(userId, serverId);
-            userPerms[channelId] = perm;
-
-            var channelPerms = GetOrCreateChannelPerms(serverId, channelId);
-            channelPerms[userId] = perm;
-
-            return Task.FromResult(true);
-        }
-
-        public Task<Dictionary<long, long>> GetAllUserPermsInServerAsync(long userId, long serverId)
-        {
-            return Task.FromResult(GetOrCreateUserPerms(userId, serverId));
-        }
-
-        public Task<Dictionary<long, long>> GetAllUserPermsInChannelAsync(long serverId, long channelId)
-        {
-            return Task.FromResult(GetOrCreateChannelPerms(serverId, channelId));
-        }
-
-        private Dictionary<long, long> GetOrCreateUserPerms(long userId, long serverId)
-        {
-            var key = $"user:{userId}:server:{serverId}:perms";
-            return _cache.GetOrCreate(key, entry => new Dictionary<long, long>());
-        }
-
-        private Dictionary<long, long> GetOrCreateChannelPerms(long serverId, long channelId)
-        {
-            var key = $"server:{serverId}:channel:{channelId}:perms";
-            return _cache.GetOrCreate(key, entry => new Dictionary<long, long>());
-        }
-
-        private string GetServerKey(long serverId) => $"server:{serverId}:meta";
-        private string GetServerKey(string serverId) => $"server:{serverId}:meta";
-        private string GetChannelKey(string serverId) => $"server:{serverId}:channels";
-
-        public async Task IsInServerWithCorrectStruct(long userId, long serverId, long channelId)
-        {
-            if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
-                throw new KeyNotFoundException($"Server {serverId} not found in cache.");
-
-            var channel = channelId.ToString();
-            if (!server.Channels.Any(c => c.Id == channel))
-                throw new KeyNotFoundException($"Channel {channel} not found in server {serverId}.");
-
-            if (!_userChatService.IsUserInServer(userId.ToString(), serverId))
-                throw new KeyNotFoundException($"Member {userId} not in {serverId}");
-        }
-
-        public void AddChannelAsync(ChatChannelDto channel)
-        {
-            var serverId = channel.ServerId;
-            if (!_cache.TryGetValue(GetServerKey(serverId), out ChatServerMetadata? server))
-                throw new KeyNotFoundException($"Server {serverId} not found in cache.");
-
-            server.Channels.Add(channel);
-        }
-
-        public bool SetUserOnline(List<long> serverIds, UserMetadata user,  long userIdL=-1)
-        {
-
-            var userId = user.ToString();
-            if (userIdL ==-1)
-                userIdL = long.Parse(userId);
-            if (_userChatService.IsUserOnline(userId))
-                return false;
+            var serverId = long.Parse(server.Id);
+            _metadataMap[serverId] = server;
+            var offline = new SkipListSortedSetV2<long>();
+            var online = new SkipListSortedSetV2<long>();
+            _serverUserMap[serverId] = (online, offline);
             
-            foreach (var serverId in serverIds)
+            return Task.FromResult(true);
+        }
+        public Task<bool> AddChannel(ChatChannelDto channel)
+        {
+            var metadata = GetServerAsync(channel.ServerId, false);
+            if (!metadata.Result.Success)
+                return Task.FromResult(false);
+            metadata.Result.Value.Channels.Add(channel);
+            return Task.FromResult(true);   
+        }
+        public Task<OperationResultT<ChatServerMetadata>> EditServerProfile(stringlong serverId, stringlong requestorId, string newName, string avatarUrl = "")
+        {
+            var metadata = GetServerAsync(serverId, false).Result.Value;
+            if (metadata == null)
+                return Task.FromResult(OperationResultT<ChatServerMetadata>.Fail("404", "Server not found"));
+
+            if (requestorId.StringValue != metadata.AdminId)
+                return Task.FromResult(OperationResultT<ChatServerMetadata>.Fail("403", "You are not an admin"));
+
+            metadata.Name = newName;
+            metadata.AvatarUrl = avatarUrl;
+            return Task.FromResult(OperationResultT<ChatServerMetadata>.Ok(metadata));
+        }
+
+        public Task<OperationResultT<ChatServerMetadata>> GetServerAsync(stringlong serverId, bool isCopy = true)
+        {
+            if (!_metadataMap.TryGetValue(serverId.Value, out var cached) || cached is null)
+                return Task.FromResult(OperationResultT<ChatServerMetadata>.Fail("404", "Server metadata not found"));
+
+            ChatServerMetadata result = !isCopy
+                ? cached
+                : new ChatServerMetadata
+                {
+                    Id = cached.Id,
+                    Name = cached.Name,
+                    AvatarUrl = cached.AvatarUrl,
+                    CreatedAt = cached.CreatedAt,
+                    AdminId = cached.AdminId,
+                    Channels = new List<ChatChannelDtoLite>(cached.Channels)
+                };
+
+            return Task.FromResult(OperationResultT<ChatServerMetadata>.Ok(result));
+        }
+
+        public OperationResultBool IsAdmin(stringlong serverId, stringlong userId)
+        {
+            if (!_metadataMap.TryGetValue(serverId.Value, out var server))
             {
-                if (!_serverOnlineUserMap.TryGetValue(serverId, out var set))
+                return OperationResultBool.Fail("400", $"[UserService:IsAdmin] Server {serverId} not found in cache");
+            }
+
+            bool isAdmin = server.AdminId == userId.StringValue;
+            return OperationResultBool.Ok(isAdmin);
+        }
+
+        public Task<OperationResultBool> IsAdmin(stringlong serverId, stringlong channelId, stringlong userId)
+        {
+            var serverResult = GetServerAsync(serverId, false).Result;
+            if (!serverResult.Success)
+            {
+                return Task.FromResult(OperationResultBool.Fail("400", $"[UserService:IsAdmin] Server {serverId} not found in cache"));
+            }
+
+            var server = serverResult.Value;
+            if (!_userChatService.IsUserInServer(userId.StringValue, serverId.Value))
+            {
+                return Task.FromResult(OperationResultBool.Fail("403", $"[UserService:IsAdmin] User {userId} is not a member of server {serverId}"));
+            }
+            if(!server.Channels.Any(c => c.Id == channelId.StringValue))
+            {
+                return Task.FromResult(OperationResultBool.Fail("403", $"[UserService:IsAdmin] Channel {channelId} is not a channel of server {channelId}"));
+            }
+            bool isAdmin = server.AdminId == userId.StringValue;
+            return Task.FromResult(OperationResultBool.Ok(isAdmin));
+        }
+
+        public (bool success, List<int> newOnlineLocations, List<int> oldOfflineLocations) SetUserOnline(List<long> serverIds, UserMetadata user)
+        {
+            var userId = long.Parse(user.UserId);
+            if (_userChatService.IsUserOnline(user.UserId))
+                return (false, new(), new());
+
+            var newOnlineLocations = new List<int>(serverIds.Count);
+            var oldOfflineLocations = new List<int>(serverIds.Count);
+
+            for (int i = 0; i < serverIds.Count; i++)
+            {
+                var serverId = serverIds[i];
+                if (!_serverUserMap.TryGetValue(serverId, out var sets))
                     throw new Exception($"Server {serverId} not found in cache");
-                set.AddUser(userIdL);
+
+                sets.Offline.Remove(userId, out var oldOfflineIndex);
+                if (!sets.Online.Add(userId, out var newOnlineIndex))
+                    throw new Exception("Cache mismatch");
+                newOnlineLocations.Add(newOnlineIndex);
+                oldOfflineLocations.Add(oldOfflineIndex);
             }
-            _userChatService.SetOnlineUserData(serverIds, user);
-            return true;
+            _userChatService.SetOnlineUserData(serverIds.Select(s => s).ToList(), user);
+            return (true, newOnlineLocations, oldOfflineLocations);
         }
 
-
-        public List<long> GetOnlineUsersAsync(long serverId,int lim=50)
+        public (bool success, List<long> serverList, List<int> newOfflineLocations, List<int> oldOnlineLocations) SetUserOffline(stringlong userId)
         {
-            if(_serverOnlineUserMap.TryGetValue(serverId,out  var index))
+            if (!_userChatService.IsUserOnline(userId.StringValue))
+                return (false, new(), new(), new());
+
+            var serverIds = _userChatService.GetUserServerList(userId.StringValue);
+            var newOfflineLocations = new List<int>(serverIds.Count);
+            var oldOnlineLocations = new List<int>(serverIds.Count);
+
+            for (int i = 0; i < serverIds.Count; i++)
             {
-                return index.GetUserPage(0, lim);
+                var serverId = serverIds[i];
+                if (!_serverUserMap.TryGetValue(serverId, out var sets))
+                    throw new Exception($"Server {serverId} not found in cache");
+
+                if (!sets.Online.Remove(userId.Value, out var oldOnlineIndex))
+                    throw new Exception($"Cache mismatch removing user {userId} from online");
+
+                if (!sets.Offline.Add(userId.Value, out var newOfflineIndex))
+                    throw new Exception("Cache mismatch");
+
+                oldOnlineLocations.Add(oldOnlineIndex);
+                newOfflineLocations.Add(newOfflineIndex);
             }
-            throw new Exception($"Error while loading online user :Server havent loaded {serverId}");
+            _userChatService.DowngradeUserCache(userId.StringValue);
+            return (true, serverIds, newOfflineLocations, oldOnlineLocations);
         }
 
-        public List<long> GetOfflineUsersAsync(long serverId, int lim = 50)
+        public List<long> GetOnlineUsersAsync(stringlong serverId, int lim = 50)
         {
-            if (_serverOfflineUserMap.TryGetValue(serverId, out var index))
-            {
-                return index.GetUserPage(0, lim);
-            }
-            throw new Exception($"Error while loading offline user: Server havent loaded {serverId}");
+            if (_serverUserMap.TryGetValue(serverId.Value, out var sets))
+                return sets.Online.GetRange(0, lim);
+            throw new Exception($"Server {serverId} not loaded");
         }
 
-        public void SetAllUsers(long serverId, List<long> users)
+        public List<long> GetOfflineUsersAsync(stringlong serverId, int lim = 50)
         {
-            if (!_serverOfflineUserMap.TryGetValue(serverId, out var set))
-                _serverOfflineUserMap[serverId] = set = new ThreadSafeIndexedUserCollection();
-            else
-                set.Clear();
+            if (_serverUserMap.TryGetValue(serverId.Value, out var sets))
+                return sets.Offline.GetRange(0, lim);
+            throw new Exception($"Server {serverId} not loaded");
+        }
 
-            set.AddRange(users);
-        }
-        public void SetUserOffline(long userId)
+        public (int index, bool isOnline) AddUserToServer(stringlong userId, stringlong serverId)
         {
-            var (list, metadata) = _userChatService.GetUserChatData(userId.ToString());
-            if(list == null)
-            {
-                //user already offline
-                return ;
-            }
-            foreach(var i in list)
-            {
-                if(_serverOfflineUserMap.TryGetValue(i,out var offlinelist))
-                {
-                    offlinelist.Add(userId);
-                }else
-                    Console.WriteLine($"Server  {i} not found in here");
-                if (_serverOnlineUserMap.TryGetValue(i, out var onlinelist))
-                {
-                    onlinelist.Add(userId);
-                }
-                else
-                    Console.WriteLine($"Server {i} not found in here");
-            }
+            var online = _userChatService.AddServerToUser(userId.Value, serverId.Value);
+            return (_AddUserToServer(userId.Value, serverId.Value, online), online);
         }
-        private void _AddUserToServer(long userId,long serverId, bool online)
+
+        private int _AddUserToServer(long userId, long serverId, bool online)
         {
+            if (!_serverUserMap.TryGetValue(serverId, out var sets))
+                throw new KeyNotFoundException($"Server {serverId} not found in _serverUserMap.");
+            int index=-1;
             if (online)
-                _serverOnlineUserMap[serverId].Add(userId);
+                sets.Online.Add(userId, out index);
             else
-                _serverOnlineUserMap[serverId].Add(userId);
-
-        }
-        public void AddUserToServer(long userId, long serverId, bool online)
-        {
-            _userChatService.AddServerToUser(userId, serverId);
-            _AddUserToServer(userId, serverId, online);
+                sets.Offline.Add(userId, out index);
+            return index;
         }
 
-        public bool RemoveUserFromServer(long userId, long serverId)
+        public bool RemoveUserFromServer(stringlong userId, stringlong serverId)
         {
-            var isOnline = _serverOnlineUserMap.Remove(userId);
-            if (isOnline)
-                _userChatService.RemoveServerFromUser(userId.ToString(), serverId);
-            else
-            {
-            var offline=       _serverOfflineUserMap.Remove(userId);
-                if (!offline)
-                    return false;//throw new Exception($"{userId} is not in {serverId}");
-            }
-            return true;
+            if (!_serverUserMap.TryGetValue(serverId.Value, out var sets))
+                return false;
+
+            var removed = sets.Online.Remove(userId.Value, out _) || sets.Offline.Remove(userId.Value, out _);
+            if (removed)
+                _userChatService.RemoveServerFromUser(userId.StringValue, serverId.Value);
+
+            return removed;
+        }
+
+        public (List<long> online, List<long> offline) GetUserList(stringlong serverId)
+        {
+            if (!_serverUserMap.TryGetValue(serverId.Value, out var sets))
+                throw new KeyNotFoundException($"Server {serverId} not found in _serverUserMap.");
+            return (sets.Online.GetAll(), sets.Offline.GetAll());
         }
     }
 }

@@ -31,7 +31,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             string userId = new UserClaimHelper(User).GetUserIdStr();
             try
             {
-                await _chatHub.EditedMessage(await _writeService.EditMessageAsync(rq, userId));
+                var result = await _writeService.EditMessageAsync(rq, userId);
+                if (!result.Success)
+                    return BadRequest($"Fail to edit message" + result.ErrorMessage);
+                await _chatHub.EditedMessage(result.Value);
             }
             catch(Exception ex)
             {
@@ -50,7 +53,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             string userId = new UserClaimHelper(User).GetUserIdStr();
             try
             {
-               await _chatHub.DeletedMessage(await _writeService.DeleteMessageAsync(rq, userId));
+                var result = await _writeService.DeleteMessageAsync(rq, userId);
+                if (!result.Success)
+                    return BadRequest($"Fail to delete message" + result.ErrorMessage);
+               await _chatHub.DeletedMessage(result.Value);
             }
             catch (Exception ex)
             {   
@@ -64,7 +70,9 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
         {
             var userId = new UserClaimHelper(User).GetUserIdStr();
             var result = await _writeService.SendMediaMessageAsync(request, userId);
-            await _chatHub.NewMessage(result, request.ServerId);
+            if (!result.Success)
+                return BadRequest(result.ErrorMessage);
+            await _chatHub.NewMessage(result.Value, request.ServerId);
             return Ok();
         }
         //[HttpPost]

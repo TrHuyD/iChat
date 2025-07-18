@@ -1,6 +1,7 @@
 ﻿using iChat.Client.Data.Chat;
 using iChat.Client.Services.Auth;
 using iChat.DTOs.Users;
+using iChat.DTOs.Users.Enum;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -34,7 +35,7 @@ namespace iChat.Client.Services.UserServices.Chat
             _hubConnection = _connectionFactory.CreateHubConnection(ChatHubPath);
 
             Console.WriteLine("Registering ReceiveMessage on Signalr Client");
-            _hubConnection.On<NewMessage>("ReceiveMessage", async message =>
+            _hubConnection.On<NewMessage>(SignalrClientPath.RecieveMessage, async message =>
             {
                 try
                 {
@@ -48,8 +49,8 @@ namespace iChat.Client.Services.UserServices.Chat
                     Console.WriteLine($"Error handling new message: {ex.Message}");
                 }
             });
-            _hubConnection.On<ChatChannelDto>("ChannelCreate", HandleChannelCreate);
-            _hubConnection.On<DeleteMessageRt>("MessageDelete",async rt =>
+            _hubConnection.On<ChatChannelDto>(SignalrClientPath.ChannelCreate, HandleChannelCreate);
+            _hubConnection.On<DeleteMessageRt>(SignalrClientPath.MessageDelete,async rt =>
             {
                 try
                 {
@@ -60,7 +61,7 @@ namespace iChat.Client.Services.UserServices.Chat
                     Console.WriteLine($"Error handling delete message: {ex.Message}");
                 }
             });
-            _hubConnection.On<UserMetadata>("UpdateProfile", async rt =>
+            _hubConnection.On<UserMetadata>(SignalrClientPath.UpdateProfile, async rt =>
             {
                 try
                 {
@@ -71,10 +72,10 @@ namespace iChat.Client.Services.UserServices.Chat
                     Console.WriteLine($"Error handling delete message: {ex.Message}");
                 }
             });
-            _hubConnection.On<string>("LeaveServer",LeaveRoomAsync);
-            _hubConnection.On<ChatServerMetadata>("JoinNewServer", OnJoiningNewServer);
-            _hubConnection.On<EditMessageRt>("MessageEdit",  HandleEditMessage);
-            _hubConnection.On<string, string>("UserTyping", async (channelId, userId) =>
+            _hubConnection.On<string>(SignalrClientPath.LeaverServer,LeaveRoomAsync);
+            _hubConnection.On<ChatServerMetadata>(SignalrClientPath.JoinNewServer, OnJoiningNewServer);
+            _hubConnection.On<EditMessageRt>(SignalrClientPath.MessageEdit,  HandleEditMessage);
+            _hubConnection.On<string, string>(SignalrClientPath.UserTyping, async (channelId, userId) =>
             {
                 try
                 {

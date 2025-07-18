@@ -393,21 +393,21 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
 
         #region Backward Compatibility
 
-        public void SetUserChatData(string userId, List<long>? serverList = null, UserMetadata? metadata = null)
-        {
-            if (serverList != null && metadata != null)
-            {
-                SetOnlineUserData(serverList, metadata);
-            }
-            else if (metadata != null)
-            {
-                SetOfflineUserMetadata(userId, metadata);
-            }
-            else if (serverList != null)
-            {
-                UpdateOnlineUserServers(userId, serverList);
-            }
-        }
+        //public void SetUserChatData(string userId, List<long>? serverList = null, UserMetadata? metadata = null)
+        //{
+        //    if (serverList != null && metadata != null)
+        //    {
+        //        SetOnlineUserData(serverList, metadata);
+        //    }
+        //    else if (metadata != null)
+        //    {
+        //        SetOfflineUserMetadata(userId, metadata);
+        //    }
+        //    else if (serverList != null)
+        //    {
+        //        UpdateOnlineUserServers(userId, serverList);
+        //    }
+        //}
 
         public (List<long>? serverList, UserMetadata? metadata) GetUserChatData(string userId, bool extendExpire = false)
         {

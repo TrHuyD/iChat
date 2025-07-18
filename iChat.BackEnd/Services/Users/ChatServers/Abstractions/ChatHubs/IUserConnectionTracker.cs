@@ -2,7 +2,7 @@
 {
     public interface IUserConnectionTracker
     {
-        void AddConnection(long userId, string connectionId);
+        bool AddConnection(long userId, string connectionId);
         bool RemoveConnection(long userId, string connectionId);
         IReadOnlyCollection<string> GetConnections(long userId);
     }

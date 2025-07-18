@@ -135,7 +135,7 @@ builder.Services.AddIdentity<AppUser, Role>(options =>
 
 // Add authentication services
 new SqlAuthBuilderHelper().AddService(builder);
-
+builder.Services.AddScoped<AppChatServerCacheService>();
 // Add user and chat services
 builder.Services.AddScoped<IChatCreateDBService, EfCoreChatCreateService>();
 builder.Services.AddScoped<CreateUserService>();

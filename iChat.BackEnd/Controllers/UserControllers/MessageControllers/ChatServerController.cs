@@ -35,8 +35,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
                 }
 
                 var userId = new UserClaimHelper(User).GetUserId();
-                var serverid = await createService.CreateServerAsync(rq, userId);
-                await responer.JoinNewServer(userId.ToString(), serverid);
+                var result= await createService.CreateServerAsync(rq, userId);
+                if (!result.Success)
+                    return BadRequest(result.ErrorMessage);
+                await responer.JoinNewServer(userId.ToString(), result.Value);
                 return Ok();
             }
             catch(Exception ex)
@@ -58,7 +60,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             var userId = new UserClaimHelper(User).GetUserId();
             try
             {
-                var channel = await createService.CreateChannelAsync(rq,userId);
+                var result = await createService.CreateChannelAsync(rq,userId);
+                if(!result.Success)
+                    return BadRequest(result.ErrorMessage);
+                var channel = result.Value;
                 await responer.NewChannel(channel.ServerId, channel);
                 return Ok();
             }
