@@ -6,6 +6,7 @@ using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs;
 using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users.Enum;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
@@ -25,11 +26,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         private readonly IMessageWriteService _sendMessageService;
         private readonly MemCacheUserChatService _localCache; 
 
-    //    private static readonly ConcurrentDictionary<string, string> UserFocusedChannel = new();
-        public static string FocusKey(string roomId)=> $"{roomId}_focus";
-        public static string FocusKey(long roomId) => $"{roomId}_focus";
-        //    public static string PersonalKey(string userId) => $"{userId}_personal"; 
-        public static string FocusChannelKey(string ChannelId) => $"{ChannelId}c_focus";
+        public static string FocusServerKey(stringlong roomId) => $"{roomId}_focus";
+        public static string FocusChannelKey(stringlong ChannelId) => $"{ChannelId}c_focus";
         private readonly AppChatServerCacheService _chatServerMetadataCacheService;
 
         private readonly IUserConnectionTracker _connectionTracker;
@@ -101,8 +99,11 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
                 return;
             }
             
-            await Groups.AddToGroupAsync(Context.ConnectionId, FocusKey(roomId));
-            _connectionTracker.TrackRoom(roomId,userId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, FocusServerKey(roomId));
+            var prev =_connectionTracker.SetServer(roomId,userId);
+            if(prev!=0)
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusServerKey(prev));
+
             await Clients.Caller.SendAsync(SignalrClientPath.UserList,await _chatServerMetadataCacheService.GetMemberList(roomId));
             _logger.LogInformation($"Client {Context.ConnectionId} joined room {roomId}");
         }
@@ -110,16 +111,18 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
             //Doesnt check for now
-            _connectionTracker.SetChannel(Context.ConnectionId,ChannelId);
+            var prev=_connectionTracker.SetChannel(Context.ConnectionId,ChannelId);
+            if (prev != 0)
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusChannelKey(prev));
+            await Groups.AddToGroupAsync(Context.ConnectionId, FocusChannelKey(ChannelId));
+
+
         }
         public async Task LeaveRoom(string roomId)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusKey(roomId));
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusServerKey(roomId));
             _logger.LogInformation($"Client {Context.ConnectionId} left room {roomId}");
         }
-
-
-
         public async Task SendMessage(string roomId, ChatMessageDtoSafe message)
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();

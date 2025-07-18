@@ -7,12 +7,12 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs
         bool AddConnection(long userId, string connectionId);
         bool RemoveConnection(long userId, string connectionId);
         IReadOnlyCollection<string> GetConnections(long userId);
-        bool TrackRoom(string connectionId, stringlong roomName);
-        stringlong GetRoom(string connectionId);
+        stringlong SetServer(string connectionId, stringlong roomName);
+        stringlong GetServer(string connectionId);
 
         // Channel tracking
-        void SetChannel(string connectionId, string channelId);
-        string? GetChannelForConnection(string connectionId);
+        stringlong SetChannel(string connectionId, string channelId);
+        stringlong GetChannelForConnection(string connectionId);
         IReadOnlyCollection<string> GetConnectionsInChannel(string channelId);
     }
 }
