@@ -77,6 +77,8 @@ namespace iChat.Client.Pages.Chat
 
         protected override async Task OnParametersSetAsync()
         {
+            var prevChannel = _currentChannelId;
+            var prevServer = _currentServerId;
             if (Init_failed) return;
 
             if (_currentChannelId != ChannelId)
@@ -89,7 +91,7 @@ namespace iChat.Client.Pages.Chat
 
                 if (!string.IsNullOrEmpty(_currentChannelId))
                 {
-                    await ChatService.LeaveRoomAsync(_currentChannelId);
+                   // await ChatService.LeaveRoomAsync(_currentChannelId);
                 }
 
                 // Store previous serverId for comparison
@@ -123,14 +125,16 @@ namespace iChat.Client.Pages.Chat
                     await AddMessagesForward(bucket);
 
                 _currentBucketIndex = latest[0].BucketId;
-                await ChatService.JoinRoomAsync(ServerId);
                 StateHasChanged();
 
                 checkScrollToBotoom = checkScrollToTop = _isOldHistoryRequestButtonDisabled = _currentBucketIndex == 0;
 
               //  StartTypingTimer();
-
-                await Task.Delay(125);
+              if(_currentServerId!=prevServer)
+                    await ChatService.NotifyJoinServer(new ChatServerConnectionState { ServerId = _currentServerId, ChannelId = _currentChannelId });
+              else
+                    await ChatService.NotifyJoinChannel(_currentChannelId);
+                    await Task.Delay(125);
                 await ScrollToMessage(loc.ToString());
             }
         }
@@ -281,7 +285,7 @@ namespace iChat.Client.Pages.Chat
         {
             try
             {
-                await ChatService.LeaveRoomAsync(ServerId);
+                await ChatService.NotifyLeaveRoom();
             }
             catch (Exception ex)
             {

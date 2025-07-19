@@ -7,6 +7,7 @@ using iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs;
 using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.DTOs.Collections;
+using iChat.DTOs.Users;
 using iChat.DTOs.Users.Enum;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
@@ -15,6 +16,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
+using System.Data;
 using System.Security.Claims;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
@@ -86,25 +88,19 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
              await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task JoinRoom(string roomId)
+        public async Task JoinRoom(ChatServerConnectionState state)
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
-            if(!ValueParser.TryLong(roomId, out var roomIdLong)&&roomIdLong<1_000_000_000l)
-            {
-                _logger.LogWarning($"Invalid roomId: {roomId} for user {userId}");
+            if (!await _chatServerMetadataCacheService.IsMember(state.ServerId, state.ChannelId, userId))
                 return;
-            }
-            if (!_localCache.IsUserInServer(userId, roomIdLong))
+            var prevState = _connectionTracker.SetServer(Context.ConnectionId,state);
+            if (prevState.ServerId != state.ServerId)
             {
-                return;
+                await Groups.AddToGroupAsync(Context.ConnectionId, FocusServerKey(state.ServerId));
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusServerKey(prevState.ServerId));
             }
-            await Groups.AddToGroupAsync(Context.ConnectionId, FocusServerKey(roomId));
-            var prev =_connectionTracker.SetServer(roomId,userId);
-            if(prev!=0)
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusServerKey(prev));
-
-            await Clients.Caller.SendAsync(SignalrClientPath.UserList,await _chatServerMetadataCacheService.GetMemberList(roomId));
-            _logger.LogInformation($"Client {Context.ConnectionId} joined room {roomId}");
+            await Clients.Caller.SendAsync(SignalrClientPath.UserList,await _chatServerMetadataCacheService.GetMemberList(state.ServerId));
+            _logger.LogInformation($"Client {Context.ConnectionId} joined room {state.ServerId}");
         }
         public async Task JoinChannel(string ChannelId)
         {
@@ -118,24 +114,28 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             if (prev != 0)
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusChannelKey(prev));
             await Groups.AddToGroupAsync(Context.ConnectionId, FocusChannelKey(ChannelId));
-
-
         }
-        public async Task LeaveRoom(string roomId)
+        public async Task LeaveRoom()
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusServerKey(roomId));
-            _logger.LogInformation($"Client {Context.ConnectionId} left room {roomId}");
+            var prev = _connectionTracker.SetServer(Context.ConnectionId, new ChatServerConnectionState(0,0));
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusServerKey(prev.ServerId));
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusChannelKey(prev.ChannelId));
+
+            _logger.LogInformation($"Client {Context.ConnectionId} left room {prev.ServerId}");
         }
         public async Task SendMessage(string roomId, ChatMessageDtoSafe message)
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
+            var isValid = _connectionTracker.ValidateConnection(roomId, message.ChannelId, Context.ConnectionId);
+            if (!isValid)
+                return;
             var request = new MessageRequest
             {
                 SenderId = userId,
                 TextContent = message.Content,
                 ReceiveChannelId = message.ChannelId,
             };
-            var result = await _sendMessageService.SendTextMessageAsync(request,roomId);
+            var result = await _sendMessageService.SendTextMessageAsync(request,roomId,false);
             _logger.LogInformation($"Message sent to room {roomId} by user {userId}");
             await Clients.Group(roomId).SendAsync(SignalrClientPath.RecieveMessage, result.Value);
         }

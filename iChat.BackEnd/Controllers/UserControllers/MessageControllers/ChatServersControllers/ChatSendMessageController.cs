@@ -69,7 +69,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
         public async Task<IActionResult> SendMessage( [FromForm] MessageUploadRequest request)
         {
             var userId = new UserClaimHelper(User).GetUserIdStr();
-            var result = await _writeService.SendMediaMessageAsync(request, userId);
+            var result = await _writeService.SendMediaMessageAsync(request, userId,true);
             if (!result.Success)
                 return BadRequest(result.ErrorMessage);
             await _chatHub.NewMessage(result.Value, request.ServerId);

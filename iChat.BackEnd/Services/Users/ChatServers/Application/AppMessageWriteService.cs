@@ -88,15 +88,18 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 BucketId = bucketID
             });
         }
-        public async Task<OperationResultT<NewMessage>> SendMediaMessageAsync(MessageUploadRequest rq,string UserId)
+        public async Task<OperationResultT<NewMessage>> SendMediaMessageAsync(MessageUploadRequest rq,string UserId,bool fromApi)
         {
             var channelId = new stringlong(rq.ChannelId);
             var serverId = new stringlong(rq.ServerId);
             var userId = new stringlong(UserId);
-            var isAdminRt = await _serverMetaDataCacheService.IsAdmin(serverId, channelId,userId);
-            if (!isAdminRt.Success)
-                return OperationResultT<NewMessage>.Fail(isAdminRt.ErrorCode, "Error when editing message :" + isAdminRt.ErrorCode);
-            var messageIdResult = _idGen.GenerateId();
+            if (fromApi)
+            {
+                var isAdminRt = await _serverMetaDataCacheService.IsAdmin(serverId, channelId, userId);
+                if (!isAdminRt.Success)
+                    return OperationResultT<NewMessage>.Fail(isAdminRt.ErrorCode, "Error when editing message :" + isAdminRt.ErrorCode);
+            }
+                var messageIdResult = _idGen.GenerateId();
             var uploadResult = await _chatWriteService.UploadImage(rq, messageIdResult, userId);
             var chatMessage = new ChatMessageDtoSafe
             {
@@ -115,15 +118,17 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             });
         }
 
-        public async Task<OperationResultT<NewMessage>> SendTextMessageAsync(MessageRequest request,string serverId)
+        public async Task<OperationResultT<NewMessage>> SendTextMessageAsync(MessageRequest request,string serverId,bool fromApi)
         {
             var channelId = long.Parse(request.ReceiveChannelId);
             var serverIdLong = long.Parse(serverId);
             var userId = long.Parse(request.SenderId);
-            var permCheck =await _serverMetaDataCacheService.IsAdmin(serverIdLong,channelId , userId);
-            if (!permCheck.Success)
-                return OperationResultT<NewMessage>.Fail(permCheck.ErrorCode, permCheck.ErrorMessage);
-            
+            if (fromApi)
+            {
+                var permCheck = await _serverMetaDataCacheService.IsAdmin(serverIdLong, channelId, userId);
+                if (!permCheck.Success)
+                    return OperationResultT<NewMessage>.Fail(permCheck.ErrorCode, permCheck.ErrorMessage);
+            }
             var messageIdResult = _idGen.GenerateId();
             _ = Task.Run(() => _chatWriteService.UploadMessageAsync(request, messageIdResult));
             var chatMesssage = new ChatMessageDtoSafe

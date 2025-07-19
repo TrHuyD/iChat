@@ -5,6 +5,7 @@ using iChat.DTOs.Users;
 using iChat.DTOs.Users.Enum;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Threading.Channels;
 
 namespace iChat.Client.Services.UserServices.Chat
 {
@@ -78,7 +79,7 @@ namespace iChat.Client.Services.UserServices.Chat
                     Console.WriteLine($"Error handling delete message: {ex.Message}");
                 }
             });
-            _hubConnection.On<string>(SignalrClientPath.LeaverServer,LeaveRoomAsync);
+            _hubConnection.On<string>(SignalrClientPath.LeaverServer, ForceLeaveRoom);
             _hubConnection.On<ChatServerMetadata>(SignalrClientPath.JoinNewServer, OnJoiningNewServer);
             _hubConnection.On<EditMessageRt>(SignalrClientPath.MessageEdit,  HandleEditMessage);
             _hubConnection.On<string, string>(SignalrClientPath.UserTyping,  (channelId, userId) =>
@@ -153,20 +154,30 @@ namespace iChat.Client.Services.UserServices.Chat
             await _hubConnection.StartAsync();
             Console.WriteLine("Connected to ChatHub");
         }
-        public async Task JoinRoomAsync(string roomId)
+        public async Task NotifyJoinServer(ChatServerConnectionState state)
         {
             if (_hubConnection is { State: HubConnectionState.Connected })
             {
-                await _hubConnection.InvokeAsync("JoinRoom", roomId);
+                await _hubConnection.InvokeAsync("JoinRoom", state);
             }
         }
-        public async Task LeaveRoomAsync(string roomId)
+        public async Task NotifyJoinChannel(string ChannelId)
         {
             if (_hubConnection is { State: HubConnectionState.Connected })
             {
-                await _hubConnection.InvokeAsync("LeaveRoom", roomId);
+                await _hubConnection.InvokeAsync("JoinChannel", ChannelId);
             }
-            _chatNavigationService.RemoveServer(roomId);
+
+        }
+        public async Task ForceLeaveRoom(string ServerId)
+        {
+            _chatNavigationService.RemoveServer(ServerId);
+
+        }
+        public async Task NotifyLeaveRoom()
+        {
+            if (_hubConnection is { State: HubConnectionState.Connected })
+                await _hubConnection.InvokeAsync("LeaveRoom");
 
         }
         public async Task SendMessageAsync(string roomId, ChatMessageDtoSafe message)

@@ -1,4 +1,6 @@
 ﻿using iChat.DTOs.Collections;
+using iChat.DTOs.Users;
+
 
 namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs
 {
@@ -7,8 +9,9 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs
         bool AddConnection(stringlong userId, string connectionId);
         bool RemoveConnection(stringlong userId, string connectionId);
         IReadOnlyCollection<string> GetConnections(long userId);
-        stringlong SetServer(string connectionId, stringlong roomName);
+        ChatServerConnectionState SetServer(string connectionId, ChatServerConnectionState state);
         stringlong GetServer(string connectionId);
+        bool ValidateConnection(stringlong serverId, stringlong channelId, string connectionId);
         // Channel tracking
         stringlong SetChannel(string connectionId, stringlong channelId);
         stringlong GetChannelForConnection(string connectionId);
