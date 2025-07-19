@@ -118,12 +118,11 @@ builder.Services.AddTransient<IMessageWriteService, AppMessageWriteService>();
 //builder.Services.AddTransient<IChatReadMessageService, _AppMessageReadService>();
 
 // Database Context
-builder.Services.AddDbContext<iChatDbContext>(
-    options =>
-        options.UseNpgsql(builder.Configuration.GetValue<string>("PostgreSQL:ConnectionString"))
-               .LogTo(Console.WriteLine, LogLevel.Information),
-    ServiceLifetime.Scoped
+builder.Services.AddDbContextPool<iChatDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetValue<string>("PostgreSQL:ConnectionString"))
+           .LogTo(Console.WriteLine, LogLevel.Information)
 );
+
 
 // Identity Configuration
 builder.Services.AddIdentity<AppUser, Role>(options =>

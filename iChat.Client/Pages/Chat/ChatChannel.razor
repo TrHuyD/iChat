@@ -38,7 +38,7 @@
    
 
         <div class="messages-container" @ref="_messagesContainer" @onscroll="HandleScroll">
-            <Virtualize Items="@_groupedMessages" Context="group" ItemSize="48">
+            <Virtualize Items="@_groupedMessages" Context="group" ItemSize="48" OverscanCount="50">
                 <div class="message-group" @key="group.Messages[0].Message.Id">
                     <div class="message-group-header">
                         <img class="avatar" src="@group.User.AvatarUrl" />
@@ -111,8 +111,10 @@
                        OnChange="HandleFileUpload"
                        accept="image/*"
                        style="display: none;" />
-
             <button @onclick="SendMessage">Send</button>
+        </div>
+        <div class="typing-indicator">
+            @(_typingCount > 0 ? $"{_typingCount} people are typing…" : "&nbsp;")
         </div>
     </div>
 

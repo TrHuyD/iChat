@@ -8,6 +8,8 @@ namespace iChat.DTOs.Users.Enum
 {
    public static class SignalrClientPath
     {
+        //server_all
+        public static string ServerProfileChange = "sa_ServerProfileChange";
 
         //server_focus
         public static string ChannelCreate = "sf_ChannelCreate";

@@ -26,6 +26,7 @@ namespace iChat.Client.Services.UserServices
         public event Action<ChatServerDtoUser> ServerChanged;
         public event Action<string> ChannelChanged;
         private readonly Lazy<UserStateService> userStateService;
+
         NavigationManager nav;
         string CurrentServer = "";
         public ChatNavigationService(JwtAuthHandler jwtAuthHandler,ToastService toast, LastVisitedChannelService channelTracker, NavigationManager nav,
@@ -60,6 +61,7 @@ namespace iChat.Client.Services.UserServices
                 return;
             server.Channels.RemoveAll(c => c.Id == ccdto.Id);
             server.Channels.Add(ccdto);
+            OnChatServersChanged?.Invoke();
 
         }
         public void RemoveServer(string serverId )
@@ -89,6 +91,7 @@ namespace iChat.Client.Services.UserServices
                 Position = post,
                 isadmin=long.Parse(server.AdminId)==userStateService.Value.GetUserProfile().UserId
             });
+            OnChatServersChanged?.Invoke();
         }
         public void AddServer(ChatServerDtoUser server)
         {
@@ -168,7 +171,7 @@ namespace iChat.Client.Services.UserServices
                 var errorContent = await response.Content.ReadAsStringAsync();
                 throw new InvalidOperationException($"Failed to create server: {errorContent}");
             }
-
+            OnChatServersChanged?.Invoke();
         }
         /// <summary>
         /// Gets a specific server by ID

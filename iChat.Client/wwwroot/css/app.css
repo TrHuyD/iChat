@@ -356,7 +356,10 @@ form + p, p.mt-3 {
     align-items: center;
 }
 
-
+.sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #202225 #2b2d31;
+}
 .server-list {
     display: flex;
     flex-direction: column;

@@ -44,11 +44,14 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
 
         public async Task<OperationResultString> LoginShortSession(LoginRequest request)
         {
-            var user = await _userManager.FindByNameAsync(request.Username);
-            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
-                return OperationResultString.Fail("401", "Invalid credential");
-            return OperationResultString.Ok(_jwksService.GenerateAccessToken(user.Id.ToString()).AccessToken);
-        }
+           
+                var user = await _userManager.FindByNameAsync(request.Username);
+                if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+                    return OperationResultString.Fail("401", "Invalid credential");
+                return OperationResultString.Ok(_jwksService.GenerateAccessToken(user.Id.ToString()).AccessToken);
+           
+
+            }
         public async Task<OperationResult> LoginAsync(LoginRequest request,HttpContext context)
         {
             var user = await _userManager.FindByNameAsync(request.Username);

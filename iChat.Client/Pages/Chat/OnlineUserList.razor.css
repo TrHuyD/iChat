@@ -1,52 +1,4 @@
-﻿.online {
-    color: green;
-}
-
-.offline {
-    color: gray;
-}
-.user-entry {
-    list-style: none;
-    margin-bottom: 0.5rem;
-}
-
-.message {
-    display: flex;
-    gap: 0.5rem;
-    align-items: flex-start;
-}
-
-.avatar {
-    width: 32px;
-    height: 32px;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 14px;
-}
-
-.chat-message-meta {
-    display: flex;
-    gap: 0.2rem;
-    font-size: 0.9rem;
-    font-weight: bold;
-}
-
-.status.online {
-    color: green;
-}
-
-.status.offline {
-    color: gray;
-}
-
-.message-content.placeholder {
-    font-size: 0.9rem;
-    color: #888; 
-}
+﻿
 .section-header {
     font-weight: bold;
     text-align: center;
@@ -54,19 +6,11 @@
     margin: 0.1rem 0;
     list-style: none;
 }
-.message-content.placeholder {
-    margin-top: 0;
-    background: none !important;
-    margin-top:-0.8rem;
-}
-.message
-{
-gap:0.3rem
-}
-.username
-{
-    margin-top:-0.2rem
-}
 ol, ul {
     padding-left: 0.2rem;
+
+}
+.online-list {
+    scrollbar-width: thin;
+    scrollbar-color: #202225 #2b2d31;
 }

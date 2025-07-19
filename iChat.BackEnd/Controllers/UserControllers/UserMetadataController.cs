@@ -22,8 +22,7 @@ namespace iChat.BackEnd.Controllers.UserControllers
             var metadata = await _userMetadataService.GetUserMetadataAsync(userId);
             if (metadata == null)
                 return NotFound();
-            //Response.Headers["Cache-Control"] = "public,max-age=86400"; 
-            //Response.Headers["Expires"] = DateTime.UtcNow.AddDays(1).ToString("R"); 
+
             return Ok(metadata);
         }
         [HttpPost("GetUsersByIds")]

@@ -39,7 +39,7 @@
     private async Task Continue()
     {
          await InviteService.UseInvite(InviteId);
-        Navigation.NavigateTo($"/", forceLoad: true);
+        Navigation.NavigateTo($"/");
     }
 
     private void ExitToMainMenu() => Navigation.NavigateTo("/");

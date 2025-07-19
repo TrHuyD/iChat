@@ -17,13 +17,21 @@ namespace iChat.BackEnd.Controllers
         {
             
         }
-        [HttpGet("SessionLogin")]
+        [HttpPost("SessionLogin")]
         public async Task<IActionResult> SessionLogin(
             [FromBody] LoginRequest request,
             [FromServices] ILoginService loginService)
         {
-            return Ok((await loginService.LoginShortSession(request)).Value);
-        }
+            try
+            {
+                return Ok((await loginService.LoginShortSession(request)).Value);
+            }
+            catch
+            (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            }
         [HttpGet("refreshtoken")]
         public async Task<IActionResult> RefreshToken([FromServices] SqlKeyRotationService _service)
         {

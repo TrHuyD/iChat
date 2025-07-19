@@ -142,7 +142,7 @@ namespace iChat.Client.Services.UserServices.Chat
             {
                 var request = new HttpRequestMessage(HttpMethod.Post, "/api/users/GetUsersByIds")
                 {
-                    Content = new StringContent(JsonSerializer.Serialize(ids), Encoding.UTF8, "application/json")
+                    Content = new StringContent(JsonSerializer.Serialize(ids.Select(i=>i.ToString()).ToList()), Encoding.UTF8, "application/json")
                 };
 
                 var response = await _https.SendAuthAsync(request);
