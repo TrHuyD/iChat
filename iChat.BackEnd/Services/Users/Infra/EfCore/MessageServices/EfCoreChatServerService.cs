@@ -2,6 +2,8 @@
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.Data.EF;
 using iChat.Data.Entities.Servers;
+using iChat.DTOs.Collections;
+using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
 
 namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
@@ -15,19 +17,19 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _db = db;
         }
 
-        public Task<bool> CheckIfUserInServer(long userId, long serverId)
+        public Task<bool> CheckIfUserInServer(stringlong userId, stringlong serverId)
         {
             return _db.UserChatServers
                 .AnyAsync(us => us.UserId == userId && us.ChatServerId == serverId);
         }
 
-        public Task<bool> CheckIfUserBanned(long userId, long serverId)
+        public Task<bool> CheckIfUserBanned(stringlong userId, stringlong serverId)
         {
             return _db.ServerBans
                 .AnyAsync(bu => bu.UserId == userId && bu.ChatServerId == serverId);
         }
 
-        public async Task BanUserAsync(long userId, long serverId, long adminUserId)
+        public async Task BanUserAsync(stringlong userId, stringlong serverId, stringlong adminUserId)
         {
             // Start a transaction
             using var transaction = await _db.Database.BeginTransactionAsync();
@@ -68,7 +70,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 throw;
             }
         }
-        public async Task UnbanUser(long userId, long serverId, long adminUserId)
+        public async Task UnbanUser(stringlong userId, stringlong serverId, stringlong adminUserId)
         {
             var ban = await _db.ServerBans
                 .FirstOrDefaultAsync(b => b.UserId == userId && b.ChatServerId == serverId);
@@ -77,7 +79,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _db.ServerBans.Remove(ban);
             await _db.SaveChangeAsyncSafe();
         }
-        public async Task Join(long userId, long serverId)
+        public async Task Join(stringlong userId, stringlong serverId)
         {
             var isBanned = await CheckIfUserBanned(userId, serverId);
             if (isBanned)
@@ -97,7 +99,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             await _db.SaveChangeAsyncSafe();
         }
 
-        public async Task Left(long userId, long serverId)
+        public async Task Left(stringlong userId, stringlong serverId)
         {
             // Idempotent delete
             var entry = await _db.UserChatServers
@@ -110,43 +112,34 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             }
         }
 
-        public async Task UpdateChatServerNameAsync(long serverId, string newName, long adminUserId)
+        private async Task EditServer(stringlong serverId,string newName="", string url="")
         {
-            var server = await _db.ChatServers
-                .FirstOrDefaultAsync(cs => cs.Id == serverId && cs.AdminId == adminUserId);
-
+            if (newName == "" && url == "")
+                throw new Exception("Method being used wrong");
+            var server = await _db.ChatServers.FirstOrDefaultAsync(cs => cs.Id == serverId );
             if (server == null)
                 throw new UnauthorizedAccessException("You do not have permission to update this server.");
-
-            server.Name = newName;
+            if(!(newName==""))
+                server.Name = newName;
+            if (!(url == ""))
+                server.Avatar = url;
             await _db.SaveChangesAsync();
-        }
-        
-        public async Task TaskDeleteChatServerAsync(long serverId, long adminUserId)
-        {
-            var server = await _db.ChatServers
-                .FirstOrDefaultAsync(cs => cs.Id == serverId);
-           
-            if (server == null||server.AdminId!=adminUserId)
-                throw new UnauthorizedAccessException("You do not have permission to delete this server.");
+            return;
 
-            _db.ChatServers.Remove(server);
-            await _db.SaveChangesAsync();
-        }
 
-        public async Task UpdateChatServerProfileAsync(long serverId, string newName, string url, long adminUserId)
+        }
+        public async Task<ChatServerChangeUpdate> UpdateChatServerProfileAsync(stringlong serverId, stringlong adminUserId, string newName="", string url="")
         {
             try
             {
-                var server = await _db.ChatServers
-                    .FirstOrDefaultAsync(cs => cs.Id == serverId);
-                if (server == null)
-                    throw new UnauthorizedAccessException("Server not found in server.");
-                if (server.AdminId != adminUserId)
-                    throw new UnauthorizedAccessException("You do not have permission to edit this server.");
-                server.Avatar = url;
-                server.Name = newName;
-                await _db.SaveChangesAsync();
+                await EditServer(serverId, newName,url);
+                return new ChatServerChangeUpdate
+                {
+                    Id = serverId.ToString(),
+                    Name = newName,
+                    AvatarUrl = url
+                };
+
             }
             catch (Exception ex)
             {
@@ -154,5 +147,17 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 
             }
             }
+
+        public async Task TaskDeleteChatServerAsync(stringlong serverId, stringlong adminUserId)
+        {
+            var server = await _db.ChatServers
+                .FirstOrDefaultAsync(cs => cs.Id == serverId);
+
+            if (server == null || server.AdminId != adminUserId)
+                throw new UnauthorizedAccessException("You do not have permission to delete this server.");
+
+            _db.ChatServers.Remove(server);
+            await _db.SaveChangesAsync();
+        }
     }
 }

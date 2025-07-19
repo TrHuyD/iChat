@@ -39,6 +39,18 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             var(online,offline) = _localMem.GetUserList(serverId);
             return new MemberList { online= online,offline=offline ,serverId=serverId};
         }
+        public async Task<bool> IsAdmin(stringlong serverId,stringlong userId)
+        {
+            var result =  _localMem.IsAdmin(serverId, userId);
+            if (result.Success)
+                return result.Value;
+            return false;
+        }
+        public async Task UpdateServerChange(ChatServerChangeUpdate server)
+        {
+            var result =await _localMem.UpdateServerMetadata(server);
+            _ = _chatHubResponer.ServerProfileChange(server);
+        }
 
     }
 }

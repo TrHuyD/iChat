@@ -134,6 +134,7 @@ namespace iChat.Client.Services.UserServices.Chat
                 }
             }
 );
+            _hubConnection.On<ChatServerChangeUpdate>(SignalrClientPath.ServerProfileChange, (update)=> OnChatServerProfileUpdate(update));
             _hubConnection.Closed += async (error) =>
             {
                 try
@@ -222,7 +223,11 @@ namespace iChat.Client.Services.UserServices.Chat
         {
             TypingReceived?.Invoke((channelId, userId));
         }
+        private void OnChatServerProfileUpdate(ChatServerChangeUpdate update)
+        {
+            _chatNavigationService.UpdateServer(update);
 
+        }
     }
 
 }

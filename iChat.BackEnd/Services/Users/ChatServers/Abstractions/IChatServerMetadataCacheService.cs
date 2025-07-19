@@ -11,7 +11,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions
         Task<bool> UploadServersAsync(List<ChatServerbulk> servers);
         Task<bool> UploadNewServerAsync(ChatServerMetadata server);
         Task<bool> AddChannel(ChatChannelDto channel);
-        Task<OperationResultT<ChatServerMetadata>> EditServerProfile(stringlong serverId, stringlong requestorId, string newName, string avatarUrl = "");
+        Task<bool> UpdateServerMetadata(ChatServerChangeUpdate update);
         Task<OperationResultT<ChatServerMetadata>> GetServerAsync(stringlong serverId, bool isCopy = true);
         OperationResultBool IsAdmin(stringlong serverId, stringlong userId);
         Task<OperationResultBool> IsAdmin(stringlong serverId, stringlong channelId, stringlong userId);

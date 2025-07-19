@@ -37,10 +37,15 @@
     background-color: #313338;
     scrollbar-width: thin;
     scrollbar-color: #202225 #2b2d31;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    height: 100%;
+    transition: none; /* for not jitterling during preend*/
 }
 .sidebar {
     width: 280px;
-    background-color: #2f3136;
+    background-color: #2C2D32;
     color: #b9bbbe;
     border-left: 1px solid #1e1f22;
     padding: 10px;
@@ -156,32 +161,6 @@ cursor: pointer;
     background-color: #4752c4;
 }
 
-.search-sidebar input {
-    width: 100%;
-    padding: 8px 12px;
-    background-color: #1e1f22;
-    color: #dcddde;
-    border: none;
-    border-radius: 4px;
-    margin-bottom: 8px;
-}
-
-.search-sidebar ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.search-sidebar li {
-    padding: 6px 10px;
-    font-size: 14px;
-    border-radius: 4px;
-    transition: background 0.2s;
-}
-
-.search-sidebar li:hover {
-background-color: #3a3c43;
-    }
 
 .avatar {
     width: 32px;
@@ -252,14 +231,20 @@ background-color: #3a3c43;
     margin-left: 8px;
     margin-top: 2px;
 }
-
-.message-group-body {
-    margin-left: 46px;
-    display: flex;
-    flex-direction: column;
-    gap: 0px;
-    margin-top: -18px;
+.timestamp.compact {
+    font-size: 10px;
+    align-items: baseline;
+    top: 4px;
+    color: #92939A;
+    position: relative
 }
+    .message-group-body {
+        margin-left: 46px;
+        display: flex;
+        flex-direction: column;
+        gap: 0px;
+        margin-top: -18px;
+    }
  .message-group-body .message {
         display: block;
         padding:1px 0;
@@ -420,4 +405,57 @@ background-color: #3a3c43;
     color: #888;
     margin-bottom: 0px;
     padding-left: 5px;
+}
+
+
+.search-sidebar input {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #1e1f22;
+    color: #dcddde;
+    border: none;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.search-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.search-sidebar li {
+    padding: 6px 10px;
+    font-size: 14px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+    .search-sidebar li:hover {
+        background-color: #3a3c43;
+    }
+
+.message.compact {
+    background-color: #323339;
+    padding: 5px 10px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    color: #ddd;
+    max-width: 100%;
+}
+
+.search_result_container {
+    padding: 3px;
+    background: #2C2D32;
+}
+
+.avatar.search {
+    position: relative;
+    top: 5px;
+}
+.chat-message-group:first-child {
+    margin-top: 0 !important;
+}
+.chat-message-group:last-child {
+    margin-bottom: 0 !important;
 }

@@ -5,6 +5,7 @@ using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
 using System.Net.Http.Headers;
 
@@ -109,29 +110,59 @@ namespace iChat.Client.Pages.Chat
 
             }
         }
+        private ScrollSnapshot? _lastScrollSnapshot;
+
+        private Virtualize<MessageGroup>? virtualizeRef;
+
+
         private async Task AddMessagesBehind(MessageBucket bucket)
         {
-            var previousScroll = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
-
-            foreach (var message in bucket.ChatMessageDtos)
+            try
             {
-                _messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
-            }
-            if (_groupedMessages.Count == 0)
-            {
-                _groupedMessages = await GroupMessagesAsync(_messages);
-            }
-            else
-            {
-                var newGroups = await GroupMessagesAsync(bucket);
-                foreach (var group in newGroups.Reverse<MessageGroup>()) // Keep order correct
+                _lastScrollSnapshot = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
+                foreach (var message in bucket.ChatMessageDtos)
                 {
-                    _groupedMessages.Insert(0, group);
+                    _messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
                 }
+                if (_groupedMessages.Count == 0)
+                {
+                    _groupedMessages = await GroupMessagesAsync(_messages);
+                }
+                else
+                {
+                    var newGroups = await GroupMessagesAsync(bucket);
+                    for (int i = newGroups.Count - 1; i >= 0; i--)
+                    {
+                        _groupedMessages.Insert(0, newGroups[i]);
+                    }
+                }
+                StateHasChanged();
+                if (virtualizeRef != null)
+                {
+                    await virtualizeRef.RefreshDataAsync();
+                }
+                await JS.InvokeVoidAsync(
+                    "requestAnimationFrameThen",
+                    DotNetObjectReference.Create(this),
+                    nameof(RestoreScrollAfterPrepend)
+                );
             }
-            await InvokeAsync(StateHasChanged);
-            await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, previousScroll);
+            finally
+            {
+            }
         }
+        [JSInvokable]
+        public async Task RestoreScrollAfterPrepend()
+        {
+            if (_lastScrollSnapshot is not null)
+            {
+                await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, _lastScrollSnapshot);
+                _lastScrollSnapshot = null;
+            }
+        }
+
+
+
         private async Task AddMessagesForward(MessageBucket bucket)
         {
             var previousScroll = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);

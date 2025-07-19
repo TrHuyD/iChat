@@ -28,6 +28,7 @@ namespace iChat.Client.Layout
         private string SelectedServerId => _selectedServer?.Id ?? string.Empty;
         protected override async Task OnInitializedAsync()
         {
+            ChatNavService.OnChatServersChanged += StateHasChanged;
             ChatNavService.ServerChanged += OnServerChange;
             ChatNavService.ChannelChanged += OnChannelChange;
             userProfileDto = LoadingService.GetUserProfile();

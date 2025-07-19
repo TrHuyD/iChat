@@ -29,10 +29,10 @@ window.captureScrollAnchor = function (container) {
         scrollHeight: container.scrollHeight
     };
 };
-window.restoreScrollAfterPrepend = function (container, previous) {
-    const newScrollHeight = container.scrollHeight;
-    container.scrollTop = newScrollHeight - (previous.scrollHeight - previous.scrollTop);
-};
+//window.restoreScrollAfterPrepend = function (container, previous) {
+//    const newScrollHeight = container.scrollHeight;
+//    container.scrollTop = newScrollHeight - (previous.scrollHeight - previous.scrollTop);
+//};
 window.isScrollAtBottom = (element) => {
     if (!element) return false;
     const threshold = 50; 
@@ -70,4 +70,16 @@ window.getTopVisibleMessageId = function (containerSelector, messageSelectorPref
 
 window.triggerInputFileClick = function (element) {
     element.click();
+};
+window.requestAnimationFrameThen = function (dotNetRef, methodName) {
+    requestAnimationFrame(() => {
+        dotNetRef.invokeMethodAsync(methodName);
+    });
+};
+window.restoreScrollAfterPrepend = function (container, snapshot) {
+    container.offsetHeight;
+
+
+    const newScrollTop = container.scrollHeight - snapshot.scrollHeight + snapshot.scrollTop;
+    container.scrollTop = Math.max(0, newScrollTop);
 };

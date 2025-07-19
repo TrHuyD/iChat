@@ -38,7 +38,7 @@
    
 
         <div class="messages-container" @ref="_messagesContainer" @onscroll="HandleScroll">
-            <Virtualize Items="@_groupedMessages" Context="group" ItemSize="48" OverscanCount="50">
+            <Virtualize Items="@_groupedMessages" Context="group" OverscanCount="30">
                 <div class="message-group" @key="group.Messages[0].Message.Id">
                     <div class="message-group-header">
                         <img class="avatar" src="@group.User.AvatarUrl" />
@@ -162,18 +162,20 @@
                                 @foreach (var msg in _searchResults)
                                 {
                                     var userMeta = _userMetadataService.GetUserByIdAsync(long.Parse(msg.SenderId));
-
-                                    <div class="message">
-                                        <img class="avatar" src="@userMeta.AvatarUrl" alt="avatar" />
+                                    <div class="search_result_container">
+                                    <div class="message compact">
+                                        <img class="avatar search" src="@userMeta.AvatarUrl" alt="avatar" />
                                         <div>
                                             <div class="chat-message-meta">
                                                 <span class="username">@userMeta.DisplayName</span>
-                                                <span class="timestamp">@msg.CreatedAt.LocalDateTime.ToString("g")</span>
+                                                <span class="timestamp compact">@msg.CreatedAt.LocalDateTime.ToString("g")</span>
                                             </div>
                                             <div class="message-content">@msg.Content</div>
                                         </div>
                                     </div>
+                                </div>
                                 }
+
 
                                 <div class="pagination">
                                     <button class="page-btn" @onclick="() => TriggerSearchAsync(_currentSearchPage - 1)" disabled="@(_currentSearchPage == 1)">Prev</button>

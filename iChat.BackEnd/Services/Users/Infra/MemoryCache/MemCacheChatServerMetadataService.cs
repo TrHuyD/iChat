@@ -61,19 +61,6 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             metadata.Result.Value.Channels.Add(channel);
             return Task.FromResult(true);   
         }
-        public Task<OperationResultT<ChatServerMetadata>> EditServerProfile(stringlong serverId, stringlong requestorId, string newName, string avatarUrl = "")
-        {
-            var metadata = GetServerAsync(serverId, false).Result.Value;
-            if (metadata == null)
-                return Task.FromResult(OperationResultT<ChatServerMetadata>.Fail("404", "Server not found"));
-
-            if (requestorId.StringValue != metadata.AdminId)
-                return Task.FromResult(OperationResultT<ChatServerMetadata>.Fail("403", "You are not an admin"));
-
-            metadata.Name = newName;
-            metadata.AvatarUrl = avatarUrl;
-            return Task.FromResult(OperationResultT<ChatServerMetadata>.Ok(metadata));
-        }
 
         public Task<OperationResultT<ChatServerMetadata>> GetServerAsync(stringlong serverId, bool isCopy = true)
         {
@@ -232,6 +219,18 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             if (!_serverUserMap.TryGetValue(serverId.Value, out var sets))
                 throw new KeyNotFoundException($"Server {serverId} not found in _serverUserMap.");
             return (sets.Online.GetAll(), sets.Offline.GetAll());
+        }
+
+        public async Task<bool> UpdateServerMetadata(ChatServerChangeUpdate update)
+        {
+            var server =await GetServerAsync(update.Id, false);
+            if (!server.Success)
+                throw new Exception("This server doesnt exist");
+            if(update.Name!="")
+                server.Value.Name=update.Name;  
+            if(update.AvatarUrl!="")
+                server.Value.AvatarUrl=update.AvatarUrl;
+            return true;
         }
     }
 }

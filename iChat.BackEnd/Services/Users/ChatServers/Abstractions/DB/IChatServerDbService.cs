@@ -1,15 +1,18 @@
-﻿namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB
+﻿using iChat.DTOs.Collections;
+using iChat.DTOs.Users.Messages;
+
+namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB
 {
     public interface IChatServerDbService
     {
-        Task<bool> CheckIfUserInServer(long userId, long serverId);
-        Task<bool> CheckIfUserBanned(long userId, long serverId);
-        Task Join(long userId, long serverId);
-        Task Left(long userId, long serverId);
-        Task BanUserAsync(long userId, long serverId, long adminUserId);
-        Task UnbanUser(long userId, long serverId, long adminUserId);
-        Task TaskDeleteChatServerAsync(long serverId, long adminUserId);
-        Task UpdateChatServerNameAsync(long serverId, string newName, long adminUserId);
-        Task UpdateChatServerProfileAsync(long serverId, string newName, string url, long adminUserId);
+        Task<bool> CheckIfUserInServer(stringlong userId, stringlong serverId);
+        Task<bool> CheckIfUserBanned(stringlong userId, stringlong serverId);
+        Task Join(stringlong userId, stringlong serverId);
+        Task Left(stringlong userId, stringlong serverId);
+        Task BanUserAsync(stringlong userId, stringlong serverId, stringlong adminUserId);
+        Task UnbanUser(stringlong userId, stringlong serverId, stringlong adminUserId);
+        Task TaskDeleteChatServerAsync(stringlong serverId, stringlong adminUserId);
+        Task<ChatServerChangeUpdate> UpdateChatServerProfileAsync(stringlong serverId, stringlong adminUserId, string newName="", string url="");
+
     }
 }

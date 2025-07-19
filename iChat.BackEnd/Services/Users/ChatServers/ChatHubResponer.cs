@@ -21,6 +21,10 @@ namespace iChat.BackEnd.Services.Users.ChatServers
             await _chatHub.Clients.Groups(ServerId).SendAsync(SignalrClientPath.ChannelCreate, dto);
 
         }
+        public async Task ServerProfileChange(ChatServerChangeUpdate change)
+        {
+            await _chatHub.Clients.Group(change.Id.ToString()).SendAsync(SignalrClientPath.ServerProfileChange, change);
+        }
         public async Task NewMessage (NewMessage newMessage,string serverId)
         {
             await _chatHub.Clients.Group(serverId).SendAsync(SignalrClientPath.RecieveMessage, newMessage);

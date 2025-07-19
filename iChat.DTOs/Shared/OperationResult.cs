@@ -9,6 +9,7 @@ namespace iChat.DTOs.Shared
     public class OperationResult
     {
         public bool Success { get; init; }
+        public bool Failure => !Success;
         public string? ErrorCode { get; init; }
         public string? ErrorMessage { get; init; }
 

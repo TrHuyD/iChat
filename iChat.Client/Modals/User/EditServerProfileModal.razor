@@ -139,16 +139,16 @@
 
             if (SelectedAvatarFile is null)
             {
-                response = await _http.SendAuthAsync(new { NewName = PreviewName }, HttpMethod.Post, $"/api/servers/{ServerId}/rename");
+                response = await _http.SendAuthAsync(new { Name = PreviewName,ServerId=ServerId }, HttpMethod.Post, $"/api/Chat/Edit/name");
             }
             else
             {
                 var form = new MultipartFormDataContent();
-                form.Add(new StringContent(PreviewName ?? ""), "newName");
+                form.Add(new StringContent(PreviewName ?? ""), "name");
                 var stream = SelectedAvatarFile.OpenReadStream(MaxFileSize);
                 form.Add(new StreamContent(stream), "file", SelectedAvatarFile.Name);
-
-                response = await _http.SendAuthAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/servers/{ServerId}/update")
+                form.Add(new StringContent(ServerId), "id");
+                response = await _http.SendAuthAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/Chat/Edit/profile")
                 {
                     Content = form
                 });

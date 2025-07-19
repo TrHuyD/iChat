@@ -50,6 +50,8 @@ namespace iChat.Client.Services.UserServices
 
             // Sort by position
             ChatServers = chatServers.OrderBy(x => x.Position).ToList();
+            foreach (var i in chatServers)
+                i.AvatarUrl = URLsanitizer.Apply(i.AvatarUrl);
 
             // Notify subscribers that the list has changed
             OnChatServersChanged?.Invoke();
@@ -63,6 +65,19 @@ namespace iChat.Client.Services.UserServices
             server.Channels.Add(ccdto);
             OnChatServersChanged?.Invoke();
 
+        }
+        public void UpdateServer(ChatServerChangeUpdate update)
+        {
+            var server = ChatServers.Where(s => s.Id == update.Id.ToString()).FirstOrDefault();
+            if (server == null)
+                return;
+
+
+            if(update.Name!="")
+                server.Name = update.Name;
+            if(update.AvatarUrl!="")
+                server.AvatarUrl=URLsanitizer.Apply(update.AvatarUrl);
+            OnChatServersChanged?.Invoke();
         }
         public void RemoveServer(string serverId )
         {
@@ -86,7 +101,7 @@ namespace iChat.Client.Services.UserServices
             {
                 Id = server.Id,
                 Name = server.Name,
-                AvatarUrl = server.AvatarUrl,
+                AvatarUrl =URLsanitizer.Apply( server.AvatarUrl)    ,
                 Channels = server.Channels,
                 Position = post,
                 isadmin=long.Parse(server.AdminId)==userStateService.Value.GetUserProfile().UserId
