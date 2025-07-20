@@ -25,7 +25,6 @@ namespace iChat.Client.Pages.Chat
         private string?_currentServerId;
         private ChatServerDtoUser? _currentServer=new ChatServerDtoUser();
         private ChatChannelDtoLite? _currentChannel= new ChatChannelDtoLite();
-        private string _newMessage = string.Empty;
         private int _myCount = 0;
         private ElementReference _messagesContainer;
         private string _connectionStatus = "Disconnected";

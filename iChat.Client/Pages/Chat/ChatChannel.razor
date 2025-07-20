@@ -101,10 +101,29 @@
                 }
             </div>
         }
-
+        <div class="mention-wrapper">
         <div class="message-input d-flex align-center">
-            <input type="text" @bind="_newMessage" @bind:event="oninput"
-                   placeholder="Type your message..." @onkeypress="HandleKeyPress" />
+                <input @ref="inputEl"
+                       type="text"
+                       value="@_newMessage"
+                       @onkeydown="HandleKeyDown"
+                       @onkeydown:preventDefault="@_preventDefault"
+                       @oninput="HandleInput"
+                       placeholder="Type your message..."
+                       class="mention-input" />
+                @if (_showDropdown)
+                {
+                    <ul class="mention-list"
+                        style="position: absolute; top:@($"{- _results.Count * 36}px"); left:@($"{_dropdownLeft+5}px");">
+                        @foreach (var result in _results)
+                        {
+                            <li class="@(result == _results[_highlight] ? "highlight" : null)"
+                                @onmousedown="() => Select(result.UserId)">
+                                @result.DisplayName
+                            </li>
+                        }
+                    </ul>
+                }
             <label class="upload-icon icon-button" title="Upload Image" @onclick="TriggerFileInput">
                 <i class="fas fa-image"></i>
             </label>
@@ -116,7 +135,7 @@
         </div>
         <ListUserTypingTab @ref="_typingTab"></ListUserTypingTab>
     </div>
-
+    </div>
     <!-- Right Sidebar: Online Users or Search -->
     <div class="sidebar">
         @if (_showSearchSidebar)

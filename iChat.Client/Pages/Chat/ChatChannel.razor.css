@@ -114,7 +114,7 @@ cursor: pointer;
 
     .message-input input {
         flex: 1;
-        padding: 10px 12px;
+        padding: 10px 12px 12px 67px;
         background-color: #393A41;
         color: #dcddde;
         border: none;
@@ -458,4 +458,57 @@ cursor: pointer;
 }
 .chat-message-group:last-child {
     margin-bottom: 0 !important;
+}
+
+.mention-input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.mention-list {
+    position: absolute;
+    background-color: #1e1f22;
+    border: 1px solid #333;
+    border-radius: 6px;
+    width: 300px;
+    max-height: 250px;
+    overflow-y: auto;
+    list-style: none;
+    padding: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+    .mention-list li {
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        color: white;
+        transition: background-color 0.1s ease-in-out;
+    }
+
+        .mention-list li:hover,
+        .mention-list li.highlight {
+            background-color: #3a3b3f; 
+            color: white;
+        }
+
+        .mention-list li img.avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+.mention-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    overflow: visible !important;
 }

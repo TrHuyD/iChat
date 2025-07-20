@@ -1,6 +1,8 @@
 ﻿using iChat.Client.Data;
+using iChat.Client.DTOs;
 using iChat.Client.DTOs.Chat;
 using iChat.Client.Services.UserServices.Chat;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
@@ -8,6 +10,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
 using System.Net.Http.Headers;
+using static System.Net.WebRequestMethods;
 
 namespace iChat.Client.Pages.Chat
 {
@@ -101,23 +104,7 @@ namespace iChat.Client.Pages.Chat
         }
 
 
-        private  DateTime _next_time_Sending_Typing=DateTime.MinValue;
-        private async Task HandleKeyPress(KeyboardEventArgs e)
-        {
-            if (e.Key == "Enter" && !e.ShiftKey)
-            {
-                await SendMessage();
-            }
-            else
-            {
-                if(_next_time_Sending_Typing < DateTime.UtcNow)
-                {
-                    _=ChatService.Typing();
-                    _next_time_Sending_Typing = DateTime.UtcNow.AddSeconds(3);
-                }
 
-            }
-        }
         private ScrollSnapshot? _lastScrollSnapshot;
 
         private Virtualize<MessageGroup>? virtualizeRef;
@@ -252,9 +239,95 @@ namespace iChat.Client.Pages.Chat
             });
         }
 
+        private string _newMessage = string.Empty;
+        private ElementReference inputEl;
+        private bool _tracking = false;
+        private int _mentionStart = -1;
+        private bool _showDropdown = false;
+        private List<UserMetadataReact> _results = new();
+        private int _highlight = 0;
+        private bool _preventDefault = false;
+        private DateTime _next_time_Sending_Typing = DateTime.MinValue;
+        double _dropdownTop = 0;
+        double _dropdownLeft = 0;
+        async Task HandleKeyDown(KeyboardEventArgs e)
+        {
+            if (_showDropdown && (e.Key == "ArrowDown" || e.Key == "ArrowUp" || e.Key == "Enter"))
+            {
+                _preventDefault = true;
+
+                if (e.Key == "ArrowDown")
+                    _highlight = (_highlight + 1) % _results.Count;
+                else if (e.Key == "ArrowUp")
+                    _highlight = (_highlight - 1 + _results.Count) % _results.Count;
+                else if (e.Key == "Enter")
+                    Select(_results[_highlight].UserId);
+
+                return;
+            }
+
+            _preventDefault = false;
+
+            if (e.Key == "@" && !_tracking)
+            {
+                int cursorPos = await JS.InvokeAsync<int>("mentionHelper.getCursorPos", inputEl);
+                if (cursorPos == 0 || char.IsWhiteSpace(_newMessage[cursorPos - 1]))
+                {
+                    var pos = await JS.InvokeAsync<Coords>("mentionHelper.getCursorCoordinates", inputEl);
+                    _dropdownTop = pos.Top;
+                    _dropdownLeft = pos.Left;
+                    _tracking = true;
+                    _mentionStart = cursorPos;
+                }
+            }
 
 
+            if (e.Key == "Enter" && !e.ShiftKey)
+            {
+                await SendMessage();
+            }
+            else if (_next_time_Sending_Typing < DateTime.UtcNow)
+            {
+                _ = ChatService.Typing();
+                _next_time_Sending_Typing = DateTime.UtcNow.AddSeconds(3);
+            }
+        }
 
+        async Task HandleInput(ChangeEventArgs e)
+        {
+            _newMessage = e.Value?.ToString() ?? "";
+            if (!_tracking) return;
+
+            var fragment = GetFragment(_newMessage, _mentionStart);
+            if (!string.IsNullOrWhiteSpace(fragment))
+            {
+                _results = _userMetadataService.SearchUsers(fragment);
+                _showDropdown = _results.Any();
+                _highlight = 0;
+            }
+            else
+            {
+                _showDropdown = false;
+            }
+        }
+
+
+        string GetFragment(string text, int start)
+        {
+            if (start < 0 || start >= text.Length) return "";
+            int i = start;
+            while (i < text.Length && !char.IsWhiteSpace(text[i])) i++;
+            return text.Substring(start + 1, i - start - 1);
+        }
+
+        void Select(stringlong user)
+        {
+            var frag = GetFragment(_newMessage, _mentionStart);
+            int end = _mentionStart + frag.Length + 1;
+            _newMessage = _newMessage[.._mentionStart] + "<" + user +">"+ _newMessage[end..];
+            _tracking = _showDropdown = false;
+            StateHasChanged();
+        }
 
     }
 }

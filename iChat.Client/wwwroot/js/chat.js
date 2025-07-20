@@ -35,7 +35,7 @@ window.captureScrollAnchor = function (container) {
 //};
 window.isScrollAtBottom = (element) => {
     if (!element) return false;
-    const threshold = 50; 
+    const threshold = 50;
     const scrollTop = element.scrollTop;
     const scrollHeight = element.scrollHeight;
     const clientHeight = element.clientHeight;
@@ -82,25 +82,62 @@ window.restoreScrollAfterPrepend = function (container, snapshot) {
 
     const newScrollTop = container.scrollHeight - snapshot.scrollHeight + snapshot.scrollTop;
     container.scrollTop = Math.max(0, newScrollTop);
-window.getCaretPosition = function (el) {
-    return el.selectionStart;
+};
+window.mentionHelper = {
+    getCursorPos: function (input) {
+        return input.selectionStart;
+    },
+    suppressNavigationKeys: function (e) {
+        const keysToSuppress = ["ArrowUp", "ArrowDown", "Enter"];
+        if (keysToSuppress.includes(e.key)) {
+            e.preventDefault();
+        }
+    },
+    getCursorCoordinates: function (input) {
+        const selectionStart = input.selectionStart;
+
+        // Create a div that mimics the input
+        const div = document.createElement("div");
+        const computed = getComputedStyle(input);
+
+        for (const prop of computed) {
+            div.style[prop] = computed[prop];
+        }
+
+        // Required adjustments for accuracy
+        div.style.position = "absolute";
+        div.style.visibility = "hidden";
+        div.style.whiteSpace = "pre-wrap";
+        div.style.wordWrap = "break-word";
+        div.style.overflow = "auto"; // mimic scrolling
+        div.style.height = input.offsetHeight + "px";
+        div.style.width = input.offsetWidth + "px";
+        div.style.padding = computed.padding; // important for textarea
+        div.style.border = computed.border;   // important for textarea
+
+        // Set the text up to the cursor
+        const beforeText = input.value.substring(0, selectionStart);
+        const afterText = input.value.substring(selectionStart);
+
+        // Add a span at the cursor point
+        const span = document.createElement("span");
+        span.textContent = "\u200b"; // Zero-width space
+
+        div.textContent = beforeText;
+        div.appendChild(span);
+        div.append(afterText);
+
+        // Append to body to calculate position
+        document.body.appendChild(div);
+
+        const spanRect = span.getBoundingClientRect();
+        const result = {
+            top: spanRect.top + window.scrollY,
+            left: spanRect.left + window.scrollX
+        };
+
+        document.body.removeChild(div);
+        return result;
+    }
 };
 
-window.getCaretCoordinates = function (element) {
-    if (!element) return null;
-
-    const selectionStart = element.selectionStart;
-    const rect = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    const lineHeight = parseFloat(style.lineHeight || "20");
-    const approxCharWidth = parseFloat(style.fontSize || "14") * 0.6;
-
-    const x = rect.left + (selectionStart * approxCharWidth);
-    const y = rect.top + lineHeight;
-
-    return { x, y };
-};
-window.setCaretPosition = (el, pos) => {
-    el.setSelectionRange(pos, pos);
-    el.focus();
-};
