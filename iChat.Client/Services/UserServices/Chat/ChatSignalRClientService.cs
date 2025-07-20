@@ -1,5 +1,6 @@
 ﻿using iChat.Client.Data.Chat;
 using iChat.Client.Services.Auth;
+using iChat.Client.Services.UI;
 using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Enum;
@@ -20,14 +21,17 @@ namespace iChat.Client.Services.UserServices.Chat
 #endif
         private readonly ChatMessageCacheService _MessageCacheService;
         private readonly ChatNavigationService _chatNavigationService;
+        private readonly ToastService _toastService;
         private readonly UserMetadataService _userMetadata;
-        public event Action<(string channelId, string userId)>? TypingReceived;
         public event Action<MemberList>? OnlineListRecieved;
         public event Action<(stringlong id, bool online)>? OnlineStatechanged;
-        public void RegisterOnMemberListRecieve(Action<MemberList> callback) => OnlineListRecieved = callback;
-        public void RegisterOnOnlineUpdate(Action<(stringlong id,bool online)> callback)=> OnlineStatechanged= callback;
-        public ChatSignalRClientService(SignalRConnectionFactory connectionFactory,ChatMessageCacheService MessageCacheService, ChatNavigationService chatNavigationService, UserMetadataService userMetadata)
+        public event Action<long> UserTypingReceived;
+        public void ResigerOnUserTypingRecieved(Action<long> callback) => UserTypingReceived += callback; 
+        public void RegisterOnMemberListRecieve(Action<MemberList> callback) => OnlineListRecieved += callback;
+        public void RegisterOnOnlineUpdate(Action<(stringlong id,bool online)> callback)=> OnlineStatechanged += callback;
+        public ChatSignalRClientService(SignalRConnectionFactory connectionFactory,ToastService toastService,ChatMessageCacheService MessageCacheService, ChatNavigationService chatNavigationService, UserMetadataService userMetadata)
         {
+            _toastService = toastService;
             _MessageCacheService = MessageCacheService;
             _connectionFactory = connectionFactory;
             _chatNavigationService = chatNavigationService;
@@ -82,11 +86,11 @@ namespace iChat.Client.Services.UserServices.Chat
             _hubConnection.On<string>(SignalrClientPath.LeaverServer, ForceLeaveRoom);
             _hubConnection.On<ChatServerMetadata>(SignalrClientPath.JoinNewServer, OnJoiningNewServer);
             _hubConnection.On<EditMessageRt>(SignalrClientPath.MessageEdit,  HandleEditMessage);
-            _hubConnection.On<string, string>(SignalrClientPath.UserTyping,  (channelId, userId) =>
+            _hubConnection.On<long>(SignalrClientPath.UserTyping,  (userId) =>
             {
                 try
                 {
-                    OnUserType(channelId,userId);
+                    OnUserType(userId);
                     Console.WriteLine($"{userId} is typing");
                 }
                 catch (Exception ex)
@@ -158,14 +162,25 @@ namespace iChat.Client.Services.UserServices.Chat
         {
             if (_hubConnection is { State: HubConnectionState.Connected })
             {
-                await _hubConnection.InvokeAsync("JoinRoom", state);
+               var result =await _hubConnection.InvokeAsync<bool>("JoinRoom", state);
+                if(!result)
+                {
+                    _toastService.ShowError("Error when joining server");
+                    _chatNavigationService.NavigateToHome();
+                }
+                    
             }
         }
         public async Task NotifyJoinChannel(string ChannelId)
         {
             if (_hubConnection is { State: HubConnectionState.Connected })
             {
-                await _hubConnection.InvokeAsync("JoinChannel", ChannelId);
+                var result = await _hubConnection.InvokeAsync<bool>("JoinChannel", ChannelId);
+                if (!result)
+                {
+                    _toastService.ShowError("Error when joining channel ");
+                    _chatNavigationService.NavigateToHome();
+                }
             }
 
         }
@@ -177,7 +192,7 @@ namespace iChat.Client.Services.UserServices.Chat
         public async Task NotifyLeaveRoom()
         {
             if (_hubConnection is { State: HubConnectionState.Connected })
-                await _hubConnection.InvokeAsync("LeaveRoom");
+                await _hubConnection.SendAsync("LeaveRoom");
 
         }
         public async Task SendMessageAsync(string roomId, ChatMessageDtoSafe message)
@@ -191,7 +206,7 @@ namespace iChat.Client.Services.UserServices.Chat
         {
             if (_hubConnection is { State: HubConnectionState.Connected })
             {
-                await _hubConnection.InvokeAsync("Typing");
+                await _hubConnection.SendAsync("Typing");
             }
         }
         public async Task DisconnectAsync()
@@ -230,9 +245,9 @@ namespace iChat.Client.Services.UserServices.Chat
             _chatNavigationService.AddServer(serverID);
         }
 
-        private void OnUserType(string channelId, string userId)
+        private void OnUserType(long userId)
         {
-            TypingReceived?.Invoke((channelId, userId));
+            UserTypingReceived?.Invoke(userId);
         }
         private void OnChatServerProfileUpdate(ChatServerChangeUpdate update)
         {

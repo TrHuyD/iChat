@@ -20,6 +20,8 @@ namespace iChat.Client.Services.UserServices.Chat
         //public event Action? OnUserProfileUpdated;
         private readonly JwtAuthHandler _https;
         public IEnumerable<UserMetadataReact> GetAll() => _cache.Values;
+        public Action<long> OnMetadataChangeSpecifc;
+        public void RegisterOnSpecificMetadataChange(Action<long> action)=> OnMetadataChangeSpecifc += action;
         public UserMetadataService(JwtAuthHandler jwtAuthHandler)
         {
             _https = jwtAuthHandler;
@@ -87,6 +89,7 @@ namespace iChat.Client.Services.UserServices.Chat
                 metadata.AvatarUrl ??= $"https://cdn.discordapp.com/embed/avatars/0.png";
                 _cache[metadata.UserId] = metadata;
             }
+            OnMetadataChangeSpecifc?.Invoke(metadata.UserId);
             OnMetadataUpdated?.Invoke();
 
         }

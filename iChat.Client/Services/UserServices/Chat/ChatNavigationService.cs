@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
 
@@ -225,6 +226,11 @@ namespace iChat.Client.Services.UserServices
             
             await _channelTracker.SaveLastChannelAsync(serverId, channelId);
             nav.NavigateTo($"/chat/{serverId}/{channelId}");
+        }
+        public void  NavigateToHome()
+        {
+            nav.NavigateTo($"/");
+
         }
         public async Task OnServerChange(string serverId)
         {

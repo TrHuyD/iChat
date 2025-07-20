@@ -99,6 +99,9 @@ namespace iChat.Client.Pages.Chat
             await Task.Delay(200);
             _shouldScrollToBottom = true;
         }
+
+
+        private  DateTime _next_time_Sending_Typing=DateTime.MinValue;
         private async Task HandleKeyPress(KeyboardEventArgs e)
         {
             if (e.Key == "Enter" && !e.ShiftKey)
@@ -107,6 +110,11 @@ namespace iChat.Client.Pages.Chat
             }
             else
             {
+                if(_next_time_Sending_Typing < DateTime.UtcNow)
+                {
+                    _=ChatService.Typing();
+                    _next_time_Sending_Typing = DateTime.UtcNow.AddSeconds(3);
+                }
 
             }
         }

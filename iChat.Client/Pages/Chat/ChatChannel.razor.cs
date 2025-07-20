@@ -1,5 +1,6 @@
 ﻿using iChat.Client.Data;
 using iChat.Client.DTOs.Chat;
+using iChat.Client.Pages.Component;
 using iChat.Client.Services.UserServices;
 using iChat.Client.Services.UserServices.Chat;
 using iChat.DTOs.Users;
@@ -37,6 +38,13 @@ namespace iChat.Client.Pages.Chat
         private SortedList<long, RenderedMessage> _messages = new();
         private List<MessageGroup> _groupedMessages = new();
         bool Init_failed = false;
+
+
+
+        private ListUserTypingTab? _typingTab;
+
+
+
         protected override async Task OnInitializedAsync()
         {
             if (!_userInfo.ConfirmServerChannelId(ServerId, ChannelId))
@@ -83,6 +91,7 @@ namespace iChat.Client.Pages.Chat
 
             if (_currentChannelId != ChannelId)
             {
+                _typingTab?.Reset();
                 RoomIdL = long.Parse(ChannelId);
                 ServerIdL = long.Parse(ServerId);
 

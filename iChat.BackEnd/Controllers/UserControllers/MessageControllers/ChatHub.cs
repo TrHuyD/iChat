@@ -88,32 +88,43 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
              await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task JoinRoom(ChatServerConnectionState state)
+        public async Task<bool> JoinRoom(ChatServerConnectionState state)
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
             if (!await _chatServerMetadataCacheService.IsMember(state.ServerId, state.ChannelId, userId))
-                return;
+                return false;
             var prevState = _connectionTracker.SetServer(Context.ConnectionId,state);
             if (prevState.ServerId != state.ServerId)
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, FocusServerKey(state.ServerId));
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusServerKey(prevState.ServerId));
+                if (prevState.ServerId != 0)
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusServerKey(prevState.ServerId));
+
             }
+            if(prevState.ChannelId!=state.ChannelId)
+            {
+                if (prevState.ChannelId != 0)
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusChannelKey(prevState.ChannelId));
+                await Groups.AddToGroupAsync(Context.ConnectionId, FocusChannelKey(state.ChannelId));
+            }
+
             await Clients.Caller.SendAsync(SignalrClientPath.UserList,await _chatServerMetadataCacheService.GetMemberList(state.ServerId));
             _logger.LogInformation($"Client {Context.ConnectionId} joined room {state.ServerId}");
+            return true;
         }
-        public async Task JoinChannel(string ChannelId)
+        public async Task<bool> JoinChannel(string ChannelId)
         {
             var userId = new UserClaimHelper(Context.User).GetUserIdStr();
             var serverId = _connectionTracker.GetServer(Context.ConnectionId);
             if (serverId == 0)
-                return;
+                return false;
             if (!await _chatServerMetadataCacheService.IsMember(serverId, ChannelId, userId))
-                return;
+                return false;
             var prev=_connectionTracker.SetChannel(Context.ConnectionId,ChannelId);
             if (prev != 0)
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusChannelKey(prev));
             await Groups.AddToGroupAsync(Context.ConnectionId, FocusChannelKey(ChannelId));
+            return true;
         }
         public async Task LeaveRoom()
         {

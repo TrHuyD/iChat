@@ -1,0 +1,103 @@
+﻿@using iChat.Client.DTOs.Chat
+@using iChat.Client.Services.UserServices.Chat
+ 
+@inject UserMetadataService metadataService
+@inject ChatSignalRClientService  clientService
+@inject UserStateService userState
+<div class="typing-indicator">
+    @DisplayTypingText
+</div>
+
+@code {
+    private class TypingUser
+    {
+        public UserMetadataReact User { get; init; }
+        public int Lifespan { get; set; } = 8;
+    }
+
+    private Dictionary<long, TypingUser> _typingUsers = new();
+    private string DisplayTypingText = "No one is typing";
+    private Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        _timer = new Timer(UpdateTypingUsers, null, 0, 2000);
+        clientService.ResigerOnUserTypingRecieved(AddTypingUser);
+        metadataService.RegisterOnSpecificMetadataChange(OnMetadataChange);
+    }
+    public void AddTypingUser(long userId)
+    {
+        if (userState.GetUserId() == userId)
+            return;
+        if(_typingUsers.TryGetValue(userId,out var typingUser))
+        {
+            typingUser.Lifespan = 8;
+        }
+        else
+        {
+            _typingUsers[userId] = new TypingUser
+                {
+                    User = metadataService.GetUserByIdAsync(userId)
+                };
+            StateChanged();
+        }
+    }
+    private void OnMetadataChange(long userId)
+    {
+        if (_typingUsers.Count >= 4||_typingUsers.Count==0)
+            return;
+        if (_typingUsers.ContainsKey(userId))
+            StateChanged();
+    }
+    private void UpdateTypingUsers(object? state)
+    {
+        bool changed = false;
+
+        foreach (var key in _typingUsers.Keys.ToList())
+        {
+            var user = _typingUsers[key];
+            user.Lifespan -= 2;
+
+            if (user.Lifespan <= 0)
+            {
+                _typingUsers.Remove(key);
+                changed = true;
+            }
+        }
+
+
+        if (changed)
+        {
+            StateChanged();
+        }
+    }
+    void StateChanged()
+    {
+        DisplayTypingText = BuildDisplayText();
+        InvokeAsync(StateHasChanged);
+    }
+    public void Reset()
+    {
+        _typingUsers.Clear();
+        StateChanged();
+    }
+    private string BuildDisplayText()
+    {
+        if(_typingUsers.Count>=4)
+            return $"{_typingUsers.Count} people are typing…";
+
+        var users = _typingUsers.Values.Select(u => u.User.DisplayName).ToList();
+        int count = users.Count;
+
+        if (count == 0) return "No one is typing";
+        if (count == 1) return $"{users[0]} is typing…";
+        if (count == 2) return $"{users[0]} and {users[1]} are typing…";
+        if (count == 3) return $"{users[0]}, {users[1]} and {users[2]} are typing…";
+        return "";
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}

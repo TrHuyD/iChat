@@ -1,6 +1,7 @@
 ﻿@page "/chat/{ServerId}/{ChannelId}"
 @using System.Threading.Channels
 @using iChat.Client.DTOs.Chat
+@using iChat.Client.Pages.Component
 @using iChat.Client.Services.UserServices
 @using iChat.Client.Services.UserServices.Chat
 @using iChat.DTOs.Users.Messages
@@ -38,7 +39,7 @@
    
 
         <div class="messages-container" @ref="_messagesContainer" @onscroll="HandleScroll">
-            <Virtualize Items="@_groupedMessages" Context="group" OverscanCount="30">
+            <Virtualize Items="@_groupedMessages" Context="group" OverscanCount="20">
                 <div class="message-group" @key="group.Messages[0].Message.Id">
                     <div class="message-group-header">
                         <img class="avatar" src="@group.User.AvatarUrl" />
@@ -113,9 +114,7 @@
                        style="display: none;" />
             <button @onclick="SendMessage">Send</button>
         </div>
-        <div class="typing-indicator">
-            @(_typingCount > 0 ? $"{_typingCount} people are typing…" : "&nbsp;")
-        </div>
+        <ListUserTypingTab @ref="_typingTab"></ListUserTypingTab>
     </div>
 
     <!-- Right Sidebar: Online Users or Search -->
