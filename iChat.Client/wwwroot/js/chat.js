@@ -82,4 +82,25 @@ window.restoreScrollAfterPrepend = function (container, snapshot) {
 
     const newScrollTop = container.scrollHeight - snapshot.scrollHeight + snapshot.scrollTop;
     container.scrollTop = Math.max(0, newScrollTop);
+window.getCaretPosition = function (el) {
+    return el.selectionStart;
+};
+
+window.getCaretCoordinates = function (element) {
+    if (!element) return null;
+
+    const selectionStart = element.selectionStart;
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    const lineHeight = parseFloat(style.lineHeight || "20");
+    const approxCharWidth = parseFloat(style.fontSize || "14") * 0.6;
+
+    const x = rect.left + (selectionStart * approxCharWidth);
+    const y = rect.top + lineHeight;
+
+    return { x, y };
+};
+window.setCaretPosition = (el, pos) => {
+    el.setSelectionRange(pos, pos);
+    el.focus();
 };

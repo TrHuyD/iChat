@@ -366,3 +366,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /iChat.BackEnd/appsettings.secrets.json
 /iChat.BackEnd/wwwroot/uploads/avatars
+/iChat.BackEnd/wwwroot/uploads/images

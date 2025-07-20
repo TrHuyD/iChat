@@ -164,5 +164,19 @@ namespace iChat.Client.Services.UserServices.Chat
             _timer.Dispose();
             return ValueTask.CompletedTask;
         }
+
+        public List<UserMetadataReact> SearchUsers(string query,int limit=6)
+        {
+            query = query.Trim().ToLowerInvariant();
+
+            var results = _cache.Values
+                .Where(user =>
+                    !string.IsNullOrEmpty(user.DisplayName) &&
+                    user.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .Take(limit)
+                .ToList();
+
+            return results;
+        }
     }
 }

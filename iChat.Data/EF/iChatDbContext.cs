@@ -35,7 +35,8 @@ namespace iChat.Data.EF
             builder.ApplyConfiguration(new BucketConfiguration());
             builder.ApplyConfiguration(new ServerBanConfiguration());
             builder.ApplyConfiguration(new MessageAuditLogConfiguration());
-            builder.ApplyConfiguration(new MediaFileConfiguration());   
+            builder.ApplyConfiguration(new MediaFileConfiguration());
+            builder.ApplyConfiguration(new UserChatChannelConfiguration());
             //builder.seed();
             base.OnModelCreating(builder);
         }
@@ -53,5 +54,6 @@ namespace iChat.Data.EF
         public DbSet<UserChatServer> UserChatServers { get; set; }
         public DbSet<ServerBan> ServerBans { get; set; }
         public DbSet<MessageAuditLog> MessageAuditLogs { get; set; }
+        public DbSet<UserChatChannel> UserChatChannels { get; set; }
     }
 }
