@@ -123,17 +123,34 @@ _Below is an example of how you can instruct your audience on installing and set
 
 -->
 
-<!-- USAGE EXAMPLES 
+
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+- Text & Image Message Uploading
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+    <img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/imageupload.png?raw=true" width="250" />
 
+- Message Editing & Deletion
 
--->
+    <img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/editdeleteDemo.gif?raw=true" width="250
+" />
+
+- Real-Time Typing Indicators
+
+    <img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/typing.gif?raw=true" width="250" />
+
+- Channel-Specific History with Message Search
+<img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/Search.png?raw=true" width="250" />
+
+- Infinite Scrolling for Older Messages
+
+     <img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/infinitescrolling.gif?raw=true" width="250" />
+
+- Online/Offline User Tracking
+
+    <img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/onlinetrack.gif?raw=true" width="250" />
+
 <!-- ROADMAP -->
 ## Roadmap
 
