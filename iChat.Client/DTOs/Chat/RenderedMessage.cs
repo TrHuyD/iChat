@@ -37,7 +37,8 @@ namespace iChat.Client.DTOs.Chat
         public RenderedMessage WithEdit(string newContent)
         {
             if (Message.IsDeleted) return this;
-
+            isEdited = true;
+            Content = newContent;
             return new RenderedMessage
             {
                 Message = new ChatMessageDto

@@ -50,9 +50,9 @@
                     <div class="message-group-body">
                     @foreach (var item in group.Messages)
                     {
-                        <div class="message @item.CssClass @(item.Message.IsDeleted ? "deleted-message" : "")"
+                        <div class="message @item.CssClass @(item.Message.IsDeleted ? "deleted-message" : "") @(item.Message.IsEdited ? "edited-message" : "")  "
                                 id="message-@item.Message.Id"
-                                @key="item.Message.Id"
+                                @key="item"
                                 @oncontextmenu="(e) => ShowContextMenu(e, item.Message)"
                                 @oncontextmenu:preventDefault>
 
@@ -68,11 +68,20 @@
                                     }
                                     else
                                     {
-                                        @((MarkupString)item.Content)
                                         @if (item.isEdited)
                                         {
-                                            <span class="edited-badge">(edited)</span>
+
+                                            <span class="edited-inline">
+                                                @((MarkupString)item.Content)<span class="edited-badge">(edited)</span>
+                                            </span>
                                         }
+                                        else
+                                        {
+                                            <div class="regular-content">
+                                                @((MarkupString)item.Content)
+                                            </div>
+                                        }
+
                                     }
                                 </div>
 
@@ -93,12 +102,19 @@
                 <div class="context-item" @onclick="ScrollToContextMessage">
                     <i class="fas fa-location-arrow"></i> Scroll to Message
                 </div>
+                @if (_contextMenuMessage.SenderId.ToString() == _currentUserId&&_contextMenuMessage.MessageType!=2)
+                {
+                    <div class="context-item" @onclick="BeginEditMessage">
+                        <i class="fas fa-pen"></i> Edit Message
+                    </div>
+                }
                 @if ((!_contextMenuMessage.IsDeleted)&&(_currentServer.isadmin||_contextMenuMessage.SenderId.ToString()==_currentUserId))
                 {
                     <div class="context-item danger" @onclick="DeleteMessage">
                         <i class="fas fa-trash-alt"></i> Delete Message
                     </div>
                 }
+
             </div>
         }
         <div class="mention-wrapper">

@@ -74,7 +74,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 UserId = long.Parse(UserId),
                 NewContent = rq.NewContent
             };
-            var isAdminRt = await _serverMetaDataCacheService.IsAdmin(rq.ServerId, rq.ChannelId, rq.ChannelId);
+            var isAdminRt = await _serverMetaDataCacheService.IsAdmin(rq.ServerId, rq.ChannelId, UserId);
             if (!isAdminRt.Success)
                 return OperationResultT<EditMessageRt>.Fail(isAdminRt.ErrorCode, "Error when editing message :" + isAdminRt.ErrorCode);
             var cacheResult= await _cache.EditMessageAsync(longrq);

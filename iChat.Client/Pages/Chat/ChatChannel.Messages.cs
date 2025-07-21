@@ -79,8 +79,22 @@ namespace iChat.Client.Pages.Chat
 
             }
         }
+        private async Task EditMessage()
+        {
+            if (_editingMessageId == null || string.IsNullOrWhiteSpace(_newMessage))
+                return;
+            await _messageHandleService.EditMessageAsync( new UserEditMessageRq
+            {
+                ServerId=_currentServerId,
+                ChannelId=_currentChannelId,
+                MessageId=_editingMessageId.ToString(),
+                NewContent = _newMessage.Trim()
 
+            });
 
+            ExitEditMode();
+            _newMessage = "";
+        }
         private async Task SendMessage()
         {
             if (string.IsNullOrWhiteSpace(_newMessage)) return;
@@ -239,6 +253,30 @@ namespace iChat.Client.Pages.Chat
             });
         }
 
+
+
+
+        private bool _isEditing = false;
+        private long? _editingMessageId = null;
+        private string _editingOriginalText = "";
+        private string _editInputCache = "";
+        private async Task BeginEditMessage()
+        {
+            _isEditing = true;
+            _editingMessageId = _contextMenuMessage.Id;
+            _editingOriginalText = _contextMenuMessage.Content;
+            _editInputCache = _newMessage;
+            _newMessage = _editingOriginalText;
+            _showContextMenu = false;
+            await Task.Yield(); 
+            await inputEl.FocusAsync();
+        }
+        private void ExitEditMode()
+        {
+            _isEditing = false;
+            _editingMessageId = null;
+            _newMessage = _editInputCache;
+        }
         private string _newMessage = string.Empty;
         private ElementReference inputEl;
         private bool _tracking = false;
@@ -281,10 +319,18 @@ namespace iChat.Client.Pages.Chat
                 }
             }
 
+            if (e.Key == "Escape" && _isEditing)
+            {
+                ExitEditMode();
+                return;
+            }
 
             if (e.Key == "Enter" && !e.ShiftKey)
             {
-                await SendMessage();
+                if (_isEditing)
+                    await EditMessage();
+                else
+                    await SendMessage();
             }
             else if (_next_time_Sending_Typing < DateTime.UtcNow)
             {

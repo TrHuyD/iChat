@@ -512,3 +512,15 @@ cursor: pointer;
     width: 100%;
     overflow: visible !important;
 }
+
+.edited-inline {
+    display: inline;
+    white-space: pre-wrap;
+}
+
+.edited-badge {
+    font-size: 0.8em;
+    color: gray;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+}

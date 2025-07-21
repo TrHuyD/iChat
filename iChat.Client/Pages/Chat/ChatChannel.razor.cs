@@ -155,16 +155,25 @@ namespace iChat.Client.Pages.Chat
                 _shouldScrollToBottom = false;
             }
         }
-        private async Task HandleDeleteMessage( DeleteMessageRt rq)
+        private async Task HandleDeleteMessage(DeleteMessageRt rq)
         {
-            if(rq.ChannelId != ChannelId) return;
+            if (rq.ChannelId != ChannelId) return;
             try
             {
                 var messageId = long.Parse(rq.MessageId);
-
                 if (_messages.TryGetValue(messageId, out var oldMessage))
                 {
-                    _messages[messageId] = oldMessage.WithDelete();
+                    var updatedMessage = oldMessage.WithDelete();
+                    _messages[messageId] = updatedMessage;
+                    foreach (var group in _groupedMessages)
+                    {
+                        var msgIndex = group.Messages.FindIndex(m => m.Message.Id == messageId);
+                        if (msgIndex >= 0)
+                        {
+                            group.Messages[msgIndex] = updatedMessage;
+                            break;
+                        }
+                    }
                     await InvokeAsync(StateHasChanged);
                 }
             }
@@ -173,6 +182,7 @@ namespace iChat.Client.Pages.Chat
                 Console.Error.WriteLine($"Error handling delete message: {ex.Message}");
             }
         }
+
         private async Task HandleEditMessage(EditMessageRt rq)
         {
             if (rq.ChannelId != ChannelId) return;
@@ -180,11 +190,25 @@ namespace iChat.Client.Pages.Chat
             {
                 var messageId = long.Parse(rq.MessageId);
 
-                if (_messages.TryGetValue(messageId, out var oldMessage))
+                var group = _groupedMessages.FirstOrDefault(g => g.Messages.Any(m => m.Message.Id == messageId));
+                if (group is not null)
                 {
-                    _messages[messageId] = oldMessage.WithEdit(rq.NewContent);
-                    await InvokeAsync(StateHasChanged);
+                    var groupIndex = _groupedMessages.IndexOf(group);
+                    var messages = group.Messages.ToList(); 
+                    var msgIndex = messages.FindIndex(m => m.Message.Id == messageId);
+                    if (msgIndex >= 0)
+                    {
+                        messages[msgIndex] = messages[msgIndex].WithEdit(rq.NewContent);
+                        _groupedMessages[groupIndex] = new MessageGroup
+                        {
+                            User = group.User,
+                            Timestamp = group.Timestamp,
+                            Messages = messages
+                        };
+                        await InvokeAsync(StateHasChanged);
+                    }
                 }
+
             }
             catch (Exception ex)
             {

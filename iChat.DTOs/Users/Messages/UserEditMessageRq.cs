@@ -9,14 +9,9 @@ namespace iChat.DTOs.Users.Messages
 {
     public class UserEditMessageRq
     {
-        [Required]
         public string ServerId { get; set; }
-        [Required]
       public  string ChannelId { get; set; }
-        [Required]
       public  string MessageId { get; set; }
-        [Required]
-        [MinLength(1, ErrorMessage = "New content must be at least 1 character long.")]
         public string NewContent { get; set; }
 
     }

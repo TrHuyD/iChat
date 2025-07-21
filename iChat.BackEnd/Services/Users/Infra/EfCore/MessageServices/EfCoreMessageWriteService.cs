@@ -91,6 +91,19 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 throw new InvalidOperationException("Not authorized to edit this message");
             message.TextContent = rq.NewContent;
             message.LastEditedAt = DateTimeOffset.UtcNow;
+            var tempo = "";
+            if (message.MessageType == (short)MessageType.Media)
+            {
+                tempo = message.MediaId.ToString() ?? "";
+                message.MediaId = null;
+                message.MediaFile = null;
+
+            }
+            else
+            {
+                tempo = message.TextContent;
+                message.TextContent = string.Empty;
+            }
             var log = new MessageAuditLog
             {
                 ChannelId = message.ChannelId,
@@ -100,7 +113,9 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 ActionType = AuditActionType.Edit,
                 Timestamp = DateTimeOffset.UtcNow,
                 ActorUserId = rq.UserId,
-                ActorUser = message.User
+                ActorUser = message.User,
+                PreviousContent = tempo ?? ""
+
             };
 
             _context.MessageAuditLogs.Add(log);
