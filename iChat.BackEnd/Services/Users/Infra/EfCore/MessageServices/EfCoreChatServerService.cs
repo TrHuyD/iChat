@@ -5,6 +5,7 @@ using iChat.Data.Entities.Servers;
 using iChat.DTOs.Collections;
 using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
+using Polly;
 
 namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 {
@@ -87,15 +88,30 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 
             var alreadyMember = await CheckIfUserInServer(userId, serverId);
             if (alreadyMember)
-                return; // Idempotent
-
-            _db.UserChatServers.Add(new UserChatServer
-            {
-                UserId = userId,
-                ChatServerId = serverId,
-                JoinedAt = DateTime.UtcNow
-            });
-
+                return; 
+            var channelsWithLastMessage = await _db.ChatChannels
+                .Where(c => c.ServerId == serverId)
+                .Select(c => new
+                {
+                    ChannelId = c.Id,
+                    LastMessageId = _db.Messages
+                        .Where(m => m.ChannelId == c.Id)
+                        .OrderByDescending(m => m.BucketId)
+                        .ThenByDescending(m => m.Id)
+                        .Select(m => m.Id)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
+                var userChatChannels = channelsWithLastMessage
+                    .Select(x => new UserChatChannel
+                    {
+                        UserId = userId,
+                        ChannelId = x.ChannelId,
+                        LastSeenMessage = x.LastMessageId, 
+                        NotificationCount = 0
+                    })
+                    .ToList();
+            _db.UserChatChannels.AddRange(userChatChannels);
             await _db.SaveChangeAsyncSafe();
         }
 

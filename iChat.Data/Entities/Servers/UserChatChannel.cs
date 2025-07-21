@@ -8,8 +8,8 @@ namespace iChat.Data.Entities.Servers
 {
     public class UserChatChannel
     {
-        public long UserIid { get; set; }   
-        public long ChannelIid { get; set; }
+        public long UserId { get; set; }   
+        public long ChannelId { get; set; }
         public long LastSeenMessage { get; set; }
         public int NotificationCount { get; set; }
     }

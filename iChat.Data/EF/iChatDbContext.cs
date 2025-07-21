@@ -40,6 +40,7 @@ namespace iChat.Data.EF
             //builder.seed();
             base.OnModelCreating(builder);
         }
+
         public DbSet<MediaFile> MediaFiles { get; set; }
         public DbSet<AppUser> AppUsers { get; set; }
         public DbSet<Message> Messages { get; set; }
@@ -55,5 +56,8 @@ namespace iChat.Data.EF
         public DbSet<ServerBan> ServerBans { get; set; }
         public DbSet<MessageAuditLog> MessageAuditLogs { get; set; }
         public DbSet<UserChatChannel> UserChatChannels { get; set; }
+
+
+
     }
 }

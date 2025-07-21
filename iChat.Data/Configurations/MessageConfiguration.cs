@@ -37,10 +37,10 @@ namespace iChat.Data.Configurations
                    .WithMany() 
                    .HasForeignKey(m => m.MediaId)
                    .OnDelete(DeleteBehavior.SetNull);
-            builder.HasIndex(m => m.ChannelId);
-            builder.HasIndex(m => new { m.ChannelId, m.Timestamp });
-            builder.HasIndex(m => new { m.ChannelId, m.SenderId, m.Timestamp });
-            builder.HasIndex(m => new { m.ChannelId, m.BucketId,m.Id });
+          //  builder.HasIndex(m => m.ChannelId);
+            builder.HasIndex(m => new { m.ChannelId, m.Timestamp }).IsDescending(false, true);
+            builder.HasIndex(m => new { m.ChannelId, m.SenderId, m.Timestamp }).IsDescending(false, false, true);
+            builder.HasIndex(m => new { m.ChannelId, m.BucketId,m.Id }).IsDescending(false, true, true);
 
             builder.Property(m => m.MessageType)
                    .HasColumnType("smallint");

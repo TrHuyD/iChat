@@ -13,10 +13,10 @@ namespace iChat.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<UserChatChannel> builder)
         {
-            builder.HasKey(ucc => new { ucc.UserIid, ucc.ChannelIid });
-            builder.Property(ucc => ucc.UserIid)
+            builder.HasKey(ucc => new { ucc.UserId, ucc.ChannelId });
+            builder.Property(ucc => ucc.UserId)
                    .IsRequired();
-            builder.Property(ucc => ucc.ChannelIid)
+            builder.Property(ucc => ucc.ChannelId)
                    .IsRequired();
             builder.Property(ucc => ucc.LastSeenMessage)
                    .IsRequired();

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using NpgsqlTypes;
@@ -12,9 +13,11 @@ using iChat.Data.EF;
 namespace iChat.Data.Migrations
 {
     [DbContext(typeof(iChatDbContext))]
-    partial class iChatDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250720213234_Fix_typo_in_UserChatchannel")]
+    partial class Fix_typo_in_UserChatchannel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -371,6 +374,9 @@ namespace iChat.Data.Migrations
                     b.Property<short>("Order")
                         .HasColumnType("smallint");
 
+                    b.Property<long>("last_seen")
+                        .HasColumnType("bigint");
+
                     b.HasKey("UserId", "ChatServerId");
 
                     b.HasIndex("ChatServerId");
@@ -601,6 +607,8 @@ namespace iChat.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ChannelId");
+
                     b.HasIndex("MediaId");
 
                     b.HasIndex("SearchVector");
@@ -609,14 +617,11 @@ namespace iChat.Data.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.HasIndex("ChannelId", "Timestamp")
-                        .IsDescending(false, true);
+                    b.HasIndex("ChannelId", "Timestamp");
 
-                    b.HasIndex("ChannelId", "BucketId", "Id")
-                        .IsDescending(false, true, true);
+                    b.HasIndex("ChannelId", "BucketId", "Id");
 
-                    b.HasIndex("ChannelId", "SenderId", "Timestamp")
-                        .IsDescending(false, false, true);
+                    b.HasIndex("ChannelId", "SenderId", "Timestamp");
 
                     b.ToTable("Messages", (string)null);
                 });

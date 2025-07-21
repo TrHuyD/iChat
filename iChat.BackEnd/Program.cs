@@ -27,7 +27,10 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR().AddMessagePackProtocol();
@@ -118,12 +121,40 @@ builder.Services.AddTransient<IMessageWriteService, AppMessageWriteService>();
 //builder.Services.AddTransient<IChatReadMessageService, _AppMessageReadService>();
 
 // Database Context
+var logFilePath = "Logs/efcore-queries-.log"; 
+Directory.CreateDirectory(Path.GetDirectoryName(logFilePath)!);
+
+// Setup Serilog logger
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .WriteTo.File(
+        path: logFilePath,
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 7
+    )
+    .CreateLogger();
 builder.Services.AddDbContextPool<iChatDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetValue<string>("PostgreSQL:ConnectionString"))
-           .LogTo(Console.WriteLine, LogLevel.Information)
+           .LogTo(log =>
+           {
+               if (log.Contains("Executed DbCommand"))
+               {
+                   var match = Regex.Match(log, @"\((\d+)ms\)");
+                   if (match.Success && int.TryParse(match.Groups[1].Value, out int durationMs))
+                   {
+                       if (durationMs > 1)
+                       {
+                           Log.Warning("[EF SLOW QUERY] {Duration}ms\n{Query}", durationMs, log);
+                       }
+                   }
+               }
+           }, LogLevel.Information)
+           .EnableSensitiveDataLogging()
+           .EnableDetailedErrors()
 );
-
-
+builder.Host.UseSerilog();
 // Identity Configuration
 builder.Services.AddIdentity<AppUser, Role>(options =>
 {
