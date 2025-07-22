@@ -34,11 +34,8 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
             if (!_refreshTokenService.isUsable(refreshToken))
                 return OperationResultT<TokenResponse>.Fail("401", "Invalid credential, unusable token");
             _refreshTokenService.RefreshIfNeeded(refreshToken, _context);
-
             var accesstoken = _accessKeyService.GenerateAccessToken(refreshToken.User.Id.ToString());
             _accessKeyService.AssignToken(accesstoken, _context);
-
-
             return OperationResultT<TokenResponse>.Ok(accesstoken);
 
         }
@@ -49,7 +46,6 @@ namespace iChat.BackEnd.Services.Users.Auth.Sql
             {
                 _accessKeyService.ExpireToken(_context);
                 _refreshTokenService.ExpireRefreshToken(_context);
-
             }
             else
             {

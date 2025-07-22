@@ -17,9 +17,8 @@ namespace iChat.Client.Services.UserServices.Chat
             };
 
             if (message.IsDeleted)
-                return result.WithDelete();
-            if (message.IsEdited)
-                return result.WithEdit(message.Content);
+                return result;
+
             if (message.ContentMedia != null)
             {
                 var url = URLsanitizer.Apply(message.ContentMedia.Url);

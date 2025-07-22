@@ -35,7 +35,6 @@ namespace iChat.Client.Pages.Chat
 
         private Task? _sendQueueTask;
         private SortedList<long, RenderedMessage> _messages = new();
-        private List<MessageGroup> _groupedMessages = new();
         bool Init_failed = false;
 
 
@@ -122,7 +121,6 @@ namespace iChat.Client.Pages.Chat
 
                 var (latest, loc) = await MessageManager.GetLatestMessage(ChannelId);
                 _messages.Clear();
-                _groupedMessages.Clear();
 
                 MessageManager.RegisterOnMessageReceived(HandleNewMessage);
                 MessageManager.RegisterOnMessageEdited(HandleEditMessage);
@@ -155,86 +153,8 @@ namespace iChat.Client.Pages.Chat
                 _shouldScrollToBottom = false;
             }
         }
-        private async Task HandleDeleteMessage(DeleteMessageRt rq)
-        {
-            if (rq.ChannelId != ChannelId) return;
-            try
-            {
-                var messageId = long.Parse(rq.MessageId);
-                if (_messages.TryGetValue(messageId, out var oldMessage))
-                {
-                    var updatedMessage = oldMessage.WithDelete();
-                    _messages[messageId] = updatedMessage;
-                    foreach (var group in _groupedMessages)
-                    {
-                        var msgIndex = group.Messages.FindIndex(m => m.Message.Id == messageId);
-                        if (msgIndex >= 0)
-                        {
-                            group.Messages[msgIndex] = updatedMessage;
-                            break;
-                        }
-                    }
-                    await InvokeAsync(StateHasChanged);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error handling delete message: {ex.Message}");
-            }
-        }
 
-        private async Task HandleEditMessage(EditMessageRt rq)
-        {
-            if (rq.ChannelId != ChannelId) return;
-            try
-            {
-                var messageId = long.Parse(rq.MessageId);
-
-                var group = _groupedMessages.FirstOrDefault(g => g.Messages.Any(m => m.Message.Id == messageId));
-                if (group is not null)
-                {
-                    var groupIndex = _groupedMessages.IndexOf(group);
-                    var messages = group.Messages.ToList(); 
-                    var msgIndex = messages.FindIndex(m => m.Message.Id == messageId);
-                    if (msgIndex >= 0)
-                    {
-                        messages[msgIndex] = messages[msgIndex].WithEdit(rq.NewContent);
-                        _groupedMessages[groupIndex] = new MessageGroup
-                        {
-                            User = group.User,
-                            Timestamp = group.Timestamp,
-                            Messages = messages
-                        };
-                        await InvokeAsync(StateHasChanged);
-                    }
-                }
-
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error handling edit message: {ex.Message}");
-            }
-        }
-        private async Task HandleNewMessage(ChatMessageDto message)
-        {
-            if (message.ChannelId !=  RoomIdL) return;
-            try
-            {
-                var messageId = message.Id;
-                var rendered = MessageRenderer.RenderMessage(message);
-                _messages.TryAdd(messageId, rendered);
-
-                await TryAddNewMessageToGroupAsync(rendered);
-                if(rendered.Message.SenderId.ToString()==_currentUserId)
-                _shouldScrollToBottom = true;
-
-                await InvokeAsync(StateHasChanged);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error handling new message: {ex.Message}");
-            }
-        }
+      
         public async ValueTask DisposeAsync()
         {
             await DisposeCore();

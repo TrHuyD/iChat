@@ -4,7 +4,9 @@
 @using iChat.Client.Pages.Component
 @using iChat.Client.Services.UserServices
 @using iChat.Client.Services.UserServices.Chat
+@using iChat.Client.Services.UserServices.SignalR
 @using iChat.DTOs.Users.Messages
+
 @inject ChatMessageCacheService MessageManager
 @inject ChatSignalRClientService ChatService
 @inject UserStateService _userInfo
@@ -36,62 +38,54 @@
         </div>
 
 
-   
+
 
         <div class="messages-container" @ref="_messagesContainer" @onscroll="HandleScroll">
-            <Virtualize Items="@_groupedMessages" Context="group" OverscanCount="20">
-                <div class="message-group" @key="group.Messages[0].Message.Id">
-                    <div class="message-group-header">
-                        <img class="avatar" src="@group.User.AvatarUrl" />
-                        <span class="username">@group.User.DisplayName</span>
-                        <span class="timestamp">@group.Timestamp.LocalDateTime.ToString("g")</span>
-                    </div>
+            <Virtualize Items="@_renderedMessages" Context="item" OverscanCount="20">
+                <div class="message-row @(item.GroupCount == 0 ? "with-header" : "no-header")"
+                     id="message-@item.Message.Id"
+                     @key="item"
+                     @oncontextmenu="(e) => ShowContextMenu(e, item.Message)"
+                     @oncontextmenu:preventDefault>
 
-                    <div class="message-group-body">
-                    @foreach (var item in group.Messages)
+                    @if (item.GroupCount == 0)
                     {
-                        <div class="message @item.CssClass @(item.Message.IsDeleted ? "deleted-message" : "") @(item.Message.IsEdited ? "edited-message" : "")  "
-                                id="message-@item.Message.Id"
-                                @key="item"
-                                @oncontextmenu="(e) => ShowContextMenu(e, item.Message)"
-                                @oncontextmenu:preventDefault>
-
-                            @if (!string.IsNullOrEmpty(item.Icon))
-                            {
-                                <span class="message-icon">@item.Icon</span>
-                            }
-
-                                <div class="message-content">
-                                    @if (item.Message.IsDeleted)
-                                    {
-                                        <span class="deleted-text">@RenderedMessage.DeleteMessage</span>
-                                    }
-                                    else
-                                    {
-                                        @if (item.isEdited)
-                                        {
-
-                                            <span class="edited-inline">
-                                                @((MarkupString)item.Content)<span class="edited-badge">(edited)</span>
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <div class="regular-content">
-                                                @((MarkupString)item.Content)
-                                            </div>
-                                        }
-
-                                    }
-                                </div>
-
-
-                        </div>
+                        <img class="avatar" src="@item.User.AvatarUrl" />
                     }
+
+                    <div class="message-body @(item.GroupCount == 0 ? "" : "message-body-continuation")">
+                        @if (item.GroupCount == 0)
+                        {
+                            <div class="message-meta">
+                                <span class="username">@item.User.DisplayName</span>
+                                <span class="timestamp">@item.Message.CreatedAt.LocalDateTime.ToString("g")</span>
+                            </div>
+                        }
+
+                        <div class="message-content">
+                            @if (item.Message.IsDeleted)
+                            {
+                                <span class="deleted-text">@RenderedMessage.DeleteMessage</span>
+                            }
+                            else if (item.Message.IsEdited)
+                            {
+                                <span class="edited-inline">
+                                    @((MarkupString)item.Message.Content)
+                                    <span class="edited-badge">(edited)</span>
+                                </span>
+                            }
+                            else
+                            {
+                                <div class="regular-content">
+                                    @((MarkupString)item.Content)
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             </Virtualize>
         </div>
+
 
         @if (_showContextMenu)
         {

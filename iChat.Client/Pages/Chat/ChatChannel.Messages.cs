@@ -121,45 +121,52 @@ namespace iChat.Client.Pages.Chat
 
         private ScrollSnapshot? _lastScrollSnapshot;
 
-        private Virtualize<MessageGroup>? virtualizeRef;
+        private Virtualize<RenderedMessage>? virtualizeRef;
 
 
-        private async Task AddMessagesBehind(MessageBucket bucket)
+private async Task AddMessagesBehind(MessageBucket bucket)
+{
+    try
+    {
+        _lastScrollSnapshot = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
+
+        // Cache messages into main dictionary
+        foreach (var message in bucket.ChatMessageDtos)
         {
-            try
-            {
-                _lastScrollSnapshot = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
-                foreach (var message in bucket.ChatMessageDtos)
-                {
-                    _messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
-                }
-                if (_groupedMessages.Count == 0)
-                {
-                    _groupedMessages = await GroupMessagesAsync(_messages);
-                }
-                else
-                {
-                    var newGroups = await GroupMessagesAsync(bucket);
-                    for (int i = newGroups.Count - 1; i >= 0; i--)
-                    {
-                        _groupedMessages.Insert(0, newGroups[i]);
-                    }
-                }
-                StateHasChanged();
-                if (virtualizeRef != null)
-                {
-                    await virtualizeRef.RefreshDataAsync();
-                }
-                await JS.InvokeVoidAsync(
-                    "requestAnimationFrameThen",
-                    DotNetObjectReference.Create(this),
-                    nameof(RestoreScrollAfterPrepend)
-                );
-            }
-            finally
-            {
-            }
+            _messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
         }
+
+        List<RenderedMessage> newMessages;
+        if (_renderedMessages.Count == 0)
+        {
+            newMessages = await GroupMessagesFlatAsync(bucket);
+            _renderedMessages = newMessages;
+        }
+        else
+        {
+            newMessages = await GroupMessagesFlatAsync(bucket);
+            _renderedMessages.InsertRange(0, newMessages);
+        }
+
+        StateHasChanged();
+
+        if (virtualizeRef != null)
+        {
+            await virtualizeRef.RefreshDataAsync();
+        }
+
+        await JS.InvokeVoidAsync(
+            "requestAnimationFrameThen",
+            DotNetObjectReference.Create(this),
+            nameof(RestoreScrollAfterPrepend)
+        );
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Error in AddMessagesBehind: {ex.Message}");
+    }
+}
+
         [JSInvokable]
         public async Task RestoreScrollAfterPrepend()
         {
@@ -169,89 +176,146 @@ namespace iChat.Client.Pages.Chat
                 _lastScrollSnapshot = null;
             }
         }
+        private async Task HandleDeleteMessage(DeleteMessageRt rq)
+        {
+            if (rq.ChannelId != ChannelId) return;
 
+            try
+            {
+                var messageId = long.Parse(rq.MessageId);
 
+                if (_messages.TryGetValue(messageId, out var oldMessage))
+                {
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error handling delete message: {ex.Message}");
+            }
+        }
+
+        private async Task HandleEditMessage(EditMessageRt rq)
+        {
+            if (rq.ChannelId != ChannelId) return;
+
+            try
+            {
+                var messageId = long.Parse(rq.MessageId);
+
+                if (_messages.TryGetValue(messageId, out var oldMessage))
+                {
+                    oldMessage.Content = rq.NewContent;
+                    await InvokeAsync(StateHasChanged);
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error handling edit message: {ex.Message}");
+            }
+        }
 
         private async Task AddMessagesForward(MessageBucket bucket)
         {
             var previousScroll = await JS.InvokeAsync<ScrollSnapshot>("captureScrollAnchor", _messagesContainer);
 
+            // Cache to dictionary
             foreach (var message in bucket.ChatMessageDtos)
             {
                 _messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
             }
-            if (_groupedMessages.Count == 0)
+
+            if (_renderedMessages.Count == 0)
             {
-                _groupedMessages = await GroupMessagesAsync(_messages);
+                _renderedMessages = await GroupMessagesFlatAsync(bucket);
             }
             else
             {
-                var newGroups = await GroupMessagesAsync(bucket);
-                foreach(var group in newGroups)
-                _groupedMessages.Add( group);
+                var newMessages = await GroupMessagesFlatAsync(bucket);
+                _renderedMessages.AddRange(newMessages);
             }
+
             await InvokeAsync(StateHasChanged);
             await JS.InvokeVoidAsync("restoreScrollAfterPrepend", _messagesContainer, previousScroll);
         }
 
-        private async Task<List<MessageGroup>> GroupMessagesAsync(MessageBucket bucket)
-        {
-            SortedList<long, RenderedMessage> messages= new SortedList<long, RenderedMessage>();
-            foreach (var message in bucket.ChatMessageDtos)
-            {
-                messages.TryAdd(message.Id, MessageRenderer.RenderMessage(message));
-            }
-            return await GroupMessagesAsync(messages);
-        }
-        private async Task<List<MessageGroup>> GroupMessagesAsync(SortedList<long, RenderedMessage> messages)
-        {
-            var groups = new List<MessageGroup>();
-            MessageGroup? current = null;
 
-            foreach (var msg in messages.Values.OrderBy(m => m.Message.Id))
-            {
-                UserMetadataReact user =  _userMetadataService.GetUserByIdAsync(msg.Message.SenderId);
-                if (current == null ||
-                    current.UserId != msg.Message.SenderId ||
-                    !current.CanAppend(msg.Message))
-                {
-                    current = new MessageGroup
-                    {
-                        UserId = msg.Message.SenderId,
-                        User = user,
-                        Timestamp = msg.Message.CreatedAt,
-                        Messages = new List<RenderedMessage>()
-                    };
-                    groups.Add(current);
-                }
-
-                current.Messages.Add(msg);
-            }
-            return groups;
-        }
-
-        private async Task TryAddNewMessageToGroupAsync(RenderedMessage message)
+        private List<RenderedMessage> _renderedMessages = new();
+        private async Task<List<RenderedMessage>> GroupMessagesFlatAsync(MessageBucket bucket)
         {
-            var userId = message.Message.SenderId;
-            var user =  _userMetadataService.GetUserByIdAsync(userId);
-            if (_groupedMessages.Count != 0)
+            var ordered = bucket.ChatMessageDtos.OrderBy(m => m.CreatedAt);
+            var result = new List<RenderedMessage>();
+
+            long? lastUserId = null;
+            DateTimeOffset? lastTimestamp = null;
+            int groupCount = 0;
+
+            foreach (var dto in ordered)
             {
-                var group = _groupedMessages[^1];
-                if (
-                    group.CanAppend(message.Message))
-                {
-                    group.Messages.Add(message);
-                    return;
-                }
+                var rendered = MessageRenderer.RenderMessage(dto);
+                var senderId = rendered.Message.SenderId;
+                var timestamp = rendered.Message.CreatedAt;
+
+                bool newGroup =
+                    lastUserId != senderId ||
+                    lastTimestamp == null ||
+                    (timestamp - lastTimestamp.Value).TotalMinutes > 5 ||
+                    groupCount >= 5;
+
+                rendered.GroupCount = newGroup ? 0 : groupCount + 1;
+                rendered.User = _userMetadataService.GetUserByIdAsync(senderId);
+
+                result.Add(rendered);
+
+                lastUserId = senderId;
+                lastTimestamp = timestamp;
+                groupCount = rendered.GroupCount;
             }
-            _groupedMessages.Add(new MessageGroup
-            {
-                UserId = userId,
-                User = user,
-                Messages = new List<RenderedMessage> { message },
-                Timestamp = message.Message.CreatedAt
-            });
+
+            return result;
         }
+
+        private async Task HandleNewMessage(ChatMessageDto message)
+        {
+            if (message.ChannelId != RoomIdL) return;
+
+            try
+            {
+                var rendered = MessageRenderer.RenderMessage(message);
+                _messages.TryAdd(message.Id, rendered);
+
+                await TryAddNewFlatMessageAsync(rendered);
+
+                if (rendered.Message.SenderId.ToString() == _currentUserId)
+                    _shouldScrollToBottom = true;
+
+                await InvokeAsync(StateHasChanged);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error handling new message: {ex.Message}");
+            }
+        }
+        private async Task TryAddNewFlatMessageAsync(RenderedMessage message)
+        {
+            var last = _renderedMessages.LastOrDefault();
+            int groupCount = 0;
+
+            if (last != null &&
+                last.Message.SenderId == message.Message.SenderId &&
+                (message.Message.CreatedAt - last.Message.CreatedAt).TotalMinutes <= 5 &&
+                last.GroupCount < 5)
+            {
+                groupCount = last.GroupCount + 1;
+            }
+
+            message.GroupCount = groupCount;
+            message.User = _userMetadataService.GetUserByIdAsync(message.Message.SenderId);
+            _renderedMessages.Add(message);
+        }
+
+
 
 
 

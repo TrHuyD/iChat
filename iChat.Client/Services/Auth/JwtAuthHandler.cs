@@ -79,16 +79,6 @@ namespace iChat.Client.Services.Auth
                     return response;
             }
 
-            //// Token missing or unauthorized
-            //var reset_token = await _tokenProvider.RetrieveNewToken();
-            //if (reset_token)
-            //{
-
-            //    request.Headers.Authorization =
-            //        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _tokenProvider.AccessToken);
-
-            //    return await base.SendAsync(request, cancellationToken);
-            //}
 
             return new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
             {

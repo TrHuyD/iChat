@@ -1,6 +1,7 @@
 ﻿using iChat.Client.Data.Chat;
 using iChat.Client.Services.Auth;
 using iChat.Client.Services.UI;
+using iChat.Client.Services.UserServices.Chat;
 using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Enum;
@@ -8,9 +9,9 @@ using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Threading.Channels;
 
-namespace iChat.Client.Services.UserServices.Chat
+namespace iChat.Client.Services.UserServices.SignalR
 {
-    public class ChatSignalRClientService : IAsyncDisposable
+    public partial class ChatSignalRClientService : IAsyncDisposable
     {
         private readonly SignalRConnectionFactory _connectionFactory;
         private HubConnection? _hubConnection;
@@ -46,32 +47,9 @@ namespace iChat.Client.Services.UserServices.Chat
             _hubConnection = _connectionFactory.CreateHubConnection(ChatHubPath);
 
             Console.WriteLine("Registering ReceiveMessage on Signalr Client");
-            _hubConnection.On<NewMessage>(SignalrClientPath.RecieveMessage, async message =>
-            {
-                try
-                {
-                    Console.WriteLine($"Recieved message for {message.message.Id}");
-                    var newmessage = new ChatMessageDto(message.message);
-                    _userMetadata.SyncMetadataVersion(newmessage.SenderId, long.Parse(message.UserMetadataVersion));
-                    await _MessageCacheService.AddLatestMessage(newmessage);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error handling new message: {ex.Message}");
-                }
-            });
+            ConnectMessageAsync();
             _hubConnection.On<ChatChannelDto>(SignalrClientPath.ChannelCreate, HandleChannelCreate);
-            _hubConnection.On<DeleteMessageRt>(SignalrClientPath.MessageDelete,async rt =>
-            {
-                try
-                {
-                   await HandleDeleteMessage(rt);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error handling delete message: {ex.Message}");
-                }
-            });
+        
             _hubConnection.On<UserMetadata>(SignalrClientPath.UpdateProfile, async rt =>
             {
                 try
@@ -85,7 +63,6 @@ namespace iChat.Client.Services.UserServices.Chat
             });
             _hubConnection.On<string>(SignalrClientPath.LeaverServer, ForceLeaveRoom);
             _hubConnection.On<ChatServerMetadata>(SignalrClientPath.JoinNewServer, OnJoiningNewServer);
-            _hubConnection.On<EditMessageRt>(SignalrClientPath.MessageEdit,  HandleEditMessage);
             _hubConnection.On<long>(SignalrClientPath.UserTyping,  (userId) =>
             {
                 try
@@ -195,13 +172,7 @@ namespace iChat.Client.Services.UserServices.Chat
                 await _hubConnection.SendAsync("LeaveRoom");
 
         }
-        public async Task SendMessageAsync(string roomId, ChatMessageDtoSafe message)
-        {
-            if (_hubConnection is { State: HubConnectionState.Connected })
-            {
-                await _hubConnection.InvokeAsync("SendMessage", roomId, message);
-            }
-        }
+
         public async Task Typing()
         {
             if (_hubConnection is { State: HubConnectionState.Connected })
@@ -222,16 +193,7 @@ namespace iChat.Client.Services.UserServices.Chat
         {
             await DisconnectAsync();
         }
-        private async Task HandleDeleteMessage(DeleteMessageRt rt)
-        {
 
-         await   _MessageCacheService.HandleDeleteMessage(rt); 
-
-        }
-        private async Task HandleEditMessage(EditMessageRt editMessage)
-        {
-            await _MessageCacheService.HandleEditMessage(editMessage);
-        }
         private void HandleChannelCreate(ChatChannelDto channel)
         {
             _chatNavigationService.AddChannel(channel);
