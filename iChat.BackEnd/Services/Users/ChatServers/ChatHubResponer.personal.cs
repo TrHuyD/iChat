@@ -1,4 +1,5 @@
 ﻿using iChat.BackEnd.Controllers.UserControllers.MessageControllers;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Enum;
 using iChat.DTOs.Users.Messages;
@@ -9,23 +10,24 @@ namespace iChat.BackEnd.Services.Users.ChatServers
     public partial class ChatHubResponer
     {
 
-        public async Task JoinNewServer(string userId, ChatServerMetadata serverId)
+        public async Task JoinNewServer(UserId userId, ServerId serverId)
         {
-            var connections = _tracker.GetConnections(long.Parse(userId));
+
+            var connections = _tracker.GetConnections(userId);
             foreach (var conn in connections)
             {
-                await _chatHub.Groups.AddToGroupAsync(conn, serverId.Id);
+                await _chatHub.Groups.AddToGroupAsync(conn, serverId.ToString());
             }
-            await _chatHub.Clients.User(userId).SendAsync(SignalrClientPath.JoinNewServer, serverId);
+            await _chatHub.Clients.User(userId.ToString()).SendAsync(SignalrClientPath.JoinNewServer, serverId);
         }
 
         public async Task LeaveServer(string userId, long serverId)
         {
-            await _chatHub.Clients.User(userId).SendAsync(SignalrClientPath.LeaverServer, serverId);
+            await _chatHub.Clients.User(userId.ToString()).SendAsync(SignalrClientPath.LeaverServer, serverId);
         }
         public async Task UpdateProfile(UserMetadata user)
         {
-            await _chatHub.Clients.User(user.UserId).SendAsync(SignalrClientPath.UpdateProfile, user);
+            await _chatHub.Clients.User(user.ToString()).SendAsync(SignalrClientPath.UpdateProfile, user);
         }
 
     }

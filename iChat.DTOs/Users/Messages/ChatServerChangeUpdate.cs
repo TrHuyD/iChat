@@ -9,7 +9,7 @@ namespace iChat.DTOs.Users.Messages
 {
     public class ChatServerChangeUpdate
     {
-        public stringlong Id { get; set; }
+        public ServerId Id { get; set; }
        public string AvatarUrl { get; set; }
         public string Name { get; set; }
         public string Version { get; set; }

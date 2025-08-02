@@ -6,16 +6,16 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs
 {
     public interface IUserConnectionTracker
     {
-        bool AddConnection(stringlong userId, string connectionId);
-        bool RemoveConnection(stringlong userId, string connectionId);
-        IReadOnlyCollection<string> GetConnections(long userId);
+        bool AddConnection(UserId userId, string connectionId);
+        bool RemoveConnection(UserId userId, string connectionId);
+        IReadOnlyCollection<string> GetConnections(UserId userId);
         ChatServerConnectionState SetServer(string connectionId, ChatServerConnectionState state);
-        stringlong GetServer(string connectionId);
-        bool ValidateConnection(stringlong serverId, stringlong channelId, string connectionId);
+        ServerId GetServer(string connectionId);
+        bool ValidateConnection(ServerId serverId, ChannelId channelId, string connectionId);
         // Channel tracking
-        stringlong SetChannel(string connectionId, stringlong channelId);
-        stringlong GetChannelForConnection(string connectionId);
-        IReadOnlyCollection<string> GetConnectionsInChannel(stringlong channelId);
+        ChannelId SetChannel(string connectionId, ChannelId channelId);
+        ChannelId GetChannelForConnection(string connectionId);
+        IReadOnlyCollection<string> GetConnectionsInChannel(ChannelId channelId);
     }
 }
 

@@ -9,7 +9,7 @@ namespace iChat.DTOs.Users
 {
     public class UserOnlineStatusChangedEventArgs
     {
-        public stringlong UserId { get; init; }
+        public UserId userId { get; init; }
         public bool IsOnline { get; init; }
     }
 }

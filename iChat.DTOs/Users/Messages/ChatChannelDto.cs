@@ -1,4 +1,5 @@
-﻿using System;
+﻿using iChat.DTOs.Collections;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,9 +9,9 @@ namespace iChat.DTOs.Users.Messages
 {
     public class ChatChannelDto :ChatChannelDtoLite
     {
-        public string ServerId { get; set; }
+        public ServerId ServerId { get; set; }
 
-        public ChatChannelDto(ChatChannelDtoLite dtoLite, string serverId)
+        public ChatChannelDto(ChatChannelDtoLite dtoLite, ServerId serverId)
         {
             Id = dtoLite.Id;
             Name = dtoLite.Name;
@@ -22,7 +23,7 @@ namespace iChat.DTOs.Users.Messages
         {
             Id = string.Empty;
             Name = string.Empty;
-            ServerId = string.Empty;
+            ServerId = new();
             Order = 0;
             last_bucket_id = 0;
         }

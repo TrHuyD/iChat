@@ -8,6 +8,7 @@ using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.Data.EF;
 using iChat.Data.Entities.Logs;
 using iChat.Data.Entities.Users.Messages;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 using iChat.ViewModels.Users.Messages;
@@ -124,7 +125,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
         }
         public async Task<MediaFileDto> UploadImage(MessageUploadRequest request, SnowflakeIdDto messageId,long userId)
         {
-            var result = (await _mediaUploadService.Value.SaveImageAsync(request.File, userId)).ToDto();
+            var result = (await _mediaUploadService.Value.SaveImageAsync(request.File, new UserId( userId))).ToDto();
             _queueService.Enqueue(new MessageRequest
             {
                 SenderId = userId.ToString(),

@@ -59,7 +59,7 @@ namespace iChat.Client.Services.UserServices
         }
         public void AddChannel(ChatChannelDto ccdto)
         {
-           var server= ChatServers.Where(s => s.Id == ccdto.ServerId).FirstOrDefault();
+           var server= ChatServers.Where(s => s.Id == ccdto.ServerId.ToString()).FirstOrDefault();
             if (server == null)
                 return;
             server.Channels.RemoveAll(c => c.Id == ccdto.Id);
@@ -100,12 +100,12 @@ namespace iChat.Client.Services.UserServices
                 post = ChatServers[^1].Position+1;
             AddServer(new ChatServerDtoUser
             {
-                Id = server.Id,
+                Id = server.Id.ToString(),
                 Name = server.Name,
                 AvatarUrl =URLsanitizer.Apply( server.AvatarUrl)    ,
                 Channels = server.Channels,
                 Position = post,
-                isadmin=long.Parse(server.AdminId)==userStateService.Value.GetUserProfile().UserId
+                isadmin=server.AdminId==userStateService.Value.GetUserProfile().userId
             });
             OnChatServersChanged?.Invoke();
         }

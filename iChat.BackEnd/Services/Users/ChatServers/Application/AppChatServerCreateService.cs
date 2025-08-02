@@ -1,5 +1,7 @@
-﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+﻿using Auth0.ManagementApi.Models;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Messages;
 
@@ -28,13 +30,14 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             }
             var server = await createService.CreateServerAsync(request.Name, userId);
             await serverMetaDataCacheService.UploadNewServerAsync(server);
-            await appChatServerService.Join(userId, long.Parse(server.Id));
+            await appChatServerService.Join(new UserId(userId), server.Id);
             return OperationResultT<ChatServerMetadata>.Ok(server);
 
         }
-        public async Task<OperationResultT<ChatChannelDto>> CreateChannelAsync(ChatChannelCreateRq request, long userId)
+        public async Task<OperationResultT<ChatChannelDto>> CreateChannelAsync(ChatChannelCreateRq request, UserId userId)
         {
-            var serverId = long.Parse(request.ServerId);
+            var serverId = new ServerId(new stringlong (request.ServerId));
+            
 
             if (string.IsNullOrWhiteSpace(request.Name))
             {

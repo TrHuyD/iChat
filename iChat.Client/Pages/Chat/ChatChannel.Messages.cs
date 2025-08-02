@@ -363,7 +363,7 @@ private async Task AddMessagesBehind(MessageBucket bucket)
                 else if (e.Key == "ArrowUp")
                     _highlight = (_highlight - 1 + _results.Count) % _results.Count;
                 else if (e.Key == "Enter")
-                    Select(_results[_highlight].UserId);
+                    Select(_results[_highlight].userId.Value);
 
                 return;
             }

@@ -16,9 +16,9 @@
         try
         {
             Server = await InviteService.GetServerFromInvite(InviteId);
-            if(await chatNavigation.HasServer(Server.Id))
+            if(await chatNavigation.HasServer(Server.Id.ToString()))
             {
-                await chatNavigation.NavigateToServer(Server.Id);
+                await chatNavigation.NavigateToServer(Server.Id.ToString());
                 return;
             }
             if (Server == null)

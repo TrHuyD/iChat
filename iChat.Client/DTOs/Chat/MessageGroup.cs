@@ -6,7 +6,7 @@ namespace iChat.Client.DTOs.Chat
 {
     //public class MessageGroup
     //{
-    //    public long UserId { get; set; }
+    //    public long userId { get; set; }
     //    public UserMetadataReact User { get; set; }
     //    public List<RenderedMessage> Messages { get; set; } = new();
     //    public DateTimeOffset Timestamp { get; set; }
@@ -14,7 +14,7 @@ namespace iChat.Client.DTOs.Chat
     //    public bool CanAppend(ChatMessageDto nextMessage)
     //    {
     //        if (Messages.Count == 0) return false;
-    //        if (nextMessage.SenderId != UserId)
+    //        if (nextMessage.SenderId != userId)
     //            return false;
     //        var lastMessage = Messages[0].Message;
     //        var timeGap = nextMessage.CreatedAt - lastMessage.CreatedAt;

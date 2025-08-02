@@ -9,15 +9,20 @@ namespace iChat.DTOs.Users
 {
     public class ChatServerConnectionState
     {
-        public stringlong ServerId { get; set; }
-        public stringlong ChannelId { get; set; }
-        public void Deconstruct(out stringlong serverId, out stringlong channelId)
+        public ServerId serverId { get; set; }
+        public ChannelId channelId { get; set; }
+        public void Deconstruct(out ServerId serverId, out ChannelId channelId)
         {
-            serverId = ServerId;
-            channelId = ChannelId;
+            serverId = this.serverId;
+            channelId = this.channelId;
         }
-        public ChatServerConnectionState() { }
-        public ChatServerConnectionState(stringlong longServerId, stringlong longChannelId) { ServerId = longServerId;ChannelId = longChannelId; }
+        public ChatServerConnectionState() 
+        {
+            serverId = new ServerId();
+            channelId = new ChannelId();
+        }
+        public ChatServerConnectionState(ServerId longServerId, ChannelId longChannelId) { serverId = longServerId; channelId = longChannelId; }
+        public ChatServerConnectionState(string serverId,string channelId) { this.channelId = new ChannelId(new stringlong(channelId));this.serverId = new ServerId(new stringlong(serverId)); }
 
 
     }

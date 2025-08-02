@@ -60,7 +60,7 @@ public class UserStateService
         _chatNavigationService.UpdateChatServers(package.ChatServers);
         _userProfile =new UserMetadataReact
         (
-             long.Parse(package.UserProfile.UserId),
+             package.UserProfile.userId,
              package.UserProfile.DisplayName,
               package.UserProfile.AvatarUrl,
               long.Parse(package.UserProfile.Version)
@@ -77,7 +77,7 @@ public class UserStateService
     {
         if (_userProfile == null)
             throw new InvalidOperationException("User profile is not loaded yet.");
-        return _userProfile.UserId;
+        return _userProfile.userId;
     }
     public UserMetadataReact? GetUserProfile()
     {

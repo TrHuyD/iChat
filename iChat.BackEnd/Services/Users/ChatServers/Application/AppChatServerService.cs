@@ -19,12 +19,12 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             _dbService = dbService;
             this._localMem = chatServerDbService;
         }
-        public async Task Join(long userId, long serverId)
+        public async Task Join(UserId userId, ServerId serverId)
         {
             await _dbService.Join(userId, serverId);
             await _localMem.JoinNewServer(userId, serverId);
         }
-        public async Task<OperationResultT<ChatServerChangeUpdate>> EditServerProfile(stringlong userId, stringlong serverId, string newName="", IFormFile file=null)
+        public async Task<OperationResultT<ChatServerChangeUpdate>> EditServerProfile(UserId userId, ServerId serverId, string newName="", IFormFile file=null)
         {
 
             if (await _localMem.IsAdmin(serverId, userId))

@@ -29,12 +29,12 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             {
                 _metadataMap[server.Id] = new ChatServerMetadata
                 {
-                    Id = server.Id.ToString(),
+                    Id =new ServerId(new stringlong(  server.Id)),
                     Name = server.Name,
                     AvatarUrl = server.AvatarUrl,
                     CreatedAt = server.CreatedAt,
                     Channels = server.Channels,
-                    AdminId = server.AdminId.ToString()
+                    AdminId =new UserId(new stringlong(server.AdminId))
                 };
                 var offline = new SkipListSortedSetV2<long>();
                 offline.Initialize(server.memberList);
@@ -45,11 +45,10 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         }
         public Task<bool> UploadNewServerAsync(ChatServerMetadata server)
         {
-            var serverId = long.Parse(server.Id);
-            _metadataMap[serverId] = server;
+            _metadataMap[server.Id.Value] = server;
             var offline = new SkipListSortedSetV2<long>();
             var online = new SkipListSortedSetV2<long>();
-            _serverUserMap[serverId] = (online, offline);
+            _serverUserMap[server.Id.Value] = (online, offline);
             
             return Task.FromResult(true);
         }
@@ -62,7 +61,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             return Task.FromResult(true);   
         }
 
-        public Task<OperationResultT<ChatServerMetadata>> GetServerAsync(stringlong serverId, bool isCopy = true)
+        public Task<OperationResultT<ChatServerMetadata>> GetServerAsync(ServerId serverId, bool isCopy = true)
         {
             if (!_metadataMap.TryGetValue(serverId.Value, out var cached) || cached is null)
                 return Task.FromResult(OperationResultT<ChatServerMetadata>.Fail("404", "Server metadata not found"));
@@ -82,18 +81,18 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             return Task.FromResult(OperationResultT<ChatServerMetadata>.Ok(result));
         }
 
-        public OperationResultBool IsAdmin(stringlong serverId, stringlong userId)
+        public OperationResultBool IsAdmin(ServerId serverId, UserId userId)
         {
             if (!_metadataMap.TryGetValue(serverId.Value, out var server))
             {
                 return OperationResultBool.Fail("400", $"[UserService:IsAdmin] Server {serverId} not found in cache");
             }
 
-            bool isAdmin = server.AdminId == userId.StringValue;
+            bool isAdmin = server.AdminId == userId;
             return OperationResultBool.Ok(isAdmin);
         }
 
-        public Task<OperationResultBool> IsAdmin(stringlong serverId, stringlong channelId, stringlong userId)
+        public Task<OperationResultBool> IsAdmin(ServerId serverId, ChannelId channelId, UserId userId)
         {
             var serverResult = GetServerAsync(serverId, false).Result;
             if (!serverResult.Success)
@@ -102,22 +101,21 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             }
 
             var server = serverResult.Value;
-            if (!_userChatService.IsUserInServer(userId.StringValue, serverId.Value))
+            if (!_userChatService.IsUserInServer(userId.Value.ToString(), serverId.Value))
             {
                 return Task.FromResult(OperationResultBool.Fail("403", $"[UserService:IsAdmin] User {userId} is not a member of server {serverId}"));
             }
-            if(!server.Channels.Any(c => c.Id == channelId.StringValue))
+            if(!server.Channels.Any(c => c.Id == channelId.Value.ToString()))
             {
                 return Task.FromResult(OperationResultBool.Fail("403", $"[UserService:IsAdmin] Channel {channelId} is not a channel of server {channelId}"));
             }
-            bool isAdmin = server.AdminId == userId.StringValue;
+            bool isAdmin = server.AdminId == userId;
             return Task.FromResult(OperationResultBool.Ok(isAdmin));
         }
 
         public (bool success, List<int> newOnlineLocations, List<int> oldOfflineLocations) SetUserOnline(List<long> serverIds, UserMetadata user)
         {
-            var userId = long.Parse(user.UserId);
-            if (_userChatService.IsUserOnline(user.UserId))
+            if (_userChatService.IsUserOnline(user.userId))
                 return (false, new(), new());
 
             var newOnlineLocations = new List<int>(serverIds.Count);
@@ -129,8 +127,8 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 if (!_serverUserMap.TryGetValue(serverId, out var sets))
                     throw new Exception($"Server {serverId} not found in cache");
 
-                sets.Offline.Remove(userId, out var oldOfflineIndex);
-                if (!sets.Online.Add(userId, out var newOnlineIndex))
+                sets.Offline.Remove(user.userId.Value, out var oldOfflineIndex);
+                if (!sets.Online.Add(user.userId.Value, out var newOnlineIndex))
                     throw new Exception("Cache mismatch");
                 newOnlineLocations.Add(newOnlineIndex);
                 oldOfflineLocations.Add(oldOfflineIndex);
@@ -139,12 +137,12 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             return (true, newOnlineLocations, oldOfflineLocations);
         }
 
-        public (bool success, List<long> serverList, List<int> newOfflineLocations, List<int> oldOnlineLocations) SetUserOffline(stringlong userId)
+        public (bool success, List<long> serverList, List<int> newOfflineLocations, List<int> oldOnlineLocations) SetUserOffline(UserId userId)
         {
-            if (!_userChatService.IsUserOnline(userId.StringValue))
+            if (!_userChatService.IsUserOnline(userId))
                 return (false, new(), new(), new());
 
-            var serverIds = _userChatService.GetUserServerList(userId.StringValue);
+            var serverIds = _userChatService.GetUserServerList(userId);
             var newOfflineLocations = new List<int>(serverIds.Count);
             var oldOnlineLocations = new List<int>(serverIds.Count);
 
@@ -166,25 +164,25 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
                 oldOnlineLocations.Add(oldOnlineIndex);
                 newOfflineLocations.Add(newOfflineIndex);
             }
-            _userChatService.DowngradeUserCache(userId.StringValue);
+            _userChatService.DowngradeUserCache(userId.Value.ToString());
             return (true, serverIds, newOfflineLocations, oldOnlineLocations);
         }
 
-        public List<long> GetOnlineUsersAsync(stringlong serverId, int lim = 50)
+        public List<long> GetOnlineUsersAsync(ServerId serverId, int lim = 50)
         {
             if (_serverUserMap.TryGetValue(serverId.Value, out var sets))
                 return sets.Online.GetRange(0, lim);
             throw new Exception($"Server {serverId} not loaded");
         }
 
-        public List<long> GetOfflineUsersAsync(stringlong serverId, int lim = 50)
+        public List<long> GetOfflineUsersAsync(ServerId serverId, int lim = 50)
         {
             if (_serverUserMap.TryGetValue(serverId.Value, out var sets))
                 return sets.Offline.GetRange(0, lim);
             throw new Exception($"Server {serverId} not loaded");
         }
 
-        public (int index, bool isOnline) AddUserToServer(stringlong userId, stringlong serverId)
+        public (int index, bool isOnline) AddUserToServer(UserId userId, ServerId serverId)
         {
             var online = _userChatService.AddServerToUser(userId.Value, serverId.Value);
             return (_AddUserToServer(userId.Value, serverId.Value, online), online);
@@ -202,19 +200,19 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             return index;
         }
 
-        public bool RemoveUserFromServer(stringlong userId, stringlong serverId)
+        public bool RemoveUserFromServer(UserId userId, ServerId serverId)
         {
             if (!_serverUserMap.TryGetValue(serverId.Value, out var sets))
                 return false;
 
             var removed = sets.Online.Remove(userId.Value, out _) || sets.Offline.Remove(userId.Value, out _);
             if (removed)
-                _userChatService.RemoveServerFromUser(userId.StringValue, serverId.Value);
+                _userChatService.RemoveServerFromUser(userId, serverId);
 
             return removed;
         }
 
-        public (List<long> online, List<long> offline) GetUserList(stringlong serverId)
+        public (List<long> online, List<long> offline) GetUserList(ServerId serverId)
         {
             if (!_serverUserMap.TryGetValue(serverId.Value, out var sets))
                 throw new KeyNotFoundException($"Server {serverId} not found in _serverUserMap.");

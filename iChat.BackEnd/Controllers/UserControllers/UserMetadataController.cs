@@ -19,7 +19,7 @@ namespace iChat.BackEnd.Controllers.UserControllers
         {
             if (string.IsNullOrEmpty(userId) || !long.TryParse(userId, out var luserId) || luserId <= 0)
                 return BadRequest("User ID is required.");
-            var metadata = await _userMetadataService.GetUserMetadataAsync(userId);
+            var metadata = await _userMetadataService.GetUserMetadataAsync(new DTOs.Collections.UserId( userId));
             if (metadata == null)
                 return NotFound();
 

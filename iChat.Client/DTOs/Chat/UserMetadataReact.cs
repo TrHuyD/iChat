@@ -1,12 +1,11 @@
 ﻿using iChat.Client.Services.UserServices.Chat.Util;
-using System.ComponentModel;
-    using System.Runtime.CompilerServices;
+using iChat.DTOs.Collections;
 
-    namespace iChat.Client.DTOs.Chat
+namespace iChat.Client.DTOs.Chat
     {
         public class UserMetadataReact 
         {
-            public long UserId { get; }
+            public UserId userId { get; set; }
             public long Version { get; set; }
             private string _displayName;
             public string DisplayName
@@ -41,13 +40,26 @@ using System.ComponentModel;
 
         public UserMetadataReact(long userId, string displayName, string avatarUrl,long version)
             {
-                UserId = userId;
+                userId = new UserId( userId);
                 _displayName = displayName;
                 _avatarUrl = URLsanitizer.Apply(avatarUrl);
                 Version = version;
              
 
             }
+        public UserMetadataReact(UserId userId, string displayName, string avatarUrl, long version)
+        {
+            this.userId =userId;
+            _displayName = displayName;
+            _avatarUrl = URLsanitizer.Apply(avatarUrl);
+            Version = version;
+
         }
+        public UserMetadataReact()
+        {
+
+        }
+    }
+
 
     }

@@ -1,4 +1,5 @@
-﻿using iChat.DTOs.Users;
+﻿using iChat.DTOs.Collections;
+using iChat.DTOs.Users;
 using iChat.DTOs.Users.Messages;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
@@ -20,10 +21,15 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         }
 
         // Primary cache key for combined data (hot path)
+        private string CombinedKey(UserId userId) => $"user:{userId}:combined";
         private string CombinedKey(string userId) => $"user:{userId}:combined";
+
         private string CombinedKey(long userId) => $"user:{userId}:combined";
         // Secondary cache key for metadata-only (for offline users)
+        private string MetadataOnlyKey(UserId userId) => $"user:{userId}:metadata";
         private string MetadataOnlyKey(string userId) => $"user:{userId}:metadata";
+        private string MetadataOnlyKey(long userId) => $"user:{userId}:metadata";
+
 
         private class CombinedUserData
         {
@@ -94,7 +100,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
        
         public bool SetOnlineUserData(List<long> serverList, UserMetadata metadata)
         {
-            var userId = metadata.UserId;
+            var userId = metadata.userId;
             if (IsUserOnline(userId))
                 return false;
             var key = CombinedKey(userId);
@@ -170,7 +176,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         /// <summary>
         /// Remove a server from user's server list (when user leaves a server)
         /// </summary>
-        public bool RemoveServerFromUser(string userId, long serverId)
+        public bool RemoveServerFromUser(UserId userId, ServerId serverId)
         {
             var key = CombinedKey(userId);
 
@@ -178,10 +184,10 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
             {
                 if (data.ServerList != null && data.ServerSet != null)
                 {
-                    if (data.ServerSet.Contains(serverId))
+                    if (data.ServerSet.Contains(serverId.Value))
                     {
-                        data.ServerList.Remove(serverId);
-                        data.ServerSet.Remove(serverId);
+                        data.ServerList.Remove(serverId.Value);
+                        data.ServerSet.Remove(serverId.Value);
                         return true;
                     }
                 }
@@ -277,9 +283,9 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         /// <summary>
         /// Get user's server list (only available for online users)
         /// </summary>
-        public List<long>? GetUserServerList(string userId, bool extendExpire = false)
+        public List<long>? GetUserServerList(UserId userId, bool extendExpire = false)
         {
-            var key = CombinedKey(userId);
+            var key = CombinedKey(userId.ToString());
             if (_localCache.TryGetValue(key, out CombinedUserData? data))
             {
                 return data.ServerList;
@@ -316,7 +322,7 @@ namespace iChat.BackEnd.Services.Users.Infra.MemoryCache
         /// <summary>
         /// Check if user is currently online (has combined cache entry)
         /// </summary>
-        public bool IsUserOnline(string userId)
+        public bool IsUserOnline(UserId userId)
         {
             return _localCache.TryGetValue(CombinedKey(userId), out _);
         }

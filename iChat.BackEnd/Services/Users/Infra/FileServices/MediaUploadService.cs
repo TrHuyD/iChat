@@ -1,6 +1,7 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.Data.EF;
 using iChat.Data.Entities.Users.Messages;
+using iChat.DTOs.Collections;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp.Formats.Webp;
 using System;
@@ -19,7 +20,7 @@ namespace iChat.BackEnd.Services.Users.Infra.FileServices
             _dbContext = dbContext;
         }
 
-        public async Task<MediaFile> SaveAvatarAsync(IFormFile file, long? uploaderUserId)
+        public async Task<MediaFile> SaveAvatarAsync(IFormFile file, UserId uploaderUserId)
         {
             return await SaveTransformedImageAsync(file, uploaderUserId,
                 folder: "avatars",
@@ -31,7 +32,7 @@ namespace iChat.BackEnd.Services.Users.Infra.FileServices
                 webpQuality: 50);
         }
 
-        public async Task<MediaFile> SaveImageAsync(IFormFile file, long? uploaderUserId)
+        public async Task<MediaFile> SaveImageAsync(IFormFile file, UserId uploaderUserId)
         {
             return await SaveTransformedImageAsync(file, uploaderUserId,
                 folder: "images",
@@ -40,7 +41,7 @@ namespace iChat.BackEnd.Services.Users.Infra.FileServices
         }
         private async Task<MediaFile> SaveTransformedImageAsync(
             IFormFile file,
-            long? uploaderUserId,
+            UserId uploaderUserId,
             string folder,
             Action<Image> transform,
             int webpQuality)
@@ -77,7 +78,7 @@ namespace iChat.BackEnd.Services.Users.Infra.FileServices
                 Height = height,
                 SizeBytes = (int)fileInfo.Length,
                 UploadedAt = DateTime.UtcNow,
-                UploaderUserId = uploaderUserId
+                UploaderUserId = uploaderUserId.Value
             };
             _dbContext.MediaFiles.Add(mediaFile);
             await _dbContext.SaveChangesAsync();

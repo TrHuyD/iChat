@@ -69,8 +69,8 @@ namespace iChat.BackEnd.Services.Users.Infra.Memory.MessageServices
         }
         public Task SetAsync(UserMetadata user)
         {
-            var metadataKey = GetMetadataKey(user.UserId);
-            var placeholderKey = GetPlaceholderKey(user.UserId);
+            var metadataKey = GetMetadataKey(user.userId.ToString());
+            var placeholderKey = GetPlaceholderKey(user.userId.ToString());
 
             // Remove placeholder if exists
             _memoryCache.Remove(placeholderKey);
@@ -85,7 +85,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Memory.MessageServices
             _memoryCache.Set(metadataKey, user, entryOptions);
 
             // Update version
-            IncrementVersionInternal(user.UserId);
+            IncrementVersionInternal(user.userId.ToString());
 
             return Task.CompletedTask;
         }
@@ -102,14 +102,14 @@ namespace iChat.BackEnd.Services.Users.Infra.Memory.MessageServices
 
             foreach (var user in userList)
             {
-                var metadataKey = GetMetadataKey(user.UserId);
-                var placeholderKey = GetPlaceholderKey(user.UserId);
+                var metadataKey = GetMetadataKey(user.userId.ToString());
+                var placeholderKey = GetPlaceholderKey(user.userId.ToString());
                 // Remove placeholder if exists
                 _memoryCache.Remove(placeholderKey);
                 // Set metadata
                 _memoryCache.Set(metadataKey, user, entryOptions);
                 // Update version
-                IncrementVersionInternal(user.UserId);
+                IncrementVersionInternal(user.userId.ToString());
             }
             return Task.CompletedTask;
         }

@@ -34,12 +34,12 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
                     return BadRequest(ModelState);
                 }
 
-                var userId = new UserClaimHelper(User).GetUserId();
+                var userId = new UserClaimHelper(User).GetUserIdSL();
                 var result= await createService.CreateServerAsync(rq, userId);
                 if (!result.Success)
                     return BadRequest(result.ErrorMessage);
-                await responer.JoinNewServer(userId.ToString(), result.Value);
-                return Ok();
+                await responer.JoinNewServer(userId, result.Value.Id);
+                return Ok();    
             }
             catch(Exception ex)
             {
@@ -57,14 +57,14 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         public async Task<IActionResult> CreateChannel([FromBody] ChatChannelCreateRq rq)
         {
 
-            var userId = new UserClaimHelper(User).GetUserId();
+            var userId = new UserClaimHelper(User).GetUserIdSL();
             try
             {
                 var result = await createService.CreateChannelAsync(rq,userId);
                 if(!result.Success)
                     return BadRequest(result.ErrorMessage);
                 var channel = result.Value;
-                await responer.NewChannel(channel.ServerId, channel);
+                await responer.NewChannel(channel.ServerId.ToString(), channel);
                 return Ok();
             }
             catch (Exception ex)

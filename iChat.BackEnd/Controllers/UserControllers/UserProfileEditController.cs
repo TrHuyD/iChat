@@ -25,7 +25,7 @@ namespace iChat.BackEnd.Controllers.UserControllers
                 return BadRequest(ModelState);
             try
             {
-                var userId = new UserClaimHelper(User).GetUserIdStr();
+                var userId = new UserClaimHelper(User).GetUserIdSL();
                 var updatedMetadata = await _editService.UpdateUserName(userId, request.UserName);
                 await _responder.UpdateProfile(updatedMetadata);
                 return Ok();
@@ -43,7 +43,7 @@ namespace iChat.BackEnd.Controllers.UserControllers
             {
                 if (ModelState.IsValid == false)
                     return BadRequest(ModelState);
-                var userId = new UserClaimHelper(User).GetUserIdStr();
+                var userId = new UserClaimHelper(User).GetUserIdSL();
                 var updatedMetadata = await _editService.UpdateUserAvatar(userId, request.File);
                 await _responder.UpdateProfile(updatedMetadata);
                 return Ok();
@@ -61,7 +61,7 @@ namespace iChat.BackEnd.Controllers.UserControllers
             {
                 if (ModelState.IsValid == false)
                     return BadRequest(ModelState);
-                var userId = new UserClaimHelper(User).GetUserIdStr();
+                var userId = new UserClaimHelper(User).GetUserIdSL();
                 var updatedMetadata = await _editService.UpdateUserNameAndAvatar(userId, request.UserName, request.File);
                 await _responder.UpdateProfile(updatedMetadata);
                 return Ok();

@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.Users.Auth;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 
 namespace iChat.BackEnd.Services.Users.ChatServers.Application
@@ -14,9 +15,9 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             _userMetaDataCacheService = userMetaDataCacheService;
             _userService = userService;
         }
-        public async Task<UserMetadata> GetUserMetadataAsync(string userId)
+        public async Task<UserMetadata> GetUserMetadataAsync(UserId userId)
         {
-            var cachedMetadata = await _userMetaDataCacheService.GetAsync(userId);
+            var cachedMetadata = await _userMetaDataCacheService.GetAsync(userId.ToString());
             if (cachedMetadata != null)
             {
                 return cachedMetadata;
@@ -41,7 +42,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 var userMetadataList = await _userService.Value.GetUserMetadataBatchAsync(missingUserIds);
                 foreach (var userMetadata in userMetadataList)
                 {
-                    metadata[userMetadata.UserId] = userMetadata;
+                    metadata[userMetadata.userId.ToString()] = userMetadata;
                     _ = _userMetaDataCacheService.SetAsync(userMetadata);
                 }
             }

@@ -11,6 +11,6 @@ namespace iChat.DTOs.Users.Messages
     {
         public List<long> online { get; set;}
         public List<long> offline { get; set; }
-         public stringlong  serverId { get; set; }
+         public ServerId  serverId { get; set; }
     }
 }

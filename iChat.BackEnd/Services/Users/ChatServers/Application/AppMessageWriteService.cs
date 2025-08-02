@@ -40,16 +40,20 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             _idGen = snowflakeService;
         }
 
-        public async Task<OperationResultT<DeleteMessageRt>> DeleteMessageAsync(UserDeleteMessageRq rq,string UserId)
+        public async Task<OperationResultT<DeleteMessageRt>> DeleteMessageAsync(UserDeleteMessageRq rq,string _userId)
         {
+            var channelId = new ChannelId(new stringlong(rq.ChannelId));
+            var serverId = new ServerId(new stringlong(rq.ServerId));
+            var userId = new UserId(new stringlong(_userId));
             var longrq= new DeleteMessageRq
             {
-                ChannelId =long.Parse( rq.ChannelId),
+                ChannelId =channelId,
                 MessageId =long.Parse( rq.MessageId),
-                UserId =long.Parse(UserId),
-                ServerId=long.Parse(rq.ServerId)
+                UserId =userId,
+                ServerId=serverId
             };
-            var isAdminRt = await  _serverMetaDataCacheService.IsAdmin(longrq.ServerId,longrq.ChannelId,longrq.UserId);
+
+            var isAdminRt = await  _serverMetaDataCacheService.IsAdmin(serverId,channelId,userId);
             if(!isAdminRt.Success)
                 return OperationResultT<DeleteMessageRt>.Fail(isAdminRt.ErrorCode,"Error when deleting message "+isAdminRt.ErrorMessage);
             var isAdmin = isAdminRt.Value;
@@ -65,16 +69,19 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
 
         }
 
-        public async Task<OperationResultT<EditMessageRt>> EditMessageAsync(UserEditMessageRq rq, string UserId)
+        public async Task<OperationResultT<EditMessageRt>> EditMessageAsync(UserEditMessageRq rq, string _userId)
         {
+            var channelId = new ChannelId(new stringlong(rq.ChannelId));
+            var serverId = new ServerId(new stringlong(rq.ServerId));
+            var userId = new UserId(new stringlong(_userId));
             var longrq= new EditMessageRq
             {
-                ChannelId = long.Parse(rq.ChannelId),
+                ChannelId = channelId,
                 MessageId = long.Parse(rq.MessageId),
-                UserId = long.Parse(UserId),
+                UserId = userId,
                 NewContent = rq.NewContent
             };
-            var isAdminRt = await _serverMetaDataCacheService.IsAdmin(rq.ServerId, rq.ChannelId, UserId);
+            var isAdminRt = await _serverMetaDataCacheService.IsAdmin(serverId, channelId, userId);
             if (!isAdminRt.Success)
                 return OperationResultT<EditMessageRt>.Fail(isAdminRt.ErrorCode, "Error when editing message :" + isAdminRt.ErrorCode);
             var cacheResult= await _cache.EditMessageAsync(longrq);
@@ -90,9 +97,9 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
         }
         public async Task<OperationResultT<NewMessage>> SendMediaMessageAsync(MessageUploadRequest rq,string UserId,bool fromApi)
         {
-            var channelId = new stringlong(rq.ChannelId);
-            var serverId = new stringlong(rq.ServerId);
-            var userId = new stringlong(UserId);
+            var channelId =new ChannelId(  new stringlong(rq.ChannelId));
+            var serverId = new ServerId(new stringlong(rq.ServerId));
+            var userId = new UserId( new stringlong(UserId));
             if (fromApi)
             {
                 var isAdminRt = await _serverMetaDataCacheService.IsAdmin(serverId, channelId, userId);
@@ -118,14 +125,14 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             });
         }
 
-        public async Task<OperationResultT<NewMessage>> SendTextMessageAsync(MessageRequest request,string serverId,bool fromApi)
+        public async Task<OperationResultT<NewMessage>> SendTextMessageAsync(MessageRequest request,string _serverId,bool fromApi)
         {
-            var channelId = long.Parse(request.ReceiveChannelId);
-            var serverIdLong = long.Parse(serverId);
-            var userId = long.Parse(request.SenderId);
+            var channelId = new ChannelId(new stringlong(request.ReceiveChannelId));
+            var serverId = new ServerId(new stringlong(_serverId));
+            var userId = new UserId(new stringlong(request.SenderId));
             if (fromApi)
             {
-                var permCheck = await _serverMetaDataCacheService.IsAdmin(serverIdLong, channelId, userId);
+                var permCheck = await _serverMetaDataCacheService.IsAdmin(serverId, channelId, userId);
                 if (!permCheck.Success)
                     return OperationResultT<NewMessage>.Fail(permCheck.ErrorCode, permCheck.ErrorMessage);
             }

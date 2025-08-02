@@ -7,11 +7,11 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
 {
     public class UserConnectionTracker : IUserConnectionTracker
     {
-        private readonly ConcurrentDictionary<stringlong, HashSet<string>> _serverToConnections = new();
-        private readonly ConcurrentDictionary<stringlong, HashSet<string>> _userToConnections = new();
+        private readonly ConcurrentDictionary<ServerId, HashSet<string>> _serverToConnections = new();
+        private readonly ConcurrentDictionary<UserId, HashSet<string>> _userToConnections = new();
         private readonly ConcurrentDictionary<string, ChatServerConnectionState> _connectionToLoc = new();
-        private readonly ConcurrentDictionary<stringlong, HashSet<string>> _channelToConnections = new();
-        public bool AddConnection(stringlong userId, string connectionId)
+        private readonly ConcurrentDictionary<ChannelId, HashSet<string>> _channelToConnections = new();
+        public bool AddConnection(UserId userId, string connectionId)
         {
             bool alreadyExists = true;
             _userToConnections.AddOrUpdate(userId,
@@ -32,26 +32,26 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             return alreadyExists;
         }
 
-        public bool RemoveConnection(stringlong userId, string connectionId)
+        public bool RemoveConnection(UserId userId, string connectionId)
         {
             if (_connectionToLoc.TryRemove(connectionId, out var loc))
             {
-                if (loc.ChannelId != 0 && _channelToConnections.TryGetValue(loc.ChannelId, out var chanSet))
+                if (!loc.channelId.Value.IsNull() && _channelToConnections.TryGetValue(loc.channelId, out var chanSet))
                 {
                     lock (chanSet)
                     {
                         chanSet.Remove(connectionId);
                         if (chanSet.Count == 0)
-                            _channelToConnections.TryRemove(loc.ChannelId, out _);
+                            _channelToConnections.TryRemove(loc.channelId, out _);
                     }
                 }
-                if (loc.ServerId != 0 && _serverToConnections.TryGetValue(loc.ServerId, out var serverSet))
+                if (!loc.serverId.Value.IsNull() && _serverToConnections.TryGetValue(loc.serverId, out var serverSet))
                 {
                     lock (serverSet)
                     {
                         serverSet.Remove(connectionId);
                         if (serverSet.Count == 0)
-                            _serverToConnections.TryRemove(loc.ServerId, out _);
+                            _serverToConnections.TryRemove(loc.serverId, out _);
                     }
                 }
             }
@@ -72,7 +72,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             return true;
         }
 
-        public IReadOnlyCollection<string> GetConnections(long userId)
+        public IReadOnlyCollection<string> GetConnections(UserId userId)
         {
             return _userToConnections.TryGetValue(userId, out var set)
                 ? set.ToList()
@@ -80,31 +80,31 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
         }
         private readonly ConcurrentDictionary<string, object> _connectionLocks = new();
 
-        public stringlong SetChannel(string connectionId, stringlong ChannelId)
+        public ChannelId SetChannel(string connectionId, ChannelId channelId)
         {
             var lockObj = _connectionLocks.GetOrAdd(connectionId, _ => new object());
 
             lock (lockObj)
             {
-                var prevLoc = _connectionToLoc.GetOrAdd(connectionId, _ => new ChatServerConnectionState(0,0));
-                if (prevLoc.ChannelId == ChannelId) return 0;
+                var prevLoc = _connectionToLoc.GetOrAdd(connectionId, _ => new ChatServerConnectionState());
+                if (prevLoc.channelId == channelId) return new();
 
-                if (prevLoc.ChannelId != 0 && _channelToConnections.TryGetValue(prevLoc.ChannelId, out var oldSet))
+                if (!prevLoc.channelId.Value.IsNull() && _channelToConnections.TryGetValue(prevLoc.channelId, out var oldSet))
                 {
                     lock (oldSet)
                     {
                         oldSet.Remove(connectionId);
                         if (oldSet.Count == 0)
-                            _channelToConnections.TryRemove(prevLoc.ChannelId, out _);
+                            _channelToConnections.TryRemove(prevLoc.channelId, out _);
                     }
                 }
 
-                _channelToConnections.AddOrUpdate(ChannelId,
+                _channelToConnections.AddOrUpdate(channelId,
                     _ => new HashSet<string> { connectionId },
                     (_, set) => { lock (set) { set.Add(connectionId); } return set; });
 
-                _connectionToLoc[connectionId] = new ChatServerConnectionState(prevLoc.ServerId, ChannelId);
-                return prevLoc.ChannelId;
+                _connectionToLoc[connectionId] = new ChatServerConnectionState(prevLoc.serverId, channelId);
+                return prevLoc.channelId;
             }
         }
 
@@ -115,35 +115,35 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             lock (lockObj)
             {
                 var prevLoc = _connectionToLoc.GetOrAdd(connectionId, _ => new ChatServerConnectionState());
-                if (prevLoc.ServerId == state.ServerId)
+                if (prevLoc.serverId == state.serverId)
                     return prevLoc;
-                if (prevLoc.ServerId != 0 && _serverToConnections.TryGetValue(prevLoc.ServerId, out var oldServerSet))
+                if (!prevLoc.serverId.Value.IsNull() && _serverToConnections.TryGetValue(prevLoc.serverId, out var oldServerSet))
                 {
                     lock (oldServerSet)
                     {
                         oldServerSet.Remove(connectionId);
                         if (oldServerSet.Count == 0)
-                            _serverToConnections.TryRemove(prevLoc.ServerId, out _);
+                            _serverToConnections.TryRemove(prevLoc.serverId, out _);
                     }
                 }
-                if (prevLoc.ChannelId != 0 && _channelToConnections.TryGetValue(prevLoc.ServerId, out var oldChannelSet))
+                if (!prevLoc.channelId.Value.IsNull() && _channelToConnections.TryGetValue(prevLoc.channelId, out var oldChannelSet))
                 {
                     lock (oldChannelSet)
                     {
                         oldChannelSet.Remove(connectionId);
                         if (oldChannelSet.Count == 0)
-                            _channelToConnections.TryRemove(prevLoc.ChannelId, out _);
+                            _channelToConnections.TryRemove(prevLoc.channelId, out _);
                     }
                 }
                 _serverToConnections.AddOrUpdate(
-                    state.ServerId,
+                    state.serverId,
                     _ => new HashSet<string> { connectionId },
                     (_, set) =>
                     {
                         lock (set) { set.Add(connectionId); }
                         return set;
                     });
-                _channelToConnections.AddOrUpdate(state.ChannelId,
+                _channelToConnections.AddOrUpdate(state.channelId,
                 _ => new HashSet<string> { connectionId },
                 (_, set) => { lock (set) { set.Add(connectionId); } return set; });
                 _connectionToLoc[connectionId] = state;
@@ -153,33 +153,33 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
         }
 
 
-        public stringlong GetServer(string connectionId)
+        public ServerId GetServer(string connectionId)
         {
             return _connectionToLoc.TryGetValue(connectionId, out var loc)
-                ? loc.ServerId
-                : 0;
+                ? loc.serverId
+                : new ServerId();
         }
 
        
 
-        public stringlong GetChannelForConnection(string connectionId)
+        public ChannelId GetChannelForConnection(string connectionId)
         {
             return _connectionToLoc.TryGetValue(connectionId, out var loc)
-                ? loc.ChannelId
-                : 0;
+                ? loc.channelId
+                : new();
         }
 
-        public IReadOnlyCollection<string> GetConnectionsInChannel(stringlong ChannelId)
+        public IReadOnlyCollection<string> GetConnectionsInChannel(ChannelId channelId)
         {
-            return _channelToConnections.TryGetValue(ChannelId, out var set)
+            return _channelToConnections.TryGetValue(channelId, out var set)
                 ? set.ToList()
                 : Array.Empty<string>();
         }
 
-        public bool ValidateConnection(stringlong ServerId, stringlong ChannelId, string connectionId)
+        public bool ValidateConnection(ServerId serverId, ChannelId channelId, string connectionId)
         {
             var (cur_ServerId, cur_ChannelId) = _connectionToLoc[connectionId];
-            return cur_ChannelId == ChannelId&&cur_ServerId==ServerId;
+            return cur_ChannelId == channelId && cur_ServerId==serverId;
         }
     }
 }

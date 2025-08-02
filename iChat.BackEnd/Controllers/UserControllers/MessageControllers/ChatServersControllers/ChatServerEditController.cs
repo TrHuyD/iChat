@@ -1,6 +1,7 @@
 ﻿using iChat.BackEnd.Models.ChatServer;
 using iChat.BackEnd.Models.User;
 using iChat.BackEnd.Services.Users.ChatServers.Application;
+using iChat.DTOs.Collections;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,8 +25,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
                 return BadRequest(ModelState);
             try
             {
-                var userId = new UserClaimHelper(User).GetUserIdStr();
-                var result = await _editor.EditServerProfile(userId, request.ServerId, request.Name);
+                var userId = new UserClaimHelper(User).GetUserIdSL();
+                var result = await _editor.EditServerProfile(userId,new ServerId( request.ServerId), request.Name);
                 if(result.Failure)
                     return BadRequest(result.ErrorMessage);
                 return Ok();
@@ -43,8 +44,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             {
                 if (ModelState.IsValid == false)
                     return BadRequest(ModelState);
-                var userId = new UserClaimHelper(User).GetUserIdStr();
-                var result = await _editor.EditServerProfile(userId, request.ServerId,"",request.File);
+                var userId = new UserClaimHelper(User).GetUserIdSL();
+                var result = await _editor.EditServerProfile(userId,new ServerId(  request.ServerId),"",request.File);
                 if (result.Failure)
                     return BadRequest(result.ErrorMessage);
                 return Ok();
@@ -62,8 +63,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             {
                 if (ModelState.IsValid == false)
                     return BadRequest(ModelState);
-                var userId = new UserClaimHelper(User).GetUserIdStr();
-                var result = await _editor.EditServerProfile(userId, request.ServerId, request.Name, request.File);
+                var userId = new UserClaimHelper(User).GetUserIdSL();
+                var result = await _editor.EditServerProfile(userId, new ServerId(request.ServerId), request.Name, request.File);
                 if (result.Failure)
                     return BadRequest(result.ErrorMessage);
                 return Ok();

@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.Users.Auth;
 using iChat.Data.Entities.Users;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 using iChat.ViewModels.Users;
 using Microsoft.AspNetCore.Authorization;
@@ -17,12 +18,12 @@ public class EfcoreUserService : IUserService
         _userManager = userManager;
     }
 
-    public Task<UserCompleteDto?> GetUserCompleteInfoAsync(string userId)
+    public Task<UserCompleteDto?> GetUserCompleteInfoAsync(UserId userId)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<UserProfileDto?> GetUserProfileAsync(string userId)
+    public async Task<UserProfileDto?> GetUserProfileAsync(UserId userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
@@ -35,9 +36,9 @@ public class EfcoreUserService : IUserService
             AvatarUrl= user.AvatarUrl ?? $"https://cdn.discordapp.com/embed/avatars/0.png"
         };
     }
-    public async Task<UserMetadata> GetUserMetadataAsync(string userId)
+    public async Task<UserMetadata> GetUserMetadataAsync(UserId userId)
     {
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId.ToString()   );
         if (user == null)
             throw new Exception("User not found");
         return new UserMetadata
@@ -56,7 +57,7 @@ public class EfcoreUserService : IUserService
         var users = await _userManager.Users
             .Where(u => useridslong.Contains(u.Id))
             .Select(u => new UserMetadata(
-                u.Id.ToString(),
+                new UserId(u.Id),
                 u.Name,
                u.AvatarUrl?? $"https://cdn.discordapp.com/embed/avatars/0.png"
             ))
@@ -65,11 +66,11 @@ public class EfcoreUserService : IUserService
         return users;
     }
 
-    public async Task<UserMetadata> EditUserNickNameAsync(string userId, string newNickName)
+    public async Task<UserMetadata> EditUserNickNameAsync(UserId userId, string newNickName)
     {
         if(newNickName.Length > 50||string.IsNullOrWhiteSpace(newNickName))
             throw new ArgumentException("Nickname cannot exceed 50 characters.");
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
         if(user == null)
             throw new Exception("User not found");
         user.Name = newNickName;
@@ -84,15 +85,15 @@ public class EfcoreUserService : IUserService
         }
         return new UserMetadata
         (
-            user.Id.ToString(),
+             new UserId(user.Id),
             newNickName,
             user.AvatarUrl ?? $"https://cdn.discordapp.com/embed/avatars/0.png"
         );
     }
-    public async Task<UserMetadata> EditAvatarAsync(string userId, string avatarUrl)
+    public async Task<UserMetadata> EditAvatarAsync(UserId userId, string avatarUrl)
     {
 
-        var user =await _userManager.FindByIdAsync(userId);
+        var user =await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
             throw new Exception("User not found");
         user.AvatarUrl = avatarUrl;
@@ -107,16 +108,16 @@ public class EfcoreUserService : IUserService
         }
     return new UserMetadata
         (
-            user.Id.ToString(),
+            new UserId (user.Id),
             user.UserName,
             avatarUrl
         );
     }
 
-    public async Task<UserMetadata> EditNameAndAvatarAsync(string userId, string newNickName, string avatarUrl)
+    public async Task<UserMetadata> EditNameAndAvatarAsync(UserId userId, string newNickName, string avatarUrl)
     {
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
             throw new Exception("User not found");
         user.AvatarUrl = avatarUrl;
@@ -132,7 +133,7 @@ public class EfcoreUserService : IUserService
         }
         return new UserMetadata
             (
-                user.Id.ToString(),
+                 new UserId(user.Id),
                 user.Name,
                 avatarUrl
             );

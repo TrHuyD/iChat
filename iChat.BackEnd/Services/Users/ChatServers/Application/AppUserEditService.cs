@@ -2,6 +2,7 @@
 using iChat.BackEnd.Services.Users.Auth;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 
 namespace iChat.BackEnd.Services.Users.ChatServers.Application
@@ -18,32 +19,30 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             uploadService = mediaUploadService;
             _userService = userService;
         }
-        public async Task<UserMetadata> UpdateUserName(string UserId, string UserName)
+        public async Task<UserMetadata> UpdateUserName(UserId UserId, string UserName)
         {
             var userMetadata = await _userService.Value.EditUserNickNameAsync(UserId, UserName);
             _ = _userMetaDataCacheService.SetAsync(userMetadata);
             return userMetadata;
 
         }
-        public async Task<UserMetadata> UpdateUserAvatar(string UserId, string AvatarUrl)
+        public async Task<UserMetadata> UpdateUserAvatar(UserId userId, string AvatarUrl)
         {
-            var userMetadata = await _userService.Value.EditAvatarAsync(UserId, AvatarUrl);
+            var userMetadata = await _userService.Value.EditAvatarAsync(userId, AvatarUrl);
             _ = _userMetaDataCacheService.SetAsync(userMetadata);
             return userMetadata;
         }
-        public async Task<UserMetadata> UpdateUserAvatar(string UserId, IFormFile file)
+        public async Task<UserMetadata> UpdateUserAvatar(UserId userId, IFormFile file)
         {
-            var userId = long.Parse(UserId);
             var _result = (await uploadService.Value.SaveAvatarAsync(file, userId));
             var result = _result.ToDto();
-            return await UpdateUserAvatar(UserId, result.Url);
+            return await UpdateUserAvatar(userId, result.Url);
         }
-        public async Task<UserMetadata> UpdateUserNameAndAvatar(string UserId, string UserName, IFormFile file)
+        public async Task<UserMetadata> UpdateUserNameAndAvatar(UserId userId, string UserName, IFormFile file)
         {
-            var userId = long.Parse(UserId);
             var _result = (await uploadService.Value.SaveAvatarAsync(file, userId));
             var result = _result.ToDto();
-            var metadata = await _userService.Value.EditNameAndAvatarAsync(UserId, UserName, result.Url);
+            var metadata = await _userService.Value.EditNameAndAvatarAsync(userId, UserName, result.Url);
             _ = _userMetaDataCacheService.SetAsync(metadata);
             return metadata;
         }

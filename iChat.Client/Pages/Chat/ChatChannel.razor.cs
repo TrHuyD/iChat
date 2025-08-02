@@ -137,7 +137,7 @@ namespace iChat.Client.Pages.Chat
 
               //  StartTypingTimer();
               if(_currentServerId!=prevServer)
-                    await ChatService.NotifyJoinServer(new ChatServerConnectionState { ServerId = _currentServerId, ChannelId = _currentChannelId });
+                    await ChatService.NotifyJoinServer(new ChatServerConnectionState  ( _currentServerId, _currentChannelId));
               else
                     await ChatService.NotifyJoinChannel(_currentChannelId);
                     await Task.Delay(125);

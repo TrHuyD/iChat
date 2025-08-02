@@ -13,33 +13,33 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
         {
             var (success, _, _) = _localMem.SetUserOnline(serverId, userId);
             if (success)
-                _ = _chatHubResponer.BroadcastUserOnline(userId.UserId, serverId);
+                _ = _chatHubResponer.BroadcastUserOnline( userId.userId, serverId);
         }
-        public async Task SetUserOffline(string userId)
+        public async Task SetUserOffline(UserId userId)
         {
             var (success, serverList, _, _) = _localMem.SetUserOffline(userId);
             if (success)
                 _ = _chatHubResponer.BroadcastUserOffline(userId, serverList);
         }
-        public async Task JoinNewServer(long userId, long serverId)
+        public async Task JoinNewServer(UserId userId, ServerId serverId)
         {
             var result = _localMem.AddUserToServer(userId, serverId);
             _=_chatHubResponer.BroadcastNewUser(userId.ToString(),serverId.ToString(),result.isOnline);
         
         }
-        public async Task<bool> IsMember(stringlong serverId,stringlong ChannelId,stringlong userId)
+        public async Task<bool> IsMember(ServerId serverId,ChannelId channelId,UserId userId)
         {
-            var result=await _localMem.IsAdmin(serverId, ChannelId, userId);
+            var result=await _localMem.IsAdmin(serverId, channelId, userId);
             if (result.Success)
                 return true;
             return false;
         }
-        public async Task<MemberList> GetMemberList(stringlong serverId, int amount = 50, int skip = 0)
+        public async Task<MemberList> GetMemberList(ServerId serverId, int amount = 50, int skip = 0)
         {
             var(online,offline) = _localMem.GetUserList(serverId);
             return new MemberList { online= online,offline=offline ,serverId=serverId};
         }
-        public async Task<bool> IsAdmin(stringlong serverId,stringlong userId)
+        public async Task<bool> IsAdmin(ServerId serverId,UserId userId)
         {
             var result =  _localMem.IsAdmin(serverId, userId);
             if (result.Success)

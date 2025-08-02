@@ -128,7 +128,7 @@
                         @foreach (var result in _results)
                         {
                             <li class="@(result == _results[_highlight] ? "highlight" : null)"
-                                @onmousedown="() => Select(result.UserId)">
+                                @onmousedown="() => Select(result.userId.Value)">
                                 @result.DisplayName
                             </li>
                         }

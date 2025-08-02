@@ -18,19 +18,19 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _db = db;
         }
 
-        public Task<bool> CheckIfUserInServer(stringlong userId, stringlong serverId)
+        public Task<bool> CheckIfUserInServer(UserId userId, ServerId serverId)
         {
             return _db.UserChatServers
-                .AnyAsync(us => us.UserId == userId && us.ChatServerId == serverId);
+                .AnyAsync(us => us.UserId == userId.Value && us.ChatServerId == serverId.Value);
         }
 
-        public Task<bool> CheckIfUserBanned(stringlong userId, stringlong serverId)
+        public Task<bool> CheckIfUserBanned(UserId userId, ServerId serverId)
         {
             return _db.ServerBans
-                .AnyAsync(bu => bu.UserId == userId && bu.ChatServerId == serverId);
+                .AnyAsync(bu => bu.UserId == userId.Value && bu.ChatServerId == serverId.Value  );
         }
 
-        public async Task BanUserAsync(stringlong userId, stringlong serverId, stringlong adminUserId)
+        public async Task BanUserAsync(UserId userId, ServerId serverId, UserId adminUserId)
         {
             // Start a transaction
             using var transaction = await _db.Database.BeginTransactionAsync();
@@ -38,11 +38,11 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             try
             {
                 var status = await _db.UserChatServers
-                    .Where(ucs => ucs.UserId == userId && ucs.ChatServerId == serverId)
+                    .Where(ucs => ucs.UserId == userId.Value && ucs.ChatServerId == serverId.Value)
                     .Select(ucs => new
                     {
                         IsBanned = _db.ServerBans
-                            .Any(sb => sb.UserId == userId && sb.ChatServerId == serverId)
+                            .Any(sb => sb.UserId == userId.Value && sb.ChatServerId == serverId.Value)
                     })
                     .FirstOrDefaultAsync();
                 if (status == null)
@@ -51,14 +51,14 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                     throw new InvalidOperationException($"User {userId} is already banned from server {serverId}.");
                 // Remove all user memberships
                 await _db.UserChatServers
-                    .Where(ucs => ucs.UserId == userId && ucs.ChatServerId == serverId)
+                    .Where(ucs => ucs.UserId == userId.Value && ucs.ChatServerId == serverId.Value)
                     .ExecuteDeleteAsync();
                 // Add ban record
                 _db.ServerBans.Add(new ServerBan
                 {
-                    UserId = userId,
-                    ChatServerId = serverId,
-                    BannedById = adminUserId,
+                    UserId = userId.Value,
+                    ChatServerId = serverId.Value,
+                    BannedById = adminUserId.Value,
                     BannedAt = DateTime.UtcNow
                 });
 
@@ -71,7 +71,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 throw;
             }
         }
-        public async Task UnbanUser(stringlong userId, stringlong serverId, stringlong adminUserId)
+        public async Task UnbanUser(UserId userId, ServerId serverId, UserId adminUserId)
         {
             var ban = await _db.ServerBans
                 .FirstOrDefaultAsync(b => b.UserId == userId && b.ChatServerId == serverId);
@@ -80,7 +80,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _db.ServerBans.Remove(ban);
             await _db.SaveChangeAsyncSafe();
         }
-        public async Task Join(stringlong userId, stringlong serverId)
+        public async Task Join(UserId userId, ServerId serverId)
         {
             var isBanned = await CheckIfUserBanned(userId, serverId);
             if (isBanned)
@@ -115,7 +115,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             await _db.SaveChangeAsyncSafe();
         }
 
-        public async Task Left(stringlong userId, stringlong serverId)
+        public async Task Left(UserId userId, ServerId serverId)
         {
             // Idempotent delete
             var entry = await _db.UserChatServers
@@ -128,7 +128,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             }
         }
 
-        private async Task EditServer(stringlong serverId,string newName="", string url="")
+        private async Task EditServer(ServerId serverId,string newName="", string url="")
         {
             if (newName == "" && url == "")
                 throw new Exception("Method being used wrong");
@@ -144,14 +144,14 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 
 
         }
-        public async Task<ChatServerChangeUpdate> UpdateChatServerProfileAsync(stringlong serverId, stringlong adminUserId, string newName="", string url="")
+        public async Task<ChatServerChangeUpdate> UpdateChatServerProfileAsync(ServerId serverId, UserId adminUserId, string newName="", string url="")
         {
             try
             {
                 await EditServer(serverId, newName,url);
                 return new ChatServerChangeUpdate
                 {
-                    Id = serverId.ToString(),
+                    Id = serverId,
                     Name = newName,
                     AvatarUrl = url
                 };
@@ -164,7 +164,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             }
             }
 
-        public async Task TaskDeleteChatServerAsync(stringlong serverId, stringlong adminUserId)
+        public async Task TaskDeleteChatServerAsync(ServerId serverId, UserId adminUserId)
         {
             var server = await _db.ChatServers
                 .FirstOrDefaultAsync(cs => cs.Id == serverId);

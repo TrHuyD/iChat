@@ -13,13 +13,13 @@ namespace iChat.BackEnd.Services.Users.ChatServers
 
 
 
-        public async Task BroadcastUserOnline(stringlong userId, List<long> serverId)
+        public async Task BroadcastUserOnline(UserId userId, List<long> serverId)
         {
             await Task.WhenAll(serverId.Select(item => _chatHub.Clients.Group(ChatHub.FocusServerKey(item)).SendAsync(SignalrClientPath.NewUserOnline, userId)));
         }
 
    
-        public async Task BroadcastUserOffline(stringlong userId, List<long> serverId)
+        public async Task BroadcastUserOffline(UserId userId, List<long> serverId)
         {
             await Task.WhenAll(serverId.Select(item => _chatHub.Clients.Group(ChatHub.FocusServerKey(item)).SendAsync(SignalrClientPath.NewUserOffline, userId)));
         }

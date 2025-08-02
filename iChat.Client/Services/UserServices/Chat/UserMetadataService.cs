@@ -61,7 +61,7 @@ namespace iChat.Client.Services.UserServices.Chat
         public void SetUserProfile(UserMetadata metadata)
         {
             if (metadata == null) return;
-            var userId = long.Parse(metadata.UserId);
+            var userId = metadata.userId;
             this.userId = userId;
             metadata.AvatarUrl ??= $"https://cdn.discordapp.com/embed/avatars/0.png";
             if (_cache.TryGetValue(userId, out var existing))
@@ -78,7 +78,7 @@ namespace iChat.Client.Services.UserServices.Chat
         public void AddOrUpdateMetadata(UserMetadataReact metadata)
         {
             if (metadata == null) return;
-            if (_cache.TryGetValue(metadata.UserId, out var existing))
+            if (_cache.TryGetValue(metadata.userId, out var existing))
             {
                 existing.DisplayName = metadata.DisplayName;
                 existing.AvatarUrl = metadata.AvatarUrl;
@@ -87,9 +87,9 @@ namespace iChat.Client.Services.UserServices.Chat
             else
             {
                 metadata.AvatarUrl ??= $"https://cdn.discordapp.com/embed/avatars/0.png";
-                _cache[metadata.UserId] = metadata;
+                _cache[metadata.userId] = metadata;
             }
-            OnMetadataChangeSpecifc?.Invoke(metadata.UserId);
+            OnMetadataChangeSpecifc?.Invoke(metadata.userId);
             OnMetadataUpdated?.Invoke();
 
         }

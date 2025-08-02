@@ -18,7 +18,7 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
             _localCache = localCache;
         }
         private TimeSpan default_invite_lifetime = TimeSpan.FromDays(7); // Default invite link lifetime
-        public async Task<OperationResultString> CreateInviteLink(stringlong serverId, stringlong userId)
+        public async Task<OperationResultString> CreateInviteLink(ServerId serverId, UserId userId)
         {
            var isAdmin = _localCache.IsAdmin(serverId,userId);
           
@@ -54,13 +54,13 @@ namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
              db.StringSetAsync(serverkey, inviteId, default_invite_lifetime));
             return OperationResultString.Ok(inviteId);
         }
-        public async Task<string> ParseInviteLink(string inviteId)
+        public async Task<ServerId> ParseInviteLink(string inviteId)
         {
             var db = _service.GetDatabase();
             var serverId = await db.StringGetAsync(RedisVariableKey.GetInviteLinkKey(inviteId));
             if (serverId.IsNullOrEmpty)
                 throw new InvalidOperationException($"Invite link {inviteId} does not exist or has expired.");
-            return serverId;
+            return new ServerId(new stringlong( serverId));
         }
     }
 }

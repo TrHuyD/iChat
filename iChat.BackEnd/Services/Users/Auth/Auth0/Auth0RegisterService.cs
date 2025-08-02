@@ -37,7 +37,7 @@
 //                    Connection = _settings.Connection,
 //                    UserName = rq.UserName,
 //                    Email = rq.Email,
-//                    UserId = _idService.GenerateId().ToString(),
+//                    userId = _idService.GenerateId().ToString(),
 //                    Password = rq.Password,
 //                    EmailVerified = false
 //                };

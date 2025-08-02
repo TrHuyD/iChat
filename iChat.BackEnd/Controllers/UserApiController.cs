@@ -32,7 +32,7 @@ namespace iChat.BackEnd.Controllers
         [Authorize]
         public async Task<IActionResult> GetProfile()
         {
-            var userId = new UserClaimHelper(User).GetUserIdStr();
+            var userId = new UserClaimHelper(User).GetUserIdSL();
 
             var userProfile = await _userService.GetUserProfileAsync(userId);
             if (userProfile == null)
@@ -45,14 +45,13 @@ namespace iChat.BackEnd.Controllers
         public async Task<IActionResult> GetCompleteInfo([FromServices] ServerListService serverListService, [FromServices] IMemoryCache _cache, [FromServices] AppChatServerCacheService _appcsCacheService,
             [FromServices] AppUserService metadataProvider)
         {
-            var userId = new UserClaimHelper(User).GetUserId();
-            var userIdStr = new UserClaimHelper(User).GetUserIdStr();
+            var userId = new UserClaimHelper(User).GetUserIdSL();
 
             var cacheKey = $"complete_info:{userId}";
             if (!_cache.TryGetValue(cacheKey, out UserCompleteDto? package))
             {
                 // var userProfile = await _userService.GetUserProfileAsync(userId.ToString());
-                var metatdata =await metadataProvider.GetUserMetadataAsync(userIdStr);
+                var metatdata =await metadataProvider.GetUserMetadataAsync(userId);
                 var userServerList = await serverListService.GetServerList(userId);
 
                 await _appcsCacheService.SetUserOnline(metatdata, userServerList.Select(t=>long.Parse(t.Id)).ToList() );

@@ -3,6 +3,7 @@ using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.Data.EF;
 using iChat.Data.Entities.Servers;
 using iChat.Data.Entities.Users.Messages;
+using iChat.DTOs.Collections;
 using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -72,7 +73,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
                 Name = channelName,
                 Order = channel.Order,
                 last_bucket_id = 0 ,
-                ServerId = serverId.ToString(),
+                ServerId =new ServerId(serverId) ,
             };
         }
 
@@ -112,11 +113,11 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
 
             return new ChatServerMetadata
             {
-                Id = serverId.Id.ToString(),
+                Id = new ServerId( serverId.Id),
                 Name = serverName,
                 AvatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png",
                 CreatedAt = serverId.CreatedAt,
-                AdminId = adminUserId.ToString(),
+                AdminId = new UserId(adminUserId),
                 Channels = new List<ChatChannelDtoLite>
         {
             new ChatChannelDtoLite

@@ -1,3 +1,4 @@
+using iChat.DTOs.Collections;
 using System.Security.Claims;
 
 public class UserClaimHelper
@@ -14,5 +15,10 @@ public class UserClaimHelper
     public string GetUserIdStr()
     {
         return _user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    }
+    public UserId GetUserIdSL()
+    {
+        return new UserId(new stringlong(_user.FindFirst(ClaimTypes.NameIdentifier)?.Value));
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using iChat.DTOs.Collections;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,13 +9,13 @@ namespace iChat.DTOs.Users
 {
     public class UserMetadata
     {
-        public string UserId { get; set; } 
+        public UserId userId { get; set; } 
         public string DisplayName { get; set; }
         public string AvatarUrl { get; set; }
         public string Version { get; set; }  // Versioning 
-        public UserMetadata(string UserId, string DisplayName, string AvatarUrl)
+        public UserMetadata(UserId userId, string DisplayName, string AvatarUrl)
         {
-            this.UserId = UserId;
+            this.userId = userId;
             this.DisplayName = DisplayName;
             this.AvatarUrl = AvatarUrl;
             this.Version= DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
