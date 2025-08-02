@@ -133,15 +133,15 @@ _Below is an example of how you can instruct your audience on installing and set
 
 - Message Editing & Deletion
 
-    <img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/editdeleteDemo.gif?raw=true" width="250
-" />
+    <img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/editdeleteDemo.gif?raw=true" width="250" />
 
 - Real-Time Typing Indicators
 
     <img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/typing.gif?raw=true" width="250" />
 
-- Channel-Specific History with Message Search
-<img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/Search.png?raw=true" width="250" />
+- History Message Search
+  
+  <img src="https://github.com/TrHuyD/iChat/blob/master/readmeimage/Search.png?raw=true" width="250" />
 
 - Infinite Scrolling for Older Messages
 
