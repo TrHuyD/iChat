@@ -40,7 +40,7 @@ namespace iChat.Client.DTOs.Chat
 
         public UserMetadataReact(long userId, string displayName, string avatarUrl,long version)
             {
-                userId = new UserId( userId);
+                this.userId = new UserId( userId);
                 _displayName = displayName;
                 _avatarUrl = URLsanitizer.Apply(avatarUrl);
                 Version = version;

@@ -36,7 +36,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
         {
             if (_connectionToLoc.TryRemove(connectionId, out var loc))
             {
-                if (!loc.channelId.Value.IsNull() && _channelToConnections.TryGetValue(loc.channelId, out var chanSet))
+                if (loc.channelId.Value is not null && _channelToConnections.TryGetValue(loc.channelId, out var chanSet))
                 {
                     lock (chanSet)
                     {
@@ -45,7 +45,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                             _channelToConnections.TryRemove(loc.channelId, out _);
                     }
                 }
-                if (!loc.serverId.Value.IsNull() && _serverToConnections.TryGetValue(loc.serverId, out var serverSet))
+                if (loc.serverId.Value is not null && _serverToConnections.TryGetValue(loc.serverId, out var serverSet))
                 {
                     lock (serverSet)
                     {
@@ -89,7 +89,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 var prevLoc = _connectionToLoc.GetOrAdd(connectionId, _ => new ChatServerConnectionState());
                 if (prevLoc.channelId == channelId) return new();
 
-                if (!prevLoc.channelId.Value.IsNull() && _channelToConnections.TryGetValue(prevLoc.channelId, out var oldSet))
+                if (prevLoc.channelId.Value is not null && _channelToConnections.TryGetValue(prevLoc.channelId, out var oldSet))
                 {
                     lock (oldSet)
                     {
@@ -117,7 +117,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 var prevLoc = _connectionToLoc.GetOrAdd(connectionId, _ => new ChatServerConnectionState());
                 if (prevLoc.serverId == state.serverId)
                     return prevLoc;
-                if (!prevLoc.serverId.Value.IsNull() && _serverToConnections.TryGetValue(prevLoc.serverId, out var oldServerSet))
+                if (prevLoc.serverId.Value is not null && _serverToConnections.TryGetValue(prevLoc.serverId, out var oldServerSet))
                 {
                     lock (oldServerSet)
                     {
@@ -126,7 +126,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                             _serverToConnections.TryRemove(prevLoc.serverId, out _);
                     }
                 }
-                if (!prevLoc.channelId.Value.IsNull() && _channelToConnections.TryGetValue(prevLoc.channelId, out var oldChannelSet))
+                if (prevLoc.channelId.Value is not null && _channelToConnections.TryGetValue(prevLoc.channelId, out var oldChannelSet))
                 {
                     lock (oldChannelSet)
                     {

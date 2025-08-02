@@ -100,13 +100,13 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             if (prevState.serverId != state.serverId)
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, FocusServerKey(state.serverId));
-                if (!prevState.serverId.Value.IsNull())
+                if (prevState.serverId.Value is not null)
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusServerKey(prevState.serverId));
 
             }
             if(prevState.channelId!=state.channelId)
             {
-                if (!prevState.channelId.Value.IsNull())
+                if (prevState.channelId.Value is not null)
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusChannelKey(prevState.channelId));
                 await Groups.AddToGroupAsync(Context.ConnectionId, FocusChannelKey(state.channelId));
             }
@@ -121,12 +121,12 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             var serverId = _connectionTracker.GetServer(Context.ConnectionId);
             var channelId = new ChannelId(new stringlong(ChannelId));
 
-			if (serverId.Value.IsNull())
+			if (serverId.Value is null)
                 return false;
             if (!await _chatServerMetadataCacheService.IsMember(serverId, channelId, userId))
                 return false;
             var prev=_connectionTracker.SetChannel(Context.ConnectionId, channelId);
-            if (!prev.Value.IsNull())
+            if (prev.Value is not null)
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, FocusChannelKey(prev));
             await Groups.AddToGroupAsync(Context.ConnectionId, FocusChannelKey(channelId));
             return true;

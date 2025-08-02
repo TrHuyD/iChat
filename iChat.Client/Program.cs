@@ -15,6 +15,10 @@ using TG.Blazor.IndexedDB;
 using iChat.Client.Services.UserServices.Chat;
 using iChat.Client.Services.UserServices.Chat.Util;
 using iChat.Client.Services.UserServices.SignalR;
+using System.Text.Json;
+using iChat.DTOs.Collections;
+
+
 
 
 
@@ -92,6 +96,11 @@ builder.Services.AddScoped<ChatMessageCacheService>();
 builder.Services.AddScoped<InviteService>();
 builder.Services.AddSingleton<ConfigService>();
 builder.Services.AddScoped<MessageHandleService>();
-builder.Services.AddSingleton<ProfileModalService>();
+builder.Services.AddSingleton<ProfileModalService>()
+    ;
+//builder.Services.Configure<JsonSerializerOptions>(options =>
+//{
+//    options.Converters.Add(new StringLongWrapperFactory());
+//});
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 await builder.Build().RunAsync();

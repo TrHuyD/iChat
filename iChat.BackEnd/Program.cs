@@ -22,6 +22,7 @@ using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.BackEnd.Services.Validators;
 using iChat.Data.EF;
 using iChat.Data.Entities.Users;
+using iChat.DTOs.Collections;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -119,7 +120,10 @@ builder.Services.AddTransient<ServerListService>();
 builder.Services.AddTransient<AppChatServerService>();
 builder.Services.AddTransient<IMessageWriteService, AppMessageWriteService>();
 //builder.Services.AddTransient<IChatReadMessageService, _AppMessageReadService>();
-
+//builder.Services.Configure<JsonSerializerOptions>(options =>
+//{
+//    options.Converters.Add(new StringLongWrapperFactory());
+//});
 // Database Context
 var logFilePath = "Logs/efcore-queries-.log"; 
 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath)!);
