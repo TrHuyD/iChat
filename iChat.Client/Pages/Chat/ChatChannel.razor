@@ -203,11 +203,8 @@
                                     </div>
                                 </div>
                                 }
-
-
                                 <div class="pagination">
                                     <button class="page-btn" @onclick="() => TriggerSearchAsync(_currentSearchPage - 1)" disabled="@(_currentSearchPage == 1)">Prev</button>
-
                                     @for (int i = 1; i <= _totalSearchPages; i++)
                                     {
                                         <button class="page-btn @(i == _currentSearchPage ? "active" : "")"
@@ -221,12 +218,7 @@
                             }
                         }
                     </div>
-
-
-
-          
         }
-
         else
         {
         }

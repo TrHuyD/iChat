@@ -30,7 +30,9 @@ namespace iChat.Data.Entities.Users.Messages
        public Bucket Bucket { get; set; } = null!;
         public NpgsqlTsVector? SearchVector { get; set; } 
         public DateTimeOffset? LastEditedAt { get; set; }
-        public bool isDeleted { get; set; } 
+        public bool isDeleted { get; set; }
+        public ICollection<UserEmojiMessage> EmojiReactions { get; set; } = new List<UserEmojiMessage>();
+
 
     }
 }

@@ -37,6 +37,8 @@ namespace iChat.Data.EF
             builder.ApplyConfiguration(new MessageAuditLogConfiguration());
             builder.ApplyConfiguration(new MediaFileConfiguration());
             builder.ApplyConfiguration(new UserChatChannelConfiguration());
+            builder.ApplyConfiguration(new UserEmojiMessageConfiguration());
+            builder.ApplyConfiguration(new EmojiConfiguration());
             //builder.seed();
             base.OnModelCreating(builder);
         }
@@ -44,6 +46,8 @@ namespace iChat.Data.EF
         public DbSet<MediaFile> MediaFiles { get; set; }
         public DbSet<AppUser> AppUsers { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<Emoji> Emojis { get; set; }
+        public DbSet<UserEmojiMessage> UserEmojiMessages { get; set; }
         public DbSet<ChatChannel> ChatChannels { get; set; }
         public DbSet<ChatServer> ChatServers { get; set; }
         public DbSet<ChatRole> ChatRoles { get; set; }
