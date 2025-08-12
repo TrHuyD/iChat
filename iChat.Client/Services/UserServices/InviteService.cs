@@ -1,5 +1,5 @@
 ﻿using iChat.Client.Services.Auth;
-using iChat.DTOs.Users.Messages;
+using iChat.DTOs.ChatServerDatas;
 using System.Net.Http.Json;
 
 namespace iChat.Client.Services.UserServices
@@ -17,7 +17,7 @@ namespace iChat.Client.Services.UserServices
             _logger = logger;
         }
 
-        public async Task<ChatServerMetadata?> GetServerFromInvite(string inviteId)
+        public async Task<ChatServerData?> GetServerFromInvite(string inviteId)
         {
             try
             {
@@ -29,7 +29,7 @@ namespace iChat.Client.Services.UserServices
                     _logger.LogWarning("Failed to parse invite link: {StatusCode}", response.StatusCode);
                     return null;
                 }
-                var result = await response.Content.ReadFromJsonAsync<ChatServerMetadata>();
+                var result = await response.Content.ReadFromJsonAsync<ChatServerData>();
                 return result;
             }
             catch (HttpRequestException ex)
@@ -50,7 +50,7 @@ namespace iChat.Client.Services.UserServices
                     var error = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("Failed to join server via invite: {Response}", error);
                 }
-              //  return result?.ServerId;
+              //  return result?.Id;
 
             }
             catch (HttpRequestException ex)

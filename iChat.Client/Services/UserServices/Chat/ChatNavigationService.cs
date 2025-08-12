@@ -2,6 +2,7 @@
 using iChat.Client.Services.Auth;
 using iChat.Client.Services.UI;
 using iChat.Client.Services.UserServices.Chat.Util;
+using iChat.DTOs.ChatServerDatas;
 using iChat.DTOs.Users.Messages;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Concurrent;
@@ -93,7 +94,7 @@ namespace iChat.Client.Services.UserServices
         /// <summary>
         /// Adds a single server to the navigation
         /// </summary>
-        public void AddServer(ChatServerMetadata server)
+        public void AddServer(ChatServerData server)
         {
             int post = 0;
             if(ChatServers.Count!=0)

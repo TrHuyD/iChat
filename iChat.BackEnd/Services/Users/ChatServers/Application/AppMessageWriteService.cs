@@ -3,6 +3,7 @@ using iChat.BackEnd.Collections;
 using iChat.BackEnd.Models.User;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.Cache.ChatServer;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
@@ -24,16 +25,16 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
         readonly SnowflakeService _idGen;
         IMessageCacheService _cache;
         MemCacheUserChatService _userCacher;
-        readonly IChatServerMetadataCacheService _serverMetaDataCacheService;
+        readonly IPermissionService _permService;
         public AppMessageWriteService(IMessageDbWriteService dbservice,
             IMessageCacheService cache
         //    ,RedisChatCache rWService
             ,SnowflakeService snowflakeService,
-            IChatServerMetadataCacheService ServerMetaDataCache,
+            IPermissionService ServerMetaDataCache,
             MemCacheUserChatService userCacher)
         {
             _userCacher = userCacher;
-             _serverMetaDataCacheService = ServerMetaDataCache;
+            _permService = ServerMetaDataCache;
             _cache = cache;
             _chatWriteService = dbservice;
        //     _redis_dbservice = rWService;
@@ -53,7 +54,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 ServerId=serverId
             };
 
-            var isAdminRt = await  _serverMetaDataCacheService.IsAdmin(serverId,channelId,userId);
+            var isAdminRt =  _permService.IsAdmin(serverId,channelId,userId);
             if(!isAdminRt.Success)
                 return OperationResultT<DeleteMessageRt>.Fail(isAdminRt.ErrorCode,"Error when deleting message "+isAdminRt.ErrorMessage);
             var isAdmin = isAdminRt.Value;
@@ -81,7 +82,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 UserId = userId,
                 NewContent = rq.NewContent
             };
-            var isAdminRt = await _serverMetaDataCacheService.IsAdmin(serverId, channelId, userId);
+            var isAdminRt =  _permService.IsAdmin(serverId, channelId, userId);
             if (!isAdminRt.Success)
                 return OperationResultT<EditMessageRt>.Fail(isAdminRt.ErrorCode, "Error when editing message :" + isAdminRt.ErrorCode);
             var cacheResult= await _cache.EditMessageAsync(longrq);
@@ -102,7 +103,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             var userId = new UserId( new stringlong(UserId));
             if (fromApi)
             {
-                var isAdminRt = await _serverMetaDataCacheService.IsAdmin(serverId, channelId, userId);
+                var isAdminRt =  _permService.IsAdmin(serverId, channelId, userId);
                 if (!isAdminRt.Success)
                     return OperationResultT<NewMessage>.Fail(isAdminRt.ErrorCode, "Error when editing message :" + isAdminRt.ErrorCode);
             }
@@ -132,7 +133,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             var userId = new UserId(new stringlong(request.SenderId));
             if (fromApi)
             {
-                var permCheck = await _serverMetaDataCacheService.IsAdmin(serverId, channelId, userId);
+                var permCheck =  _permService.IsAdmin(serverId, channelId, userId);
                 if (!permCheck.Success)
                     return OperationResultT<NewMessage>.Fail(permCheck.ErrorCode, permCheck.ErrorMessage);
             }

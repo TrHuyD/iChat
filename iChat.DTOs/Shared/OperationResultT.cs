@@ -29,7 +29,15 @@ namespace iChat.DTOs.Shared
                 ErrorMessage = source.ErrorMessage
             };
         }
-
+        public OperationResultT<TNew> FailAs<TNew>()
+        {
+            return new OperationResultT<TNew>
+            {
+                Success = this.Success,
+                ErrorCode = this.ErrorCode,
+                ErrorMessage = this.ErrorMessage
+            };
+        }
 
     }
     public class OperationResultBool : OperationResultT<bool>

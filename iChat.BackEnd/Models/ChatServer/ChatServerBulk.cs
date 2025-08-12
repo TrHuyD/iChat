@@ -1,4 +1,5 @@
 ﻿using iChat.DTOs.Users.Messages;
+using iChat.DTOs.Users.Servers;
 
 namespace iChat.BackEnd.Models.ChatServer
 {
@@ -10,6 +11,7 @@ namespace iChat.BackEnd.Models.ChatServer
         public string AvatarUrl { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public List<ChatChannelDtoLite> Channels { get; set; } = new List<ChatChannelDtoLite>();
-        public long AdminId { get; set; } 
+        public long AdminId { get; set; }
+        public List<EmojiBaseDto> Emojis { get; set; } = new();
     }
 }

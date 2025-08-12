@@ -6,6 +6,7 @@ using iChat.BackEnd.Services.Users.Auth;
 using iChat.BackEnd.Services.Users.Auth.Sql;
 using iChat.BackEnd.Services.Users.ChatServers;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.Cache.ChatServer;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.BackEnd.Services.Users.ChatServers.Application;
@@ -16,6 +17,7 @@ using iChat.BackEnd.Services.Users.Infra.Helpers;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.Memory.MessageServices;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
+using iChat.BackEnd.Services.Users.Infra.MemoryCache.ChatServer;
 using iChat.BackEnd.Services.Users.Infra.Redis;
 using iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
@@ -90,7 +92,7 @@ builder.Services.AddSingleton<IRedisConnectionService>(provider =>
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<AppRedisService>();
 builder.Services.AddSingleton<RedisLiveTime>();
-builder.Services.AddSingleton<RedisChatServerService>();
+//builder.Services.AddSingleton<RedisChatServerService>();
 
 // Add helper services
 new IdBuilderHelper().AddService(builder, WorkerIdConfig);
@@ -102,7 +104,9 @@ builder.Services.AddScoped<IChatListingService, EfCoreChatListingService>();
 builder.Services.AddScoped<IMessageDbReadService, EfCoreMessageReadService>();
 builder.Services.AddScoped<IMessageDbWriteService, EfCoreMessageWriteService>();
 builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
-builder.Services.AddTransient<Lazy<IMediaUploadService>>(provider => new Lazy<IMediaUploadService>(() => provider.GetRequiredService<IMediaUploadService>()));
+builder.Services.AddScoped<IEmojiFileUploadService, EmojiFileUploadService>();
+builder.Services.AddScoped<IGenericMediaUploadService, GenericMediaUploadService>();
+
 
 builder.Services.AddSingleton<MessageTimeLogger>();
 builder.Services.AddSingleton<MessageWriteQueueService>();
@@ -119,6 +123,8 @@ builder.Services.AddTransient<MemCacheUserChatService>();
 builder.Services.AddTransient<ServerListService>();
 builder.Services.AddTransient<AppChatServerService>();
 builder.Services.AddTransient<IMessageWriteService, AppMessageWriteService>();
+
+
 //builder.Services.AddTransient<IChatReadMessageService, _AppMessageReadService>();
 //builder.Services.Configure<JsonSerializerOptions>(options =>
 //{
@@ -181,7 +187,11 @@ builder.Services.AddScoped<RedisCSInviteLinkService>();
 builder.Services.AddScoped<AppUserService>();
 builder.Services.AddScoped<IUserMetaDataCacheService, UserMetadataMemoryCacheService>();
 builder.Services.AddTransient<Lazy<IUserService>>(provider => new Lazy<IUserService>(() => provider.GetRequiredService<IUserService>()));
-builder.Services.AddSingleton<IChatServerMetadataCacheService, MemCacheChatServerMetadataService>();
+builder.Services.AddSingleton<IChatServerRepository, MemCacheChatServerRepository>();
+builder.Services.AddSingleton<IServerUserRepository, MemCacheServerUserRepository>();
+builder.Services.AddScoped<IEmojiRepository, MemCacheEmojiRepository>();
+builder.Services.AddScoped<IPermissionService, MemCachePermissionRepository>();
+builder.Services.AddScoped<IChannelRepository, MemCacheChatChannelRepository>();
 builder.Services.AddScoped<IMessageReadService, AppMessageReadService>();
 builder.Services.AddScoped<IMessageCacheService,MemCacheMessageService>();
 builder.Services.AddTransient<ChatHubResponer, ChatHubResponer>();

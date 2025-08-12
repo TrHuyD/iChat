@@ -49,7 +49,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
         //[HttpGet("{id}/CreateChannel")]
         //public IActionResult CreateChannel(long id)
         //{
-        //    ViewData["ServerId"] = id;
+        //    ViewData["Id"] = id;
         //    return PartialView("_CreateChannel"); 
         //}
 

@@ -1,5 +1,6 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
+using iChat.BackEnd.Services.Users.Infra.FileServices;
 using iChat.BackEnd.Services.Users.Infra.MemoryCache;
 using iChat.DTOs.Collections;
 using iChat.DTOs.Shared;
@@ -12,8 +13,8 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
     {
         IChatServerDbService _dbService;
         AppChatServerCacheService _localMem;
-        Lazy<IMediaUploadService> _imageUploader;
-        public AppChatServerService(IChatServerDbService dbService, AppChatServerCacheService chatServerDbService,Lazy<IMediaUploadService> imageUploader)
+        IGenericMediaUploadService _imageUploader;
+        public AppChatServerService(IChatServerDbService dbService, AppChatServerCacheService chatServerDbService, IGenericMediaUploadService imageUploader)
         {
             _imageUploader = imageUploader;
             _dbService = dbService;
@@ -31,7 +32,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             {
                 var newAvatarUrl = "";
                 if (file != null)
-                    newAvatarUrl = (await _imageUploader.Value.SaveAvatarAsync(file, userId)).Url;
+                    newAvatarUrl = (await _imageUploader.SaveAvatarAsync(file, userId)).Url;
                 var result = await _dbService.UpdateChatServerProfileAsync(serverId, userId, newName, newAvatarUrl );
                 await _localMem.UpdateServerChange(result);
                 return OperationResultT<ChatServerChangeUpdate>.Ok(result);

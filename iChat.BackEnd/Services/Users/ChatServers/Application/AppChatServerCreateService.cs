@@ -1,6 +1,8 @@
 ﻿using Auth0.ManagementApi.Models;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.Cache.ChatServer;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
+using iChat.DTOs.ChatServerDatas;
 using iChat.DTOs.Collections;
 using iChat.DTOs.Shared;
 using iChat.DTOs.Users.Messages;
@@ -11,27 +13,37 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
     {
 
         private readonly IChatCreateDBService createService;
-        private readonly IChatServerMetadataCacheService serverMetaDataCacheService;
+        private readonly IChatServerRepository chatServerRepository;
+        private readonly IChannelRepository channelRepository;
         private readonly AppChatServerService appChatServerService;
-        public AppChatServerCreateService(IChatCreateDBService createService, 
-            IChatServerMetadataCacheService serverMetaDataCacheService,
-            AppChatServerService appChatServerService)
+        private readonly IPermissionService permissionService;
+        private readonly IServerUserRepository serverUserRepository;
+        public AppChatServerCreateService(IChatCreateDBService createService,
+            IChatServerRepository serverMetaDataCacheService,
+            AppChatServerService appChatServerService,
+            IChannelRepository channelMetaDataRepository,
+            IPermissionService permissionService,
+            IServerUserRepository serverUserRepository)
         {
+            channelRepository = channelMetaDataRepository;
+            this.permissionService = permissionService;
             this.createService = createService;
-            this.serverMetaDataCacheService = serverMetaDataCacheService;
+            this.chatServerRepository = serverMetaDataCacheService;
             this.appChatServerService = appChatServerService;
+            this.serverUserRepository = serverUserRepository;
         }
-        public async Task<OperationResultT<ChatServerMetadata>> CreateServerAsync(ChatServerCreateRq request, long userId)
+        public async Task<OperationResultT<ChatServerData>> CreateServerAsync(ChatServerCreateRq request, long userId)
         {
             
             if (string.IsNullOrWhiteSpace(request.Name))
             {
-                return OperationResultT<ChatServerMetadata>.Fail("400", "Server name cannot be empty.");
+                return OperationResultT<ChatServerData>.Fail("400", "Server name cannot be empty.");
             }
             var server = await createService.CreateServerAsync(request.Name, userId);
-            await serverMetaDataCacheService.UploadNewServerAsync(server);
+             chatServerRepository.UploadNewServerAsync(server);
+            serverUserRepository.UploadNewServerAsync(server);
             await appChatServerService.Join(new UserId(userId), server.Id);
-            return OperationResultT<ChatServerMetadata>.Ok(server);
+            return OperationResultT<ChatServerData>.Ok(server);
 
         }
         public async Task<OperationResultT<ChatChannelDto>> CreateChannelAsync(ChatChannelCreateRq request, UserId userId)
@@ -43,7 +55,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
             {
                 return OperationResultT<ChatChannelDto>.Fail("400", "Channel name cannot be empty.");
             }
-            var permResult = serverMetaDataCacheService.IsAdmin(serverId, userId);
+            var permResult = permissionService.IsAdmin(serverId, userId);
             if (!permResult.Success)
             {
                 return OperationResultT<ChatChannelDto>.Fail("500", "Failed to check admin permission.");
@@ -53,7 +65,7 @@ namespace iChat.BackEnd.Services.Users.ChatServers.Application
                 return OperationResultT<ChatChannelDto>.Fail("403", "User is not an admin of the server.");
             }
             var result = await createService.CreateChannelAsync(serverId, request.Name, userId);
-            await serverMetaDataCacheService.AddChannel(result);
+             channelRepository.AddChannel(result);
             return OperationResultT<ChatChannelDto>.Ok(result);
         }
 

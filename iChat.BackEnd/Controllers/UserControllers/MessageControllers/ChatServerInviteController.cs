@@ -1,7 +1,9 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.Cache.ChatServer;
 using iChat.BackEnd.Services.Users.ChatServers.Application;
 using iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices;
+using iChat.DTOs.ChatServerDatas;
 using iChat.DTOs.Collections;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,8 +17,8 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
     {
         private readonly RedisCSInviteLinkService _service;
 
-        IChatServerMetadataCacheService _localcache;
-        public ChatServerInviteController(RedisCSInviteLinkService service,IChatServerMetadataCacheService localcache)
+        IChatServerRepository _localcache;
+        public ChatServerInviteController(RedisCSInviteLinkService service, IChatServerRepository localcache)
         {
             _localcache = localcache;
             _service = service;
@@ -48,7 +50,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             try
             {
                 var serverId = await _service.ParseInviteLink(inviteId);
-                return Ok(await _localcache.GetServerAsync(serverId,false));
+                var result = _localcache.GetServerAsync(serverId, false);
+                if (result.Failure)
+                    return BadRequest("Internal error " + result.ErrorMessage);
+                return Ok(result.Value.toMetadata() );
             }
             catch (InvalidOperationException ex)
             {
@@ -60,7 +65,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
             }
         }
         [HttpPost("InviteLink/{inviteId}")]
-        public async Task<IActionResult> UseInviteLink(string inviteId, [FromServices] AppChatServerService _joinService, [FromServices] ChatHubResponer hub, [FromServices] IChatServerMetadataCacheService cacheService)
+        public async Task<IActionResult> UseInviteLink(string inviteId, [FromServices] AppChatServerService _joinService, [FromServices] ChatHubResponer hub)
         {
             var userId = new UserClaimHelper(User).GetUserIdSL();
             try
@@ -68,10 +73,10 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers
                 var serverId = await _service.ParseInviteLink(inviteId);
 
                 await _joinService.Join(userId, serverId);
-                var result = await cacheService.GetServerAsync(serverId);
-                if (!result.Success)
-                    throw new Exception("Server is not loaded");
-                await hub.JoinNewServer(userId,new ServerId(new stringlong( result.Value.Id)));
+                //var result = _localcache.GetServerAsync(serverId, false);
+                //if (!result.Success)
+                //    throw new Exception("Server is not loaded");
+                await hub.JoinNewServer(userId, serverId);
                 return Ok();
             }
             catch (InvalidOperationException ex)

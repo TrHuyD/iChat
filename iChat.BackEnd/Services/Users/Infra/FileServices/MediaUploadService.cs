@@ -1,96 +1,160 @@
-﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.Data.EF;
 using iChat.Data.Entities.Users.Messages;
 using iChat.DTOs.Collections;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
-using System;
-using System.Security.Cryptography;
 
 namespace iChat.BackEnd.Services.Users.Infra.FileServices
 {
-    public class MediaUploadService : IMediaUploadService
+    public class MediaUploadService : IMediaUploadService, IDisposable
     {
         private readonly IWebHostEnvironment _env;
         private readonly iChatDbContext _dbContext;
-
+        private readonly List<PendingFile> _pendingFiles = new();
+        private bool _committed;
+        private record PendingFile(MediaFile Entity, string TempPath, string FinalPath);
         public MediaUploadService(IWebHostEnvironment env, iChatDbContext dbContext)
         {
             _env = env;
             _dbContext = dbContext;
         }
-
-        public async Task<MediaFile> SaveAvatarAsync(IFormFile file, UserId uploaderUserId)
+        public async Task<MediaFile?> SaveImageWithHashDedupAsync(IFormFile file, UserId uploaderUserId, ImageUploadProfile profile)
         {
-            return await SaveTransformedImageAsync(file, uploaderUserId,
-                folder: "avatars",
-                transform: img => img.Mutate(x => x.Resize(new ResizeOptions
-                {
-                    Size = new Size(128, 128),
-                    Mode = ResizeMode.Crop
-                })),
-                webpQuality: 50);
+            var hash = await ComputeSha256Async(file.OpenReadStream());
+
+            if (await _dbContext.MediaFiles.AnyAsync(m => m.Hash == hash && !m.IsDeleted))
+                return null;
+
+            return await SaveProcessedImageAsync(file, uploaderUserId, profile, $"{hash}.webp", hash);
         }
-
-        public async Task<MediaFile> SaveImageAsync(IFormFile file, UserId uploaderUserId)
+        public async Task<MediaFile> SaveImageWithProvidedIdAsync(IFormFile file, UserId uploaderUserId, ImageUploadProfile profile, string fileName)
         {
-            return await SaveTransformedImageAsync(file, uploaderUserId,
-                folder: "images",
-                transform: img => { /* No resize, just optimize */ },
-                webpQuality: 85);
+            var hash = await ComputeSha256Async(file.OpenReadStream());
+            return await SaveProcessedImageAsync(file, uploaderUserId, profile, fileName, hash);
         }
-        private async Task<MediaFile> SaveTransformedImageAsync(
-            IFormFile file,
-            UserId uploaderUserId,
-            string folder,
-            Action<Image> transform,
-            int webpQuality)
+        private async Task<MediaFile> SaveProcessedImageAsync(IFormFile file, UserId uploaderUserId, ImageUploadProfile profile, string fileName, string hash)
         {
-            using var originalStream = file.OpenReadStream();
-            string hash = await ComputeSha256Async(originalStream);
-            var existing = await _dbContext.MediaFiles
-                .FirstOrDefaultAsync(m => m.Hash == hash && !m.IsDeleted);
-            if (existing != null)
-                return existing;
-            originalStream.Position = 0;
-            using var image = await Image.LoadAsync(originalStream);
-            // Apply transformations (resize, crop, etc.)
-            transform(image);
+            using var image = await Image.LoadAsync(file.OpenReadStream());
+            profile.Transform(image);
+            var dirPath = Path.Combine(_env.WebRootPath, "uploads", profile.Folder);
+            Directory.CreateDirectory(dirPath);
 
-            int width = image.Width;
-            int height = image.Height;
-
-            string fileName = $"{hash}.webp";
-            string dirPath = Path.Combine(_env.WebRootPath, "uploads", folder);
-            string savePath = Path.Combine(dirPath, fileName);
-            string url = $"/api/uploads/{folder}/{fileName}";
-            Directory.CreateDirectory(dirPath); 
-            // Save as WebP
-            var encoder = new WebpEncoder { Quality = webpQuality };
-            await image.SaveAsync(savePath, encoder);
-            var fileInfo = new FileInfo(savePath);
+            var finalPath = Path.Combine(dirPath, fileName);
+            var tempPath = $"{finalPath}.temp";
+            var url = $"/api/uploads/{profile.Folder}/{fileName}";
+            await image.SaveAsync(tempPath, new WebpEncoder { Quality = profile.WebpQuality });
             var mediaFile = new MediaFile
             {
                 Hash = hash,
                 Url = url,
                 ContentType = "image/webp",
-                Width = width,
-                Height = height,
-                SizeBytes = (int)fileInfo.Length,
+                Width = image.Width,
+                Height = image.Height,
+                SizeBytes = (int)new FileInfo(tempPath).Length,
                 UploadedAt = DateTime.UtcNow,
                 UploaderUserId = uploaderUserId.Value
             };
-            _dbContext.MediaFiles.Add(mediaFile);
-            await _dbContext.SaveChangesAsync();
+
+            _pendingFiles.Add(new PendingFile(mediaFile, tempPath, finalPath));
             return mediaFile;
         }
-        private async Task<string> ComputeSha256Async(Stream stream)
+        public async Task CommitAsync()
+        {
+            if (!_pendingFiles.Any())
+                return;
+
+            ValidateTargetFilesNotExist();
+            await AtomicFileMove();
+            await SaveToDatabase();
+
+            _committed = true;
+            _pendingFiles.Clear();
+        }
+        public Task RollbackAsync()
+        {
+            CleanupTempFiles();
+            _committed = true;
+            _pendingFiles.Clear();
+            return Task.CompletedTask;
+        }
+        private void ValidateTargetFilesNotExist()
+        {
+            var existingFile = _pendingFiles.FirstOrDefault(f => File.Exists(f.FinalPath));
+            if (existingFile != null)
+                throw new IOException($"Target file already exists: {existingFile.FinalPath}");
+        }
+        private async Task AtomicFileMove()
+        {
+            var movedFiles = new List<PendingFile>();
+            try
+            {
+                foreach (var file in _pendingFiles)
+                {
+                    if (!File.Exists(file.TempPath))
+                        throw new FileNotFoundException("Temp file missing during commit", file.TempPath);
+                    File.Move(file.TempPath, file.FinalPath);
+                    movedFiles.Add(file);
+                }
+            }
+            catch
+            {
+                RollbackMovedFiles(movedFiles);
+                throw new IOException("Failed to finalize staged files during commit.");
+            }
+        }
+        private async Task SaveToDatabase()
+        {
+            try
+            {
+                _dbContext.MediaFiles.AddRange(_pendingFiles.Select(f => f.Entity));
+                await _dbContext.SaveChangesAsync();
+            }
+            catch
+            {
+                RollbackMovedFiles(_pendingFiles);
+                throw new IOException("Database save failed during commit; staged files were reverted.");
+            }
+        }
+        private void RollbackMovedFiles(IEnumerable<PendingFile> files)
+        {
+            foreach (var file in files)
+            {
+                try
+                {
+                    if (File.Exists(file.FinalPath))
+                        File.Move(file.FinalPath, file.TempPath);
+                }
+                catch { }
+            }
+        }
+
+        private void CleanupTempFiles()
+        {
+            foreach (var file in _pendingFiles)
+            {
+                try { File.Delete(file.TempPath); }
+                catch { }
+            }
+        }
+        private static async Task<string> ComputeSha256Async(Stream stream)
         {
             stream.Position = 0;
-            using var sha256 = SHA256.Create();
-            var hash = await sha256.ComputeHashAsync(stream);
-            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            var hash = await SHA256.HashDataAsync(stream);
+            return Convert.ToHexString(hash).ToLowerInvariant();
+        }
+        public void Dispose()
+        {
+            if (!_committed && _pendingFiles.Any())
+                CleanupTempFiles();
         }
     }
-
 }

@@ -3,6 +3,7 @@ using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.Data.EF;
 using iChat.Data.Entities.Servers;
 using iChat.Data.Entities.Users.Messages;
+using iChat.DTOs.ChatServerDatas;
 using iChat.DTOs.Collections;
 using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
@@ -77,7 +78,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             };
         }
 
-        public async Task<ChatServerMetadata> CreateServerAsync(string serverName, long adminUserId)
+        public async Task<ChatServerData> CreateServerAsync(string serverName, long adminUserId)
         {
             var serverId = _serverIdGen.GenerateId();
             var generalChannelId = _channelIdGen.GenerateId();
@@ -111,7 +112,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
             _db.ChatServers.Add(server);
             await _db.SaveChangesAsync();
 
-            return new ChatServerMetadata
+            return new ChatServerData
             {
                 Id = new ServerId( serverId.Id),
                 Name = serverName,

@@ -10,6 +10,7 @@ namespace iChat.BackEnd.Services.Users.Infra.IdGenerator
             builder.Services.AddSingleton(new UserIdService(id.WorkerId, id.DataCenterId));
             builder.Services.AddSingleton(new ServerIdService(id.WorkerId, id.DataCenterId));
             builder.Services.AddSingleton(new ChannelIdService(id.WorkerId, id.DataCenterId));
+            builder.Services.AddSingleton(new EmojiIdService(id.WorkerId, id.DataCenterId));
         }
     }
 }

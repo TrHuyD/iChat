@@ -2,6 +2,7 @@
 using iChat.Client.Services.Auth;
 using iChat.Client.Services.UI;
 using iChat.Client.Services.UserServices.Chat;
+using iChat.DTOs.ChatServerDatas;
 using iChat.DTOs.Collections;
 using iChat.DTOs.Users;
 using iChat.DTOs.Users.Enum;
@@ -62,7 +63,7 @@ namespace iChat.Client.Services.UserServices.SignalR
                 }
             });
             _hubConnection.On<string>(SignalrClientPath.LeaverServer, ForceLeaveRoom);
-            _hubConnection.On<ChatServerMetadata>(SignalrClientPath.JoinNewServer, OnJoiningNewServer);
+            _hubConnection.On<ChatServerData>(SignalrClientPath.JoinNewServer, OnJoiningNewServer);
             _hubConnection.On<long>(SignalrClientPath.UserTyping,  (userId) =>
             {
                 try
@@ -202,7 +203,7 @@ namespace iChat.Client.Services.UserServices.SignalR
         {
             _userMetadata.SetUserProfile(userMetadata);
         }
-        private void OnJoiningNewServer(ChatServerMetadata serverID)
+        private void OnJoiningNewServer(ChatServerData serverID)
         {
             _chatNavigationService.AddServer(serverID);
         }

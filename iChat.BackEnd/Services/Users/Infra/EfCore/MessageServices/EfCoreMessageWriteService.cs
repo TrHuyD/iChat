@@ -3,6 +3,7 @@ using iChat.BackEnd.Models.User;
 using iChat.BackEnd.Models.User.CassandraResults;
 using iChat.BackEnd.Models.User.MessageRequests;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
+using iChat.BackEnd.Services.Users.Infra.FileServices;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.Redis.MessageServices;
 using iChat.Data.EF;
@@ -22,10 +23,10 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
         private readonly MessageWriteQueueService _queueService;
 
         iChatDbContext _context ;
-        Lazy<IMediaUploadService> _mediaUploadService ;
+        IGenericMediaUploadService _mediaUploadService ;
         public EfCoreMessageWriteService(MessageWriteQueueService queueService,
             iChatDbContext context,
-            Lazy<IMediaUploadService> uploadService)
+            IGenericMediaUploadService uploadService)
         {
             _mediaUploadService = uploadService ;
             _context = context;
@@ -125,7 +126,7 @@ namespace iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices
         }
         public async Task<MediaFileDto> UploadImage(MessageUploadRequest request, SnowflakeIdDto messageId,long userId)
         {
-            var result = (await _mediaUploadService.Value.SaveImageAsync(request.File, new UserId( userId))).ToDto();
+            var result = (await _mediaUploadService.SaveImageAsync(request.File, new UserId( userId))).ToDto();
             _queueService.Enqueue(new MessageRequest
             {
                 SenderId = userId.ToString(),

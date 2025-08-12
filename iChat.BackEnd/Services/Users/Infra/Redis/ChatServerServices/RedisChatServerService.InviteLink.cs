@@ -1,17 +1,19 @@
 ﻿using iChat.BackEnd.Services.Users.ChatServers.Abstractions;
+using iChat.BackEnd.Services.Users.ChatServers.Abstractions.Cache.ChatServer;
 using iChat.BackEnd.Services.Users.Infra.IdGenerator;
 using iChat.BackEnd.Services.Users.Infra.Redis.Enums;
 using iChat.DTOs.Collections;
 using iChat.DTOs.Shared;
 
+
 namespace iChat.BackEnd.Services.Users.Infra.Redis.ChatServerServices
 {
-    public partial class RedisCSInviteLinkService
+    public  class RedisCSInviteLinkService
     {
         private readonly AppRedisService _service;
-        private readonly IChatServerMetadataCacheService _localCache;
+        private readonly IPermissionService _localCache;
         public SnowflakeService idGen { get; set; }
-        public RedisCSInviteLinkService(AppRedisService redisService, IChatServerMetadataCacheService localCache,SnowflakeService snowflake)
+        public RedisCSInviteLinkService(AppRedisService redisService, IPermissionService localCache,SnowflakeService snowflake)
         {
             idGen = snowflake;
             _service = redisService;

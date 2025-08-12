@@ -1,13 +1,14 @@
 ﻿@page "/inv/{InviteId}"
-@using iChat.Client.Services.UserServices
 @using iChat.Client.DTOs.Chat
+@using iChat.Client.Services.UserServices
+@using iChat.DTOs.ChatServerDatas
 @inject NavigationManager Navigation
 @inject InviteService InviteService
 @inject ChatNavigationService chatNavigation
 @code {
     [Parameter] public string InviteId { get; set; } = string.Empty;
 
-    private ChatServerMetadata? Server;
+    private ChatServerData? Server;
     private bool _loading = true;
     private bool _failed = false;
 

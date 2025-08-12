@@ -1,4 +1,5 @@
 ﻿using iChat.BackEnd.Models.ChatServer;
+using iChat.BackEnd.Models.Helpers;
 using iChat.Data.EF;
 using iChat.DTOs.Users.Messages;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,7 @@ namespace iChat.BackEnd.Services.StartUpServices.SUS_ChatServer
             var servers = await _db.ChatServers
                 .AsNoTracking()
                 .Include(s => s.ChatChannels)
+                .Include(s=>s.Emojis)
                 .Select(s => new ChatServerbulk
                 {
                     Id = s.Id,
@@ -37,8 +39,8 @@ namespace iChat.BackEnd.Services.StartUpServices.SUS_ChatServer
                             last_bucket_id = c.LastAssignedBucketId
                         })
                         .ToList(),
-                    memberList= s.UserChatServers.Select(us =>us.UserId).ToList()
-                       
+                    memberList= s.UserChatServers.Select(us =>us.UserId).ToList(),
+                    Emojis=s.Emojis.Select(e=>e.ToBaseDto()).ToList()
                 })
                 .ToListAsync();
 
