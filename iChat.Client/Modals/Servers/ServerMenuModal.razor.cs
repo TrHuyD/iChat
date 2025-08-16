@@ -9,6 +9,7 @@ namespace iChat.Client.Modals.Servers
     public partial class ServerMenuModal
     {
         [Parameter] public EventCallback OnEditServer { get; set; }
+        [Parameter] public EventCallback OnEmojiServer { get; set; }
         [Parameter] public bool IsVisible { get; set; }
         [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
         [Parameter] public ChatServerDtoUser? Server { get; set; }
@@ -85,7 +86,11 @@ namespace iChat.Client.Modals.Servers
                 await OnEditServer.InvokeAsync();
             }
         }
-
+        private async Task TriggerEmojiEdit()
+        {
+            if(OnEmojiServer.HasDelegate)
+                await OnEmojiServer.InvokeAsync();
+        }
         private async Task CopyToClipboard()
         {
             await JS.InvokeVoidAsync("navigator.clipboard.writeText", _inviteLink);

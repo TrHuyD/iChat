@@ -159,6 +159,12 @@ namespace iChat.Client.Layout
             _showServerMenu = false;
             _editServerModalVisible = true;
         }
+        bool _showEmojiMenu = false;
+        private void ShowEmojiModal()
+        {
+            _showEmojiMenu = true;
+            _showServerMenu = false;
+        }
 
     }
 }

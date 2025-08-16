@@ -10,6 +10,7 @@ using iChat.BackEnd.Services.Users.ChatServers.Abstractions.Cache.ChatServer;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.ChatHubs;
 using iChat.BackEnd.Services.Users.ChatServers.Abstractions.DB;
 using iChat.BackEnd.Services.Users.ChatServers.Application;
+using iChat.BackEnd.Services.Users.ChatServers.Application.ChatServer;
 using iChat.BackEnd.Services.Users.Infra.EfCore.MessageServices;
 using iChat.BackEnd.Services.Users.Infra.EFcore.MessageServices;
 using iChat.BackEnd.Services.Users.Infra.FileServices;
@@ -105,6 +106,7 @@ builder.Services.AddScoped<IMessageDbReadService, EfCoreMessageReadService>();
 builder.Services.AddScoped<IMessageDbWriteService, EfCoreMessageWriteService>();
 builder.Services.AddScoped<IMediaUploadService, MediaUploadService>();
 builder.Services.AddScoped<IEmojiFileUploadService, EmojiFileUploadService>();
+builder.Services.AddScoped<AppEmojiWriteService>();
 builder.Services.AddScoped<IGenericMediaUploadService, GenericMediaUploadService>();
 
 
