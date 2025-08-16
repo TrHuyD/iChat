@@ -1,0 +1,132 @@
+﻿.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-container {
+    background: #2f3136; 
+    color: #dcddde;
+    width: 800px;
+    max-width: 95%;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    overflow: hidden;
+}
+
+.settings-container {
+    display: flex;
+    min-height: 500px;
+}
+
+.settings-sidebar {
+    width: 200px;
+    background: #2c2f33;
+    border-right: 1px solid #202225;
+    padding: 16px 0;
+}
+
+    .settings-sidebar ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .settings-sidebar li {
+        padding: 10px 16px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #b9bbbe;
+        transition: background 0.2s, color 0.2s;
+        position: relative;
+    }
+
+        .settings-sidebar li:hover {
+            background: #3a3c42;
+            color: #fff;
+        }
+
+        .settings-sidebar li.active {
+            color: #fff;
+            font-weight: 600;
+            background: #40444b;
+        }
+
+            .settings-sidebar li.active::before {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 0;
+                height: 100%;
+                width: 4px;
+                background: #5865f2;
+                border-radius: 0 4px 4px 0;
+            }
+
+.settings-content {
+    flex: 1;
+    padding: 24px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+button {
+    border: none;
+    outline: none;
+    padding: 8px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    transition: background 0.2s, transform 0.1s;
+}
+
+    button:active {
+        transform: scale(0.97);
+    }
+
+.btn-secondary {
+    background: #4f545c;
+    color: #fff;
+}
+
+    .btn-secondary:hover {
+        background: #686d73;
+    }
+
+.btn-danger {
+    background: #ed4245;
+    color: #fff;
+}
+
+    .btn-danger:hover {
+        background: #f04747;
+    }
+
+.close-btn {
+    align-self: flex-end;
+    margin: 12px;
+}
+
+.modal-backdrop.inner {
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .modal-backdrop.inner .modal {
+        background: #2f3136;
+        padding: 24px;
+        border-radius: 8px;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        color: #dcddde;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
