@@ -1,0 +1,164 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using iChat.Client.Services.Auth
+@inject ToastService ToastService
+@inject JwtAuthHandler _http
+
+<div class="server-edit-form">
+    <h3>Edit Server Profile</h3>
+
+    <!-- Preview -->
+    <div class="preview-section">
+        <div class="user-preview-card">
+            <div class="avatar-container">
+                <img class="avatar" src="@GetPreviewAvatarUrl()" alt="Server Avatar" />
+            </div>
+            <div class="user-info">
+                <div class="username">@PreviewName</div>
+                <div class="status-text">Server</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="form-section">
+        <div class="input-group">
+            <label class="input-label" for="serverName">Server Name</label>
+            <input id="serverName"
+                   class="discord-input @(string.IsNullOrEmpty(ValidationError) ? "" : "error")"
+                   @bind="PreviewName"
+                   @bind:event="oninput"
+                   maxlength="64"
+                   placeholder="Enter server name" />
+            @if (!string.IsNullOrEmpty(ValidationError))
+            {
+                <div class="error-message">@ValidationError</div>
+            }
+        </div>
+
+        <div class="input-group">
+            <label class="input-label" for="serverAvatar">Server Avatar</label>
+            <InputFile id="serverAvatar"
+                       OnChange="HandleAvatarChange"
+                       accept="image/png,image/jpeg,image/webp"
+                       class="file-input" />
+            <div class="file-hint">PNG, JPG, WebP. Max 2MB.</div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="discord-modal-footer">
+        <button class="discord-button primary" @onclick="Save" disabled="@(!CanSave || IsSaving)">
+            @if (IsSaving)
+            {
+                <div class="button-loading"><div class="spinner"></div><span>Saving...</span></div>
+            }
+            else
+            {
+                <span>Save Changes</span>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+
+    [Parameter] public ChatServerDtoUser server { get; set; }
+
+    private string? PreviewName;
+    private string? AvatarPreviewUrl;
+    private IBrowserFile? SelectedAvatarFile;
+    private string? ValidationError;
+    private bool IsSaving = false;
+    private const long MaxFileSize = 2 * 1024 * 1024;
+
+    protected override void OnInitialized()
+    {
+        PreviewName = server.Name;
+        AvatarPreviewUrl = server.AvatarUrl;
+    }
+
+    private bool CanSave =>
+        !string.IsNullOrWhiteSpace(PreviewName) &&
+        string.IsNullOrEmpty(ValidationError) &&
+        (PreviewName != server.Name || SelectedAvatarFile != null);
+
+    private void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(PreviewName))
+            ValidationError = "Server name is required.";
+        else if (PreviewName.Length > 64)
+            ValidationError = "Server name must be under 64 characters.";
+        else
+            ValidationError = null;
+    }
+
+    private async Task HandleAvatarChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file.Size > MaxFileSize)
+        {
+            ToastService.ShowError("Avatar must be under 2MB.");
+            return;
+        }
+
+        using var stream = file.OpenReadStream(MaxFileSize);
+        var buffer = new byte[file.Size];
+        await stream.ReadAsync(buffer);
+        AvatarPreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+        SelectedAvatarFile = file;
+    }
+
+    private string GetPreviewAvatarUrl() => AvatarPreviewUrl;
+
+    private async Task Save()
+    {
+        Validate();
+        if (!CanSave)
+        {
+            ToastService.ShowError("Please make valid changes.");
+            return;
+        }
+
+        IsSaving = true;
+
+        try
+        {
+            HttpResponseMessage response;
+
+            if (SelectedAvatarFile is null)
+            {
+                response = await _http.SendAuthAsync(new { Name = PreviewName, ServerId = server.Id }, HttpMethod.Post, $"/api/Chat/Edit/name");
+            }
+            else
+            {
+                var form = new MultipartFormDataContent();
+                form.Add(new StringContent(PreviewName ?? ""), "name");
+                var stream = SelectedAvatarFile.OpenReadStream(MaxFileSize);
+                form.Add(new StreamContent(stream), "file", SelectedAvatarFile.Name);
+                form.Add(new StringContent(server.Id), "id");
+                response = await _http.SendAuthAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/Chat/Edit/profile")
+                {
+                    Content = form
+                });
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.ShowSuccess("Server updated successfully.");
+             //   await OnSave.InvokeAsync((PreviewName, SelectedAvatarFile));
+            }
+            else
+            {
+                ToastService.ShowError("Failed to update server.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Error: " + ex.Message);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+}

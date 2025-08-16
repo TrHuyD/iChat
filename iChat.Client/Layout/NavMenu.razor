@@ -129,11 +129,7 @@
 
 @if (_editServerModalVisible && _contextMenuServer != null)
 {
-    <EditServerProfileModal ServerId="@_contextMenuServer.Id"
-                            OriginalName="@_contextMenuServer.Name"
-                            OriginalAvatarUrl="@_contextMenuServer.AvatarUrl"
-                            OnClose="@OnEditModalClose"
-                            OnSave="@HandleServerUpdated" />
+    <EditServerProfileModal server="@_contextMenuServer"/>
 }
 
 
@@ -151,7 +147,7 @@
 
 <CreateServerModal IsVisible="@showCreateServer" IsVisibleChanged="@((val) => showCreateServer = val)" />
 <CreateChannelModal IsVisible="@showCreateChannel" IsVisibleChanged="@((val) => showCreateChannel = val)" ServerId="@SelectedServerId" />
-<ServerSettings IsVisible="@_showEmojiMenu" IsVisibleChanged="@((val) => _showEmojiMenu = val)" ServerId="@SelectedServerId" />
+<ServerSettings IsVisible="@_showEmojiMenu" IsVisibleChanged="@((val) => _showEmojiMenu = val)" server="@_contextMenuServer"/>
 
 
 

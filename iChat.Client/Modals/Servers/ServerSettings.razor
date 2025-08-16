@@ -20,9 +20,7 @@
                     @switch (SelectedPage)
                     {
                         case SettingsPage.Overview:
-                            <h2>Server Overview - @ServerId</h2>
-                            <p>Edit server name, icon, and region here.</p>
-                            <button class="btn btn-danger" @onclick="() => ShowDeleteModal = true">Delete Server</button>
+                            <EditServerProfileModal server="@server"/>
                             break;
 
                         case SettingsPage.Roles:
@@ -75,7 +73,7 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
 
-    [Parameter] public string ServerId { get; set; }
+    [Parameter] public ChatServerDtoUser server { get; set; }
 
     private SettingsPage SelectedPage { get; set; } = SettingsPage.Overview;
     private bool ShowDeleteModal { get; set; } = false;

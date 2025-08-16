@@ -142,18 +142,8 @@ namespace iChat.Client.Layout
         {
             profileChanger.ShowDefaultModal(OnSave);
         }
-        private Task OnEditModalClose()
-        {
-            _editServerModalVisible = false;
-            StateHasChanged();
-            return Task.CompletedTask;
-        }
-        private Task HandleServerUpdated((string? newName, IBrowserFile? newAvatar) result)
-        {
-            ToastService.ShowSuccess("Server profile updated!");
-            _editServerModalVisible = false;
-            return Task.CompletedTask;
-        }
+
+
         private void ShowEditServerModal()
         {
             _showServerMenu = false;

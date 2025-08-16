@@ -1,34 +1,42 @@
-﻿.modal-backdrop {
+﻿
+.modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.65);
+    background: rgba(0, 0, 0, 0.85);
     display: flex;
-    align-items: center;
+    align-items: stretch; 
     justify-content: center;
     z-index: 1000;
 }
+
+
 .modal-container {
-    background: #2f3136; 
+    background: #2f3136;
     color: #dcddde;
-    width: 800px;
-    max-width: 95%;
-    border-radius: 8px;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    box-shadow: none;
     overflow: hidden;
 }
 
+
 .settings-container {
     display: flex;
-    min-height: 500px;
+    flex: 1;
+    min-height: 0; 
 }
 
 .settings-sidebar {
-    width: 200px;
+    width: 240px;
     background: #2c2f33;
     border-right: 1px solid #202225;
     padding: 16px 0;
+    overflow-y: auto;
 }
 
     .settings-sidebar ul {
@@ -38,7 +46,7 @@
     }
 
     .settings-sidebar li {
-        padding: 10px 16px;
+        padding: 12px 18px;
         cursor: pointer;
         font-size: 14px;
         color: #b9bbbe;
@@ -70,15 +78,16 @@
 
 .settings-content {
     flex: 1;
-    padding: 24px;
+    padding: 32px;
     font-size: 14px;
     line-height: 1.5;
+    overflow-y: auto;
 }
 
 button {
     border: none;
     outline: none;
-    padding: 8px 14px;
+    padding: 10px 16px;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
@@ -109,9 +118,19 @@ button {
     }
 
 .close-btn {
-    align-self: flex-end;
-    margin: 12px;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    color: #b9bbbe;
+    font-size: 18px;
+    padding: 6px 10px;
 }
+
+    .close-btn:hover {
+        color: #fff;
+        background: #3a3c42;
+    }
 
 .modal-backdrop.inner {
     background: rgba(0, 0, 0, 0.75);
