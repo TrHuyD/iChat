@@ -1,0 +1,109 @@
+﻿.emoji-settings {
+    padding: 1rem;
+    color: #dcddde;
+    font-family: "Whitney", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.section-sub {
+    font-size: 0.9rem;
+    color: #b9bbbe;
+    margin-bottom: 1rem;
+}
+
+.upload-box {
+    margin-bottom: 1rem;
+}
+
+.upload-btn {
+    background-color: #5865f2;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    padding: 6px 14px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+    .upload-btn:hover {
+        background-color: #4752c4;
+    }
+
+.upload-requirements {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #b9bbbe;
+    list-style-type: disc;
+    padding-left: 1.25rem;
+}
+
+.emoji-table {
+    margin-top: 1rem;
+    border-top: 1px solid #2f3136;
+}
+
+.emoji-table-header,
+.emoji-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #2f3136;
+}
+
+.emoji-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+}
+
+.emoji-name {
+    color: #fff;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background-color 0.15s;
+    display: inline-block;
+}
+
+.emoji-uploader {
+    font-size: 0.9rem;
+    color: #b9bbbe;
+}
+
+.emoji-edit-input {
+    width: 120px;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.emoji-name:hover {
+    background-color: #4f545c; 
+}
+.emoji-edit-input {
+    background-color: #202225;
+    color: #fff;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 40px;
+    max-width: 180px;
+    width: auto;
+    display: inline-block;
+    box-sizing: content-box;
+}
+.emoji-edit-input {
+    width: auto;
+    min-width: 2ch; 
+    max-width: 30ch;
+}

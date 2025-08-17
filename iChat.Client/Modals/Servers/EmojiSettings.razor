@@ -6,16 +6,27 @@
 @inject JwtAuthHandler _https
 @inject ToastService ToastService
 @inject IJSRuntime JS
+
 <div class="emoji-settings">
-    <div class="emoji-header">
-        <h3>Server Emojis</h3>
-        <label class="upload-icon icon-button" title="Upload Image" @onclick="TriggerFileInput">
-            <i class="fas fa-image"></i>
-        </label>
+    <h2 class="section-title">Emoji</h2>
+    <p class="section-sub">Add up to 100 custom emoji that anyone can use in this server.</p>
+
+    <div class="upload-box">
         <InputFile OnChange="UploadEmoji"
                    @ref="fileInput"
                    style="display:none"
                    accept="image/png,image/jpeg,image/gif,image/webp" />
+
+        <button class="upload-btn" @onclick="TriggerFileInput">
+            Upload Emoji
+        </button>
+
+        <ul class="upload-requirements">
+            <li>File type: JPEG, PNG, GIF, WEBP</li>
+            <li>Max file size: 2 MB</li>
+            <li>Recommended dimensions: 128x128</li>
+            <li>Naming: at least 2 characters, alphanumeric & underscores</li>
+        </ul>
     </div>
 
     @if (IsLoading)
@@ -24,15 +35,46 @@
     }
     else if (Emojis is not null && Emojis.Count > 0)
     {
-        <div class="emoji-grid">
-            @foreach (var emoji in Emojis)
+<div class="emoji-table">
+    <div class="emoji-table-header">
+        <span>Image</span>
+        <span>Name</span>
+        <span>Uploaded By</span>
+    </div>
+
+    @foreach (var emoji in Emojis)
+    {
+        <div class="emoji-row">
+            <img src="@emoji.url" alt="@emoji.Name" class="emoji-img" />
+
+            @if (EditingEmojiId == emoji.Id)
             {
-                <div class="emoji-item">
-                    <img src="@emoji.url" alt="@emoji.Name" />
-                    <span>@emoji.Name</span>
-                </div>
+                <input type="text"
+                       class="emoji-edit-input"
+                       style="width: @(Math.Max(EditingName?.Length ?? 0, 2))ch;"
+                       value="@EditingName"
+                       @oninput="@(e => { EditingName = e.Value?.ToString() ?? ""; StateHasChanged(); })"
+                       @onblur="() => SaveEmojiName(emoji)"
+                       @onkeydown="@(async e =>
+                       {
+                           if (e.Key == "Enter")
+                               await SaveEmojiName(emoji);
+                       })"
+                       autofocus />
             }
+            else
+            {
+                <span class="emoji-name"
+                      @onclick="() => StartEditing(emoji)">
+                    :@emoji.Name:
+                </span>
+            }
+
+            <span class="emoji-uploader">placeholder</span>
         </div>
+    }
+</div>
+
     }
     else
     {
@@ -45,13 +87,13 @@
 
     private List<EmojiFEDto> Emojis { get; set; } = new();
     private bool IsLoading { get; set; } = true;
-
     private InputFile fileInput;
-    private const long MaxFileSize = 2 * 1024 * 1024; // 2 MB
+    private const long MaxFileSize = 2 * 1024 * 1024; 
     private async Task TriggerFileInput()
     {
         await JS.InvokeVoidAsync("triggerInputFileClick", fileInput.Element);
     }
+
     protected override async Task OnParametersSetAsync()
     {
         await LoadEmojis();
@@ -62,20 +104,19 @@
         IsLoading = true;
         try
         {
-
-            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/chat/{server.Id}/emojis")
-            {
-
-            };
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/chat/{server.Id}/emojis");
             var result = await _https.SendAuthAsync(request);
+
             if (result.IsSuccessStatusCode)
-                Emojis = (await result.Content.ReadFromJsonAsync<List<EmojiBaseDto>>()).Select(t=>new EmojiFEDto(t.Id,t.Name)).ToList();
+                Emojis = (await result.Content.ReadFromJsonAsync<List<EmojiBaseDto>>())
+                    .Select(t => new EmojiFEDto(t.Id, t.Name))
+                    .ToList();
             else
                 Console.WriteLine("Error when retrieving Emoji" + result.RequestMessage);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            Console.WriteLine("Error when retrieving  emoji " + ex.Message);
+            Console.WriteLine("Error when retrieving emoji " + ex.Message);
             Emojis = new();
         }
         IsLoading = false;
@@ -94,7 +135,6 @@
                 return;
             }
 
-            // Copy to memory first (so stream isn’t disposed early)
             using var readStream = file.OpenReadStream(MaxFileSize);
             using var ms = new MemoryStream();
             await readStream.CopyToAsync(ms);
@@ -107,25 +147,77 @@
             {
                 { fileContent, "file", file.Name }
             };
+
             var request = new HttpRequestMessage(HttpMethod.Post, $"/api/chat/{server.Id}/emojis")
             {
-                Content=form
+                Content = form
             };
+
             var response = await _https.SendAuthAsync(request);
 
             if (response.IsSuccessStatusCode)
             {
-                ToastService.ShowSuccess("✅ Emoji uploaded successfully.");
+                ToastService.ShowSuccess("Emoji uploaded successfully.");
                 await LoadEmojis();
             }
             else
             {
-                ToastService.ShowError($"❌ Emoji upload failed: {response.StatusCode}");
+                ToastService.ShowError($"Emoji upload failed: {response}");
             }
         }
         catch (Exception ex)
         {
-            ToastService.ShowError($"❌ Error uploading emoji: {ex.Message}");
+            ToastService.ShowError($"Error uploading emoji: {ex.Message}");
         }
+
     }
+
+    private stringlong? EditingEmojiId { get; set; }
+    private string EditingName { get; set; }
+
+    private void StartEditing(EmojiFEDto emoji)
+    {
+        EditingEmojiId = emoji.Id;
+        EditingName = emoji.Name;
+    }
+
+    private async Task SaveEmojiName(EmojiFEDto emoji)
+    {
+        if (EditingEmojiId != emoji.Id) return;
+
+        EditingEmojiId = null; 
+
+        if (string.IsNullOrWhiteSpace(EditingName) || EditingName == emoji.Name)
+            return; 
+
+        try
+        {
+            var payload = new { name = EditingName };
+            var request = new HttpRequestMessage(
+                HttpMethod.Put,
+                $"/api/chat/{server.Id}/emojis/{emoji.Id}"
+            )
+            {
+                Content = JsonContent.Create(payload)
+            };
+
+            var response = await _https.SendAuthAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                emoji.Name = EditingName;
+                ToastService.ShowSuccess("Emoji renamed.");
+            }
+            else
+            {
+                ToastService.ShowError($"Rename failed: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error renaming emoji: {ex.Message}");
+        }
+
+    }
+
+
 }
