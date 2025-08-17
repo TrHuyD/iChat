@@ -79,13 +79,6 @@ namespace iChat.Client.Modals.Servers
             }
         }
 
-        private async Task TriggerEditServer()
-        {
-            if (OnEditServer.HasDelegate)
-            {
-                await OnEditServer.InvokeAsync();
-            }
-        }
         private async Task TriggerEmojiEdit()
         {
             if(OnEmojiServer.HasDelegate)

@@ -13,7 +13,7 @@ namespace iChat.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<MediaFile> builder)
         {
-            builder.HasIndex(x => x.Hash).IsUnique();
+            builder.HasIndex(x => x.Hash);
         }
     }
 }

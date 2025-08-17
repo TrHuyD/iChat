@@ -367,3 +367,4 @@ FodyWeavers.xsd
 /iChat.BackEnd/appsettings.secrets.json
 /iChat.BackEnd/wwwroot/uploads/avatars
 /iChat.BackEnd/wwwroot/uploads/images
+/iChat.BackEnd/wwwroot/uploads/emojis

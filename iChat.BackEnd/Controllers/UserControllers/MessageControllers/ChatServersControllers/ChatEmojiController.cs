@@ -3,17 +3,19 @@ using iChat.BackEnd.Services.Users.ChatServers.Abstractions.Cache.ChatServer;
 using iChat.BackEnd.Services.Users.ChatServers.Application.ChatServer;
 using iChat.DTOs.Collections;
 using iChat.DTOs.Users.Servers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServersControllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/chat")]
     public class ChatEmojiController :ControllerBase
     {
         public ChatEmojiController() { }
         [HttpPost("{serverId}/emojis")]
-        public async Task<IActionResult> AddEmoji([FromQuery]string serverId, [FromForm] AddEmojiRequest request, [FromServices] AppEmojiWriteService writeService )
+        public async Task<IActionResult> AddEmoji([FromRoute] string serverId, [FromForm] AddEmojiRequest request, [FromServices] AppEmojiWriteService writeService )
         {
             var userID = new UserClaimHelper(User).GetUserIdSL();
             var crequest = new CompleteEmojiRequest
@@ -28,7 +30,7 @@ namespace iChat.BackEnd.Controllers.UserControllers.MessageControllers.ChatServe
             return Ok();  
         }
         [HttpGet("{serverId}/emojis")]
-        public async Task<IActionResult> GetEmoji([FromQuery] string serverId, [FromServices]IEmojiRepository emojiCacheService)
+        public async Task<IActionResult> GetEmoji([FromRoute] string serverId, [FromServices]IEmojiRepository emojiCacheService)
         {
             return Ok(emojiCacheService.GetEmojisAsync(new ServerId(serverId)).Value);
         }
