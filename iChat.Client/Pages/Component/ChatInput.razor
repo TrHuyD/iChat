@@ -1,0 +1,159 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@inject IJSRuntime JS
+@page "/chatinput_test"
+
+<div class="chat-input-container">
+    <div class="chat-input"
+         contenteditable="true"
+         @ref="_editor"
+         @oninput="OnInputAsync"
+         @onkeydown="HandleKeyDownAsync"
+         placeholder="Message #general...">
+    </div>
+
+    @if (_showSuggestions && _suggestions.Count != 0)
+    {
+        <div class="suggestions">
+            @foreach (var emoji in _suggestions)
+            {
+                <div class="suggestion-item @(emoji.Key == _selectedEmoji?.Key ? "active" : "")"
+                     @onclick="() => SelectEmojiAsync(emoji)">
+                    @if (emoji.IsCustom)
+                    {
+                        <img src="@emoji.Value" class="emoji-icon" alt="@emoji.Key emoji" />
+                        <span class="emoji-name">:@emoji.Key:</span>
+                    }
+                    else
+                    {
+                        <span class="emoji">@emoji.Value</span>
+                        <span class="emoji-name">:@emoji.Key:</span>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private ElementReference _editor;
+    private bool _showSuggestions;
+    private string _currentWord = string.Empty;
+
+    private readonly List<EmojiItem> _emojiMap =
+    [
+        new("smile", "😄"),
+        new("sad", "😢"),
+        new("party", "🎉"),
+        new("fire", "🔥"),
+        new("cat", "/images/emojis/cat.png", true),
+        new("doggo", "/images/emojis/dog.png", true)
+    ];
+
+    private List<EmojiItem> _suggestions = [];
+    private EmojiItem? _selectedEmoji;
+
+    private async Task OnInputAsync(EventArgs _)
+    {
+        var text = await GetEditorTextAsync();
+        var lastWord = text.Split([' ', '\n'], StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "";
+
+        if (lastWord.StartsWith(':') && lastWord.Length > 1 && !lastWord.EndsWith(':'))
+        {
+            _currentWord = lastWord[1..];
+            _suggestions = _emojiMap
+                .Where(x => x.Key.StartsWith(_currentWord, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            _showSuggestions = _suggestions.Count != 0;
+            _selectedEmoji = _suggestions.FirstOrDefault();
+        }
+        else if (lastWord.StartsWith(':') && lastWord.EndsWith(':') && lastWord.Length > 2)
+        {
+            var word = lastWord[1..^1]; 
+            var match = _emojiMap.FirstOrDefault(x =>
+                x.Key.Equals(word, StringComparison.OrdinalIgnoreCase));
+
+            if (match is not null)
+            {
+                await ReplaceWithEmojiAsync(match, word);
+            }
+            _showSuggestions = false;
+            _suggestions.Clear();
+        }
+        else
+        {
+            _showSuggestions = false;
+            _suggestions.Clear();
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (!_showSuggestions) return;
+
+        switch (e.Key)
+        {
+            case "Tab" when _selectedEmoji is not null:
+                await SelectEmojiAsync(_selectedEmoji);
+                break;
+            case "ArrowDown":
+                MoveSelection(1);
+                break;
+            case "ArrowUp":
+                MoveSelection(-1);
+                break;
+            case "Escape":
+                _showSuggestions = false;
+                _suggestions.Clear();
+                StateHasChanged();
+                break;
+        }
+    }
+
+    private async Task SelectEmojiAsync(EmojiItem emoji)
+    {
+        await ReplaceWithEmojiAsync(emoji, _currentWord);
+        _showSuggestions = false;
+        _suggestions.Clear();
+        _currentWord = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task ReplaceWithEmojiAsync(EmojiItem emoji, string word)
+    {
+        var text = await GetEditorTextAsync();
+        var searchPattern = $":{word}";
+        if (text.Contains(searchPattern))
+        {
+            var lastIndex = text.LastIndexOf(searchPattern, StringComparison.Ordinal);
+            var prefix = text[..lastIndex];
+            await SetEditorHtmlAsync(prefix);
+
+            if (emoji.IsCustom)
+                await JS.InvokeVoidAsync("insertEmojiImage", _editor, emoji.Value);
+            else
+                await JS.InvokeVoidAsync("insertEmojiText", _editor, emoji.Value);
+
+            await JS.InvokeVoidAsync("insertText", _editor, " ");
+        }
+    }
+
+    private void MoveSelection(int step)
+    {
+        if (_suggestions.Count == 0) return;
+        var currentIndex = _selectedEmoji is not null ? _suggestions.IndexOf(_selectedEmoji) : 0;
+        var newIndex = (currentIndex + step + _suggestions.Count) % _suggestions.Count;
+        _selectedEmoji = _suggestions[newIndex];
+        StateHasChanged();
+    }
+
+    private ValueTask<string> GetEditorTextAsync() =>
+        JS.InvokeAsync<string>("getEditorPlainText", _editor);
+
+    private ValueTask SetEditorHtmlAsync(string html) =>
+        JS.InvokeVoidAsync("setEditorHtml", _editor, html);
+
+    private sealed record EmojiItem(string Key, string Value, bool IsCustom = false);
+}

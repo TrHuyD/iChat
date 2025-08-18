@@ -141,3 +141,30 @@ window.mentionHelper = {
     }
 };
 
+window.getEditorPlainText = (el) => {
+    return el.innerText;
+};
+
+window.setEditorHtml = (el, html) => {
+    el.innerHTML = html;
+};
+
+window.insertEmojiText = (el, emoji) => {
+    var span = document.createElement("span");
+    span.textContent = emoji;
+    el.appendChild(span);
+};
+
+window.insertEmojiImage = (el, url) => {
+    var img = document.createElement("img");
+    img.src = url;
+    img.className = "emoji-icon";
+    img.style.width = "20px";
+    img.style.height = "20px";
+    img.style.verticalAlign = "middle";
+    el.appendChild(img);
+};
+
+window.insertText = (el, text) => {
+    el.appendChild(document.createTextNode(text));
+};

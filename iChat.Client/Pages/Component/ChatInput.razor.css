@@ -1,0 +1,53 @@
+﻿.chat-input-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+}
+
+.chat-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    background: #2f3136;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    white-space: pre-wrap;
+}
+
+    .chat-input[placeholder]:empty:before {
+        content: attr(placeholder);
+        color: #777;
+    }
+
+.suggestions {
+    position: absolute;
+    bottom: 90px;
+    left: 0;
+    background: #202225;
+    border: 1px solid #444;
+    border-radius: 6px;
+    width: 250px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.suggestion-item {
+    padding: 6px 10px;
+    display: flex;
+    gap: 10px;
+    cursor: pointer;
+    color: white;
+}
+
+    .suggestion-item.active, .suggestion-item:hover {
+        background: #5865f2;
+    }
+
+.emoji-icon {
+    width: 20px;
+    height: 20px;
+}
