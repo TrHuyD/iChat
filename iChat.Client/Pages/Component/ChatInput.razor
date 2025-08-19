@@ -54,12 +54,20 @@
 
     private async Task OnInputAsync(EventArgs _)
     {
-        var text = await GetEditorTextAsync();
-        var lastWord = text.Split([' ', '\n'], StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "";
+        var info = await JS.InvokeAsync<CaretEmojiInfo?>("getEmojiTokenAtCaret", _editor);
 
-        if (lastWord.StartsWith(':') && lastWord.Length > 1 && !lastWord.EndsWith(':'))
+        if (info is null)
         {
-            _currentWord = lastWord[1..];
+            _showSuggestions = false;
+            _suggestions.Clear();
+            StateHasChanged();
+            return;
+        }
+
+        _currentWord = info.Word;
+
+        if (!info.HasClosing)
+        {
             _suggestions = _emojiMap
                 .Where(x => x.Key.StartsWith(_currentWord, StringComparison.OrdinalIgnoreCase))
                 .ToList();
@@ -67,21 +75,14 @@
             _showSuggestions = _suggestions.Count != 0;
             _selectedEmoji = _suggestions.FirstOrDefault();
         }
-        else if (lastWord.StartsWith(':') && lastWord.EndsWith(':') && lastWord.Length > 2)
-        {
-            var word = lastWord[1..^1]; 
-            var match = _emojiMap.FirstOrDefault(x =>
-                x.Key.Equals(word, StringComparison.OrdinalIgnoreCase));
-
-            if (match is not null)
-            {
-                await ReplaceWithEmojiAsync(match, word);
-            }
-            _showSuggestions = false;
-            _suggestions.Clear();
-        }
         else
         {
+            var match = _emojiMap.FirstOrDefault(x =>
+                x.Key.Equals(_currentWord, StringComparison.OrdinalIgnoreCase));
+
+            if (match is not null)
+                await ReplaceWithEmojiAsync(match, _currentWord);
+
             _showSuggestions = false;
             _suggestions.Clear();
         }
@@ -123,21 +124,7 @@
 
     private async Task ReplaceWithEmojiAsync(EmojiItem emoji, string word)
     {
-        var text = await GetEditorTextAsync();
-        var searchPattern = $":{word}";
-        if (text.Contains(searchPattern))
-        {
-            var lastIndex = text.LastIndexOf(searchPattern, StringComparison.Ordinal);
-            var prefix = text[..lastIndex];
-            await SetEditorHtmlAsync(prefix);
-
-            if (emoji.IsCustom)
-                await JS.InvokeVoidAsync("insertEmojiImage", _editor, emoji.Value);
-            else
-                await JS.InvokeVoidAsync("insertEmojiText", _editor, emoji.Value);
-
-            await JS.InvokeVoidAsync("insertText", _editor, " ");
-        }
+        await JS.InvokeVoidAsync("replaceEmojiAtCaret", _editor, word, emoji.IsCustom, emoji.Value);
     }
 
     private void MoveSelection(int step)
@@ -152,8 +139,7 @@
     private ValueTask<string> GetEditorTextAsync() =>
         JS.InvokeAsync<string>("getEditorPlainText", _editor);
 
-    private ValueTask SetEditorHtmlAsync(string html) =>
-        JS.InvokeVoidAsync("setEditorHtml", _editor, html);
-
     private sealed record EmojiItem(string Key, string Value, bool IsCustom = false);
+    private sealed record CaretEmojiInfo(string Word, bool HasClosing);
 }
+

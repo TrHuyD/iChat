@@ -140,7 +140,6 @@ window.mentionHelper = {
         return result;
     }
 };
-
 window.getEditorPlainText = (el) => {
     return el.innerText;
 };
@@ -149,10 +148,28 @@ window.setEditorHtml = (el, html) => {
     el.innerHTML = html;
 };
 
+// Utility: insert a DOM node at current selection
+function insertNodeAtCaret(el, node) {
+    var sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+        el.appendChild(node);
+        return;
+    }
+    var range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(node);
+
+    // Move caret after the inserted node
+    range.setStartAfter(node);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
 window.insertEmojiText = (el, emoji) => {
     var span = document.createElement("span");
     span.textContent = emoji;
-    el.appendChild(span);
+    insertNodeAtCaret(el, span);
 };
 
 window.insertEmojiImage = (el, url) => {
@@ -162,9 +179,63 @@ window.insertEmojiImage = (el, url) => {
     img.style.width = "20px";
     img.style.height = "20px";
     img.style.verticalAlign = "middle";
-    el.appendChild(img);
+    insertNodeAtCaret(el, img);
 };
 
 window.insertText = (el, text) => {
-    el.appendChild(document.createTextNode(text));
+    var textNode = document.createTextNode(text);
+    insertNodeAtCaret(el, textNode);
+};
+window.replaceEmoji = (el, triggerWord, isCustom, value) => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+
+    const range = sel.getRangeAt(0);
+
+    // Find the :word: text node backwards from caret
+    let container = range.startContainer;
+    let textNode = (container.nodeType === 3) ? container : null;
+
+    if (!textNode) return;
+
+    const text = textNode.textContent;
+    const searchPattern = ":" + triggerWord;
+    const idx = text.lastIndexOf(searchPattern);
+
+    if (idx === -1) return;
+
+    // Split into before, match, after
+    const before = text.substring(0, idx);
+    const after = text.substring(idx + searchPattern.length);
+
+    // Replace the whole text node with before
+    textNode.textContent = before;
+
+    // Insert emoji node
+    let node;
+    if (isCustom) {
+        node = document.createElement("img");
+        node.src = value;
+        node.className = "emoji-icon";
+        node.style.width = "20px";
+        node.style.height = "20px";
+        node.style.verticalAlign = "middle";
+    } else {
+        node = document.createElement("span");
+        node.textContent = value;
+    }
+    textNode.parentNode.insertBefore(node, textNode.nextSibling);
+
+    // Add trailing space + remaining text
+    const space = document.createTextNode(" ");
+    const afterNode = document.createTextNode(after);
+    textNode.parentNode.insertBefore(space, node.nextSibling);
+    textNode.parentNode.insertBefore(afterNode, space.nextSibling);
+
+    // Move caret after the space
+    const newRange = document.createRange();
+    newRange.setStartAfter(space);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
 };
